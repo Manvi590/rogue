@@ -1120,13 +1120,15 @@ a:hover svg {
 
 .cat-cell-desc {
   font-size: 14px;
-  color: #555;
+  color: #FFFFFF;
   line-height: 1.7;
   transition: color 0.25s ease;
+  opacity: 0.7;
 }
 
 .cat-cell:hover .cat-cell-desc {
-  color: #777;
+  color: #FFFFFF;
+  opacity: 1;
 }
 
 @media (max-width: 768px) {
@@ -1685,8 +1687,6 @@ a:hover svg {
 
 .orange-cta-btns .btn-v2:hover {
   transform: translateY(-3px) scale(1.02);
-  background: white !important;
-  color: #FF6A00 !important;
 }
 
 @media (max-width: 768px) {

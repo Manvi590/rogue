@@ -224,9 +224,13 @@ const Home = () => {
         <div className="container hero-v3-inner">
 
           {/* ── LEFT SIDEBAR (Explore Categories) ── */}
-          <aside className="hero-v3-sidebar-left" style={{ display: "flex", flexDirection: "column", position: "relative" }}>
+          <aside 
+            className="hero-v3-sidebar-left" 
+            style={{ display: "flex", flexDirection: "column", position: "relative" }}
+            onMouseEnter={() => setShowCats(true)}
+            onMouseLeave={() => setShowCats(false)}
+          >
             <div
-              onClick={() => setShowCats(!showCats)}
               style={{
                 background: "white",
                 color: "#111",
@@ -301,14 +305,25 @@ const Home = () => {
 
             {/* Top: Headline Only */}
             <div className="hero-v3-header" style={{ marginBottom: "32px", width: "100%" }}>
-              <h1 className="hero-title hero-v3-title" style={{ fontSize: "clamp(20px, 3.2vw, 46px)", margin: "0 auto", lineHeight: 1.1, letterSpacing: "-0.03em", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
-                <div style={{ display: "flex", gap: "12px", flexWrap: "nowrap", justifyContent: "center", whiteSpace: "nowrap" }}>
-                  <DecryptedText text="Set Records." animateOn="inViewHover" speed={75} maxIterations={14} />
-                  <span style={{ color: "#FF6A00" }}>
-                    <DecryptedText text="Break Records." animateOn="inViewHover" speed={75} maxIterations={14} />
-                  </span>
-                </div>
-                <DecryptedText text="Go Live." animateOn="inViewHover" speed={75} maxIterations={14} />
+              <h1 className="hero-title hero-v3-title" style={{ fontSize: "clamp(16px, 2.4vw, 32px)", margin: "0 auto", lineHeight: 1.1, letterSpacing: "-0.01em", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", fontWeight: "900", textTransform: "uppercase" }}>
+                <span style={{ color: "#FF6A00" }}>
+                  <DecryptedText text="SET" animateOn="inViewHover" speed={75} maxIterations={14} />
+                </span>
+                <span style={{ color: "#000" }}>
+                  <DecryptedText text="RECORD," animateOn="inViewHover" speed={75} maxIterations={14} />
+                </span>
+                <span style={{ color: "#FF6A00", marginLeft: "4px" }}>
+                  <DecryptedText text="BREAK" animateOn="inViewHover" speed={75} maxIterations={14} />
+                </span>
+                <span style={{ color: "#000" }}>
+                  <DecryptedText text="RECORD," animateOn="inViewHover" speed={75} maxIterations={14} />
+                </span>
+                <span style={{ color: "#FF6A00", marginLeft: "4px" }}>
+                  <DecryptedText text="GO" animateOn="inViewHover" speed={75} maxIterations={14} />
+                </span>
+                <span style={{ color: "#000" }}>
+                  <DecryptedText text="LIVE." animateOn="inViewHover" speed={75} maxIterations={14} />
+                </span>
               </h1>
             </div>
 
@@ -387,28 +402,24 @@ const Home = () => {
           </main>
 
           {/* ── RIGHT SIDEBAR (Live Videos) ── */}
-          <aside className="hero-v3-sidebar-right" style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ textAlign: "right", marginBottom: "16px" }}>
+          <aside className="hero-v3-sidebar-right" style={{ display: "flex", flexDirection: "column", height: "600px", marginTop: "35px" }}>
+            <div style={{ textAlign: "right", marginBottom: "8px", flexShrink: 0 }}>
               <span style={{ color: "#FF6A00", fontSize: "14px", fontWeight: "700", cursor: "pointer" }}>View All Streams &gt;</span>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "15px", flex: 1 }}>
               {[
-                { time: "0:53", title: "Marathon Run", img: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=400&q=80" },
-                { time: "0:48", title: "Handstand Hold", img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=400&q=80" },
-                { time: "0:47", title: "Surfing Challenge", img: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=400&q=80" },
-                { time: "0:46", title: "Light Speed Reaction", img: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=400&q=80" },
-                { time: "0:45", title: "Blindfolded Rubik's Cube", img: "https://images.unsplash.com/photo-1591123720164-de1348028a82?auto=format&fit=crop&w=400&q=80" }
+                { time: "0:53", img: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=400&q=80" },
+                { time: "0:48", img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=400&q=80" },
+                { time: "0:47", img: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=400&q=80" },
+                { time: "0:46", img: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=400&q=80" },
+                { time: "0:45", img: "https://images.unsplash.com/photo-1591123720164-de1348028a82?auto=format&fit=crop&w=400&q=80" },
+                { time: "0:44", img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=400&q=80" }
               ].map((video, idx) => (
-                <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "8px", cursor: "pointer" }}>
-                  <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden", height: "80px", boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }}>
-                    <img src={video.img} alt={video.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                    <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
-
-                    <div style={{ position: "absolute", bottom: "8px", left: "12px", color: "white", fontSize: "12px", fontWeight: "700" }}>{video.time}</div>
-
-                    <Play style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", color: "#FF6A00", fill: "#FF6A00", width: 40, height: 40, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.4))" }} />
-                  </div>
-                  <div style={{ fontSize: "13px", fontWeight: "600", color: "white" }}>{video.title}</div>
+                <div key={idx} style={{ position: "relative", borderRadius: "12px", overflow: "hidden", height: "78px", boxShadow: "0 4px 12px rgba(0,0,0,0.15)", cursor: "pointer", flexShrink: 0 }}>
+                  <img src={video.img} alt="Live Stream" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)" }} />
+                  <div style={{ position: "absolute", bottom: "8px", left: "12px", color: "white", fontSize: "12px", fontWeight: "700" }}>{video.time}</div>
+                  <Play style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", color: "#FF6A00", fill: "#FF6A00", width: 40, height: 40, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.4))" }} />
                 </div>
               ))}
             </div>
@@ -481,7 +492,11 @@ const Home = () => {
             </Link>
           </div>
 
-          <div className="newest-slider-wrap" style={{ marginTop: "20px" }}>
+          <div className="newest-slider-wrap" style={{ marginTop: "20px", position: "relative" }}>
+            {/* White gradients at the start and end */}
+            <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "100px", background: "linear-gradient(to right, #FFFFFF 0%, transparent 100%)", zIndex: 5, pointerEvents: "none" }} />
+            <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "100px", background: "linear-gradient(to left, #FFFFFF 0%, transparent 100%)", zIndex: 5, pointerEvents: "none" }} />
+            
             <InfiniteSlider speed={40} gap={24} cardWidth="300px">
               {[
                 { img: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80", cat: "ATHLETICS", title: "Most Basketball Three-Pointers in 1 Minute", avatar: "https://randomuser.me/api/portraits/men/32.jpg", name: "James Carter", value: "42 Shots" },
@@ -576,7 +591,7 @@ const Home = () => {
         <div className="container">
           <div className="section-header center" style={{ marginBottom: 0, paddingBottom: 56 }}>
             <h2 className="section-title" style={{ color: "white" }}><ScrollReveal>Compete in Your Division</ScrollReveal></h2>
-            <p className="section-subtitle" style={{ color: "#666" }}><ScrollReveal>Age is just a number. But divisions keep it fair.</ScrollReveal></p>
+            <p className="section-subtitle" style={{ color: "white" }}><ScrollReveal>Age is just a number. But divisions keep it fair.</ScrollReveal></p>
           </div>
         </div>
         <div style={{ height: 600 }}>
@@ -584,7 +599,7 @@ const Home = () => {
             speed={12}
             items={[
               {
-                link: "/leaderboard", text: "2–10", label: "Youth",
+                link: "/leaderboard", text: "2–9", label: "Youth",
                 images: [
                   "https://static.vecteezy.com/system/resources/thumbnails/076/981/260/small/young-asian-boy-with-glasses-studying-at-his-desk-for-back-to-school-free-photo.jpeg",
                   "https://images.unsplash.com/photo-1502086223501-7ea244bce1e0?auto=format&fit=crop&w=400&q=80",
@@ -592,7 +607,7 @@ const Home = () => {
                 ]
               },
               {
-                link: "/leaderboard", text: "11–12", label: "Pre-Teen",
+                link: "/leaderboard", text: "10–12", label: "Pre-Teen",
                 images: [
                   "https://media.istockphoto.com/id/498211233/photo/young-children-with-bikes-and-scooters-in-park.jpg?s=612x612&w=0&k=20&c=3XXhIYQ3-BeBbcpGLyoWz6JugQUrrR6LmTDisAM78sM=",
                   "https://images.unsplash.com/photo-1503917988258-f19782f11b6e?auto=format&fit=crop&w=400&q=80",
@@ -757,7 +772,36 @@ const Home = () => {
                 </button>
               </Link>
               <Link to="/explore" style={{ textDecoration: "none" }}>
-                <button className="btn-v2" style={{ background: "rgba(255,255,255,0.1)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", color: "white", border: "1px solid rgba(255,255,255,0.3)", padding: "14px 28px", borderRadius: "100px", fontSize: "15px", fontWeight: "700", display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", transition: "all 0.3s ease" }}>
+                <button 
+                  className="btn-v2" 
+                  style={{ 
+                    background: "#FFFFFF", 
+                    color: "#FF6A00", 
+                    border: "1px solid #FFFFFF", 
+                    padding: "14px 28px", 
+                    borderRadius: "100px", 
+                    fontSize: "15px", 
+                    fontWeight: "700", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "10px", 
+                    cursor: "pointer", 
+                    transition: "all 0.3s ease",
+                    boxShadow: "0 10px 20px rgba(0,0,0,0.1)"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+                    e.currentTarget.style.color = "#FFFFFF";
+                    e.currentTarget.style.backdropFilter = "blur(10px)";
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.3)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#FFFFFF";
+                    e.currentTarget.style.color = "#FF6A00";
+                    e.currentTarget.style.backdropFilter = "none";
+                    e.currentTarget.style.borderColor = "#FFFFFF";
+                  }}
+                >
                   Explore Categories
                 </button>
               </Link>
