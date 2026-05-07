@@ -224,8 +224,8 @@ const Home = () => {
         <div className="container hero-v3-inner">
 
           {/* ── LEFT SIDEBAR (Explore Categories) ── */}
-          <aside 
-            className="hero-v3-sidebar-left" 
+          <aside
+            className="hero-v3-sidebar-left"
             style={{ display: "flex", flexDirection: "column", position: "relative" }}
             onMouseEnter={() => setShowCats(true)}
             onMouseLeave={() => setShowCats(false)}
@@ -446,8 +446,8 @@ const Home = () => {
           {/* Right: Stats Boxes */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
             {[
-              { label: "Records Set", value: 12, suffix: "k+", icon: <Trophy style={{ width: 16, height: 16 }} /> },
-              { label: "Countries", value: 180, suffix: "+", icon: <Target style={{ width: 16, height: 16 }} /> },
+              { label: "Records Set", value: 1, suffix: " k+", icon: <Trophy style={{ width: 16, height: 16 }} /> },
+              { label: "Countries", value: 1, suffix: "+", icon: <Target style={{ width: 16, height: 16 }} /> },
               { label: "Categories", value: 20, suffix: "+", icon: <Zap style={{ width: 16, height: 16 }} /> }
             ].map((stat, idx) => (
               <div key={idx} style={{ background: "#222", border: "1.5px solid #FF6A00", padding: "20px", borderRadius: "16px", display: "flex", flexDirection: "column", justifyContent: "space-between", boxShadow: "0 4px 15px rgba(255,106,0,0.1)", aspectRatio: "1 / 1" }}>
@@ -496,7 +496,7 @@ const Home = () => {
             {/* White gradients at the start and end */}
             <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "100px", background: "linear-gradient(to right, #FFFFFF 0%, transparent 100%)", zIndex: 5, pointerEvents: "none" }} />
             <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "100px", background: "linear-gradient(to left, #FFFFFF 0%, transparent 100%)", zIndex: 5, pointerEvents: "none" }} />
-            
+
             <InfiniteSlider speed={40} gap={24} cardWidth="300px">
               {[
                 { img: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80", cat: "ATHLETICS", title: "Most Basketball Three-Pointers in 1 Minute", avatar: "https://randomuser.me/api/portraits/men/32.jpg", name: "James Carter", value: "42 Shots" },
@@ -772,20 +772,20 @@ const Home = () => {
                 </button>
               </Link>
               <Link to="/explore" style={{ textDecoration: "none" }}>
-                <button 
-                  className="btn-v2" 
-                  style={{ 
-                    background: "#FFFFFF", 
-                    color: "#FF6A00", 
-                    border: "1px solid #FFFFFF", 
-                    padding: "14px 28px", 
-                    borderRadius: "100px", 
-                    fontSize: "15px", 
-                    fontWeight: "700", 
-                    display: "flex", 
-                    alignItems: "center", 
-                    gap: "10px", 
-                    cursor: "pointer", 
+                <button
+                  className="btn-v2"
+                  style={{
+                    background: "#FFFFFF",
+                    color: "#FF6A00",
+                    border: "1px solid #FFFFFF",
+                    padding: "14px 28px",
+                    borderRadius: "100px",
+                    fontSize: "15px",
+                    fontWeight: "700",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    cursor: "pointer",
                     transition: "all 0.3s ease",
                     boxShadow: "0 10px 20px rgba(0,0,0,0.1)"
                   }}
