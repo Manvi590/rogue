@@ -12,7 +12,9 @@
 }
 
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -116,9 +118,11 @@ a:hover svg {
     width: 95%;
     padding: 0;
   }
+
   .section {
     padding: 72px 0;
   }
+
   .section-lg {
     padding: 80px 0;
   }
@@ -181,10 +185,12 @@ a:hover svg {
   .navbar {
     height: 72px;
   }
+
   .nav-logo-img {
     height: 70px;
     transform: translateY(4px);
   }
+
   .desktop-only {
     display: none;
   }
@@ -267,9 +273,17 @@ a:hover svg {
 
 /* ── NAV CTA BUTTON ── */
 @keyframes liquid-bg {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .btn-nav-cta {
@@ -305,7 +319,8 @@ a:hover svg {
 .btn-nav-cta-circle {
   width: 30px;
   height: 30px;
-  background: #111; /* Changed to dark to contrast with orange button */
+  background: #111;
+  /* Changed to dark to contrast with orange button */
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -368,12 +383,12 @@ a:hover svg {
 .btn-primary {
   background: #FF6A00;
   color: white;
-  box-shadow: 0 6px 20px rgba(255,106,0,0.35);
+  box-shadow: 0 6px 20px rgba(255, 106, 0, 0.35);
 }
 
 .btn-primary:hover {
   background: #e55e00;
-  box-shadow: 0 10px 28px rgba(255,106,0,0.5);
+  box-shadow: 0 10px 28px rgba(255, 106, 0, 0.5);
 }
 
 .btn-outline {
@@ -408,17 +423,17 @@ a:hover svg {
 .btn-white {
   background: white;
   color: #FF6A00;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .btn-outline-white {
   background: transparent;
   color: white;
-  border: 2px solid rgba(255,255,255,0.5);
+  border: 2px solid rgba(255, 255, 255, 0.5);
 }
 
 .btn-outline-white:hover {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* ── HERO ── */
@@ -434,7 +449,7 @@ a:hover svg {
   right: 0;
   width: 65%;
   height: 100%;
-  background: linear-gradient(to bottom left, rgba(255,230,214,0.8), rgba(255,240,230,0.3), transparent);
+  background: linear-gradient(to bottom left, rgba(255, 230, 214, 0.8), rgba(255, 240, 230, 0.3), transparent);
   border-radius: 0 0 0 100px;
   pointer-events: none;
 }
@@ -796,19 +811,9 @@ a:hover svg {
 /* ── RECORD CARDS ── */
 /* ── NEWEST APPROVED SECTION ── */
 .newest-section {
-  background: #FFFFFF;
+  background: linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.2)), url('/image copy 2.png') no-repeat center center / cover;
   padding: 100px 0 100px;
-  border-top: 1px solid rgba(0,0,0,0.04);
-  border-bottom: 1px solid rgba(0,0,0,0.04);
   position: relative;
-}
-
-.newest-section::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: radial-gradient(circle at top right, rgba(255, 106, 0, 0.03), transparent 60%);
-  pointer-events: none;
 }
 
 .newest-header {
@@ -847,8 +852,17 @@ a:hover svg {
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.5; transform: scale(0.7); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(0.7);
+  }
 }
 
 .newest-title {
@@ -868,14 +882,14 @@ a:hover svg {
   font-weight: 700;
   color: #fff;
   text-decoration: none;
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   padding: 10px 20px;
   border-radius: 100px;
   transition: background 0.2s, border-color 0.2s, gap 0.2s;
 }
 
 .newest-see-all:hover {
-  background: rgba(255,106,0,0.12);
+  background: rgba(255, 106, 0, 0.12);
   border-color: #FF6A00;
   gap: 11px;
 }
@@ -909,22 +923,18 @@ a:hover svg {
 .rec-card-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.92) 0%,
-    rgba(0, 0, 0, 0.45) 45%,
-    rgba(0, 0, 0, 0.1) 100%
-  );
+  background: linear-gradient(to top,
+      rgba(0, 0, 0, 0.92) 0%,
+      rgba(0, 0, 0, 0.45) 45%,
+      rgba(0, 0, 0, 0.1) 100%);
   transition: background 0.3s;
 }
 
 .rec-card:hover .rec-card-overlay {
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.96) 0%,
-    rgba(0, 0, 0, 0.5) 50%,
-    rgba(0, 0, 0, 0.15) 100%
-  );
+  background: linear-gradient(to top,
+      rgba(0, 0, 0, 0.96) 0%,
+      rgba(0, 0, 0, 0.5) 50%,
+      rgba(0, 0, 0, 0.15) 100%);
 }
 
 .rec-card-top {
@@ -1005,6 +1015,7 @@ a:hover svg {
   .grid-4 {
     grid-template-columns: repeat(2, 1fr);
   }
+
   .grid-3 {
     grid-template-columns: repeat(2, 1fr);
     gap: 24px;
@@ -1012,7 +1023,10 @@ a:hover svg {
 }
 
 @media (max-width: 640px) {
-  .grid-4, .grid-3, .grid-2 {
+
+  .grid-4,
+  .grid-3,
+  .grid-2 {
     grid-template-columns: 1fr;
     gap: 24px;
   }
@@ -1153,7 +1167,7 @@ a:hover svg {
 
 /* ── HOLDERS SECTION ── */
 .holders-section {
-  background: #FFF8F5;
+  background: linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.2)), url('/image copy 2.png') no-repeat center center / cover;
   padding: 100px 0 60px;
   position: relative;
   overflow: hidden;
@@ -1166,7 +1180,7 @@ a:hover svg {
   transform: translate(-50%, -50%);
   font-size: clamp(80px, 15vw, 160px);
   font-weight: 900;
-  color: rgba(0,0,0,0.04);
+  color: rgba(0, 0, 0, 0.04);
   letter-spacing: -0.04em;
   white-space: nowrap;
   pointer-events: none;
@@ -1250,13 +1264,13 @@ a:hover svg {
   overflow: hidden;
   cursor: pointer;
   flex-shrink: 0;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.13);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.13);
   transition: transform 0.35s ease, box-shadow 0.35s ease;
 }
 
 .holder-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 20px 48px rgba(0,0,0,0.2);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.2);
 }
 
 .holder-card-img {
@@ -1273,7 +1287,7 @@ a:hover svg {
 .holder-card-gradient {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.1) 55%, transparent 100%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.1) 55%, transparent 100%);
 }
 
 .holder-side-strip {
@@ -1306,7 +1320,7 @@ a:hover svg {
   text-transform: uppercase;
   letter-spacing: 0.15em;
   color: white;
-  background: rgba(255,106,0,0.85);
+  background: rgba(255, 106, 0, 0.85);
   padding: 5px 12px;
   border-radius: 100px;
 }
@@ -1315,7 +1329,7 @@ a:hover svg {
   font-size: 11px;
   font-weight: 800;
   color: white;
-  background: rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   padding: 5px 12px;
@@ -1341,7 +1355,7 @@ a:hover svg {
 
 .holder-records {
   font-size: 13px;
-  color: rgba(255,255,255,0.65);
+  color: rgba(255, 255, 255, 0.65);
   margin-bottom: 10px;
 }
 
@@ -1378,7 +1392,7 @@ a:hover svg {
   padding: 24px 48px;
   text-align: center;
   cursor: pointer;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   transition: all 0.3s ease;
 }
 
@@ -1460,7 +1474,7 @@ a:hover svg {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
   margin-bottom: 32px;
   border: 4px solid #FFF8F5;
 }
@@ -1497,6 +1511,7 @@ a:hover svg {
     gap: 48px;
     max-width: 480px;
   }
+
   .steps-grid::before {
     display: none;
   }
@@ -1512,7 +1527,7 @@ a:hover svg {
   display: flex;
   align-items: center;
   gap: 80px;
-  box-shadow: 0 30px 80px rgba(0,0,0,0.2);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.2);
 }
 
 @media (max-width: 1024px) {
@@ -1544,7 +1559,7 @@ a:hover svg {
 .dark-cta-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to right, #000 0%, rgba(17,17,17,0.92) 50%, transparent 100%);
+  background: linear-gradient(to right, #000 0%, rgba(17, 17, 17, 0.92) 50%, transparent 100%);
 }
 
 .dark-cta-left {
@@ -1596,9 +1611,9 @@ a:hover svg {
   inset: -100% 0 0 -100%;
   width: 300%;
   height: 300%;
-  background-image: 
-    linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
   background-size: 40px 40px;
   transform: rotate(15deg);
   z-index: 1;
@@ -1611,7 +1626,7 @@ a:hover svg {
   transform: translateX(-50%);
   width: 80%;
   height: 50%;
-  background: radial-gradient(ellipse at top, rgba(255,255,255,0.4) 0%, transparent 70%);
+  background: radial-gradient(ellipse at top, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
   z-index: 1;
   pointer-events: none;
 }
@@ -1638,7 +1653,7 @@ a:hover svg {
   border-radius: 100px;
   margin-bottom: 24px;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
 .orange-cta-title {
@@ -1648,7 +1663,7 @@ a:hover svg {
   margin-bottom: 24px;
   line-height: 1.1;
   letter-spacing: -0.02em;
-  text-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  text-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
 .orange-cta-highlight {
@@ -1669,13 +1684,13 @@ a:hover svg {
 }
 
 .orange-cta-subtitle {
-  color: rgba(255,255,255,0.9);
+  color: rgba(255, 255, 255, 0.9);
   font-size: clamp(16px, 2vw, 20px);
   margin-bottom: 48px;
   max-width: 600px;
   line-height: 1.6;
   font-weight: 500;
-  text-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .orange-cta-btns {
@@ -1700,7 +1715,7 @@ a:hover svg {
 /* ── RECORD SEARCH CARDS ── */
 .rec-search-card {
   background: #222;
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 20px;
   padding: 20px 24px;
   display: flex;
@@ -1788,7 +1803,7 @@ a:hover svg {
 }
 
 .footer-bottom {
-  border-top: 1px solid rgba(255,255,255,0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding-top: 32px;
   display: flex;
   justify-content: space-between;
@@ -1812,7 +1827,7 @@ a:hover svg {
 .social-btn {
   width: 40px;
   height: 40px;
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1894,7 +1909,7 @@ a:hover svg {
 
 .carousel-btn-fill {
   background: #FF6A00;
-  box-shadow: 0 8px 20px rgba(255,106,0,0.3);
+  box-shadow: 0 8px 20px rgba(255, 106, 0, 0.3);
 }
 
 .carousel-btn-fill:hover {
@@ -1906,14 +1921,14 @@ a:hover svg {
   position: absolute;
   bottom: 28px;
   left: 28px;
-  background: rgba(255,255,255,0.95);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px);
   border-radius: 16px;
   padding: 14px 18px;
   display: flex;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 }
 
 .live-icon {
@@ -1929,8 +1944,15 @@ a:hover svg {
 
 /* ── ANIMATIONS ── */
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .pulse {
@@ -1949,14 +1971,21 @@ a:hover svg {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   z-index: 100;
   animation: slideDown 0.3s ease-out;
 }
 
 @keyframes slideDown {
-  from { transform: translateY(-10px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .mobile-nav-link {
@@ -1992,20 +2021,25 @@ a:hover svg {
    NEWEST ACHIEVERS & STEP-BY-STEP GUIDES
 --------------------------------------------------------- */
 
-.newest-grid, .guides-grid {
+.newest-grid,
+.guides-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
 }
 
 @media (max-width: 900px) {
-  .newest-grid, .guides-grid {
+
+  .newest-grid,
+  .guides-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 600px) {
-  .newest-grid, .guides-grid {
+
+  .newest-grid,
+  .guides-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -2014,8 +2048,8 @@ a:hover svg {
   overflow: hidden;
   border-radius: 16px;
   background: #FFF;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.03), 0 1px 3px rgba(0,0,0,0.02);
-  border: 1px solid rgba(0,0,0,0.04);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
   transition: all 0.3s ease;
@@ -2024,7 +2058,7 @@ a:hover svg {
 
 .hover-zoom-container:hover {
   transform: translateY(-4px);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.03);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.03);
   border-color: rgba(255, 106, 0, 0.2);
 }
 
@@ -2047,11 +2081,14 @@ a:hover svg {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  height: 360px; /* Reduced height */
+  height: 360px;
+  /* Reduced height */
 }
+
 .newest-card-img-wrap {
   position: relative;
-  height: 160px; /* Reduced height */
+  height: 160px;
+  /* Reduced height */
   overflow: hidden;
 }
 
@@ -2092,7 +2129,7 @@ a:hover svg {
   line-height: 1.3;
   margin-bottom: 20px;
   /* Maintain 2-line height consistency */
-  height: 2.6em; 
+  height: 2.6em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -2152,7 +2189,7 @@ a:hover svg {
   align-items: center;
   justify-content: center;
   z-index: 2;
-  box-shadow: 0 4px 12px rgba(255,106,0,0.4);
+  box-shadow: 0 4px 12px rgba(255, 106, 0, 0.4);
   transition: transform 0.2s ease;
 }
 

@@ -137,7 +137,7 @@ const AnimatedStat = ({ end, suffix, duration = 2000 }) => {
 const Home = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showAllCats, setShowAllCats] = useState(false);
-  const [showCats, setShowCats] = useState(false);
+  const [showCats, setShowCats] = useState(true);
 
   const navLinks = [
     { label: "Records", to: "/explore" },
@@ -227,8 +227,6 @@ const Home = () => {
           <aside
             className="hero-v3-sidebar-left"
             style={{ display: "flex", flexDirection: "column", position: "relative" }}
-            onMouseEnter={() => setShowCats(true)}
-            onMouseLeave={() => setShowCats(false)}
           >
             <div
               style={{
@@ -240,19 +238,14 @@ const Home = () => {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                cursor: "pointer",
                 boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
-                border: "1px solid #f0f0f0",
-                transition: "all 0.2s"
+                border: "1px solid #f0f0f0"
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#FF6A00"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#f0f0f0"; e.currentTarget.style.transform = "translateY(0)"; }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                 <LayoutGrid style={{ width: 20, height: 20, color: "#FF6A00" }} />
                 <span style={{ fontSize: "15px" }}>Explore Categories</span>
               </div>
-              {showCats ? <ChevronUp style={{ width: 18, height: 18, color: "#888" }} /> : <ChevronDown style={{ width: 18, height: 18, color: "#888" }} />}
             </div>
 
             {showCats && (
@@ -265,9 +258,6 @@ const Home = () => {
                 flexDirection: "column",
                 marginTop: "12px",
                 border: "1px solid #f0f0f0",
-                position: "absolute",
-                top: "100%",
-                left: 0,
                 width: "100%",
                 zIndex: 10
               }}>
@@ -491,28 +481,28 @@ const Home = () => {
               View All Records <ChevronRight style={{ width: 16, height: 16 }} />
             </Link>
           </div>
+        </div>
 
-          <div className="newest-slider-wrap" style={{ marginTop: "20px", position: "relative" }}>
-            {/* White gradients at the start and end */}
-            <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "100px", background: "linear-gradient(to right, #FFFFFF 0%, transparent 100%)", zIndex: 5, pointerEvents: "none" }} />
-            <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "100px", background: "linear-gradient(to left, #FFFFFF 0%, transparent 100%)", zIndex: 5, pointerEvents: "none" }} />
+        <div className="newest-slider-wrap" style={{ marginTop: "20px", position: "relative", width: "100%", overflow: "hidden" }}>
+          {/* White gradients at the start and end */}
+          <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "150px", background: "linear-gradient(to right, rgba(255,255,255,0.9) 0%, transparent 100%)", zIndex: 5, pointerEvents: "none" }} />
+          <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "150px", background: "linear-gradient(to left, rgba(255,255,255,0.9) 0%, transparent 100%)", zIndex: 5, pointerEvents: "none" }} />
 
-            <InfiniteSlider speed={40} gap={24} cardWidth="300px">
-              {[
-                { img: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80", cat: "ATHLETICS", title: "Most Basketball Three-Pointers in 1 Minute", avatar: "https://randomuser.me/api/portraits/men/32.jpg", name: "James Carter", value: "42 Shots" },
-                { img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80", cat: "FITNESS", title: "Fastest 100m Sand Sprint", avatar: "https://randomuser.me/api/portraits/women/44.jpg", name: "Elena Petrov", value: "11.2 Sec" },
-                { img: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=600&q=80", cat: "STRENGTH", title: "Most Consecutive Pull-Ups", avatar: "https://randomuser.me/api/portraits/men/85.jpg", name: "Marcus S.", value: "89 Reps" },
-                { img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=600&q=80", cat: "ENDURANCE", title: "Longest Plank Hold (Under 18)", avatar: "https://randomuser.me/api/portraits/men/12.jpg", name: "Leo Rossi", value: "1h 12m" },
-                { img: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=600&q=80", cat: "GAMING", title: "Highest Score in Retro Tetris", avatar: "https://randomuser.me/api/portraits/women/15.jpg", name: "Sarah Kim", value: "999,999" },
-                { img: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=600&q=80", cat: "ACTION", title: "Fastest 360 Flip on Skateboard", avatar: "https://randomuser.me/api/portraits/men/45.jpg", name: "Ryan G.", value: "0.8 Sec" },
-                { img: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80", cat: "REACTION", title: "Fastest Light Button Hits", avatar: "https://randomuser.me/api/portraits/women/22.jpg", name: "Mina Chen", value: "24 Hits/s" },
-                { img: "https://images.unsplash.com/photo-1591123720164-de1348028a82?auto=format&fit=crop&w=600&q=80", cat: "MIND", title: "Blindfolded Rubik's Solve", avatar: "https://randomuser.me/api/portraits/men/76.jpg", name: "David Lu", value: "14.5 Sec" },
-                { img: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=600&q=80", cat: "SPEED", title: "Fastest 50m Crawl", avatar: "https://randomuser.me/api/portraits/women/67.jpg", name: "Alice B.", value: "9.8 Sec" }
-              ].map((rec, idx) => (
-                <NewestCard key={idx} {...rec} />
-              ))}
-            </InfiniteSlider>
-          </div>
+          <InfiniteSlider speed={40} gap={24} cardWidth="300px">
+            {[
+              { img: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80", cat: "ATHLETICS", title: "Most Basketball Three-Pointers in 1 Minute", avatar: "https://randomuser.me/api/portraits/men/32.jpg", name: "James Carter", value: "42 Shots" },
+              { img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80", cat: "FITNESS", title: "Fastest 100m Sand Sprint", avatar: "https://randomuser.me/api/portraits/women/44.jpg", name: "Elena Petrov", value: "11.2 Sec" },
+              { img: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=600&q=80", cat: "STRENGTH", title: "Most Consecutive Pull-Ups", avatar: "https://randomuser.me/api/portraits/men/85.jpg", name: "Marcus S.", value: "89 Reps" },
+              { img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=600&q=80", cat: "ENDURANCE", title: "Longest Plank Hold (Under 18)", avatar: "https://randomuser.me/api/portraits/men/12.jpg", name: "Leo Rossi", value: "1h 12m" },
+              { img: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=600&q=80", cat: "GAMING", title: "Highest Score in Retro Tetris", avatar: "https://randomuser.me/api/portraits/women/15.jpg", name: "Sarah Kim", value: "999,999" },
+              { img: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=600&q=80", cat: "ACTION", title: "Fastest 360 Flip on Skateboard", avatar: "https://randomuser.me/api/portraits/men/45.jpg", name: "Ryan G.", value: "0.8 Sec" },
+              { img: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80", cat: "REACTION", title: "Fastest Light Button Hits", avatar: "https://randomuser.me/api/portraits/women/22.jpg", name: "Mina Chen", value: "24 Hits/s" },
+              { img: "https://images.unsplash.com/photo-1591123720164-de1348028a82?auto=format&fit=crop&w=600&q=80", cat: "MIND", title: "Blindfolded Rubik's Solve", avatar: "https://randomuser.me/api/portraits/men/76.jpg", name: "David Lu", value: "14.5 Sec" },
+              { img: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=600&q=80", cat: "SPEED", title: "Fastest 50m Crawl", avatar: "https://randomuser.me/api/portraits/women/67.jpg", name: "Alice B.", value: "9.8 Sec" }
+            ].map((rec, idx) => (
+              <NewestCard key={idx} {...rec} />
+            ))}
+          </InfiniteSlider>
         </div>
       </section>
 
@@ -811,7 +801,7 @@ const Home = () => {
       </section>
 
       {/* ══════════════════ FOOTER ══════════════════ */}
-      <footer className="footer">
+      <footer className="footer" style={{ position: 'relative', overflow: 'hidden' }}>
         <div className="container">
           <div className="footer-inner" style={{ alignItems: 'flex-start' }}>
 
@@ -854,6 +844,21 @@ const Home = () => {
           <div className="footer-bottom">
             <span>© {new Date().getFullYear()} Rogue World Records. All rights reserved.</span>
           </div>
+
+          {/* Large Branding Image - Absolute Positioned */}
+          <img 
+            src="/image%20copy.png" 
+            alt="Rogue Branding" 
+            style={{ 
+              position: 'absolute', 
+              right: 40, 
+              bottom: 50, 
+              width: '300px', 
+              height: '200px', 
+              pointerEvents: 'none',
+              zIndex: 1
+            }} 
+          />
 
         </div>
       </footer>

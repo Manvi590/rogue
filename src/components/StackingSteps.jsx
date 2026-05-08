@@ -65,7 +65,7 @@ export default function StackingSteps() {
         height: '100vh',
         position: 'sticky',
         top: 0,
-        background: '#FFF8F5',
+        background: `linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.2)), url('/image copy 2.png') no-repeat center center / cover`,
         display: 'grid',
         placeContent: 'center',
         overflow: 'hidden',
