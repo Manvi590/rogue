@@ -6,6 +6,8 @@ import FlowingMenu from "../components/FlowingMenu";
 import StackingSteps from "../components/StackingSteps";
 import DecryptedText from "../components/DecryptedText";
 import ScrollReveal from "../components/ScrollReveal";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 /* ─────────────────────────────────────────────────────────
    REUSABLE SUB-COMPONENTS
@@ -60,7 +62,11 @@ const HolderCard = ({ img, badge, name, records, rank }) => (
     <div className="holder-card-bottom">
       <div className="holder-name">{name}</div>
       <div className="holder-records">{records} World Records</div>
-      <div className="holder-view-link">View Profile <ArrowRight style={{ width: 12, height: 12 }} /></div>
+      <Link to={`/profile/${name.toLowerCase().replace(/\s+/g, '-')}`} style={{ textDecoration: "none" }}>
+        <div className="holder-view-link" style={{ transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "white"} onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}>
+          View Profile <ArrowRight style={{ width: 12, height: 12 }} />
+        </div>
+      </Link>
     </div>
   </div>
 );
@@ -135,83 +141,14 @@ const AnimatedStat = ({ end, suffix, duration = 2000 }) => {
 ───────────────────────────────────────────────────────── */
 
 const Home = () => {
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [showAllCats, setShowAllCats] = useState(false);
   const [showCats, setShowCats] = useState(true);
 
-  const navLinks = [
-    { label: "Records", to: "/explore" },
-    { label: "Challenge", to: "/challenge" },
-    { label: "Live Events", to: "/events" },
-    { label: "Shop", to: "/certificates" },
-  ];
-
   return (
-    <div style={{ background: "#FFF8F5", color: "#111", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ background: "#FFF8F5", color: "#111", fontFamily: "'Inter', sans-serif", paddingTop: "80px" }}>
 
       {/* ══════════════════ NAVBAR ══════════════════ */}
-      <nav className="navbar">
-        <div className="navbar-inner">
-
-          {/* Logo - Left aligned */}
-          <div className="nav-logo-wrap">
-            <Link to="/" className="nav-logo-link-main">
-              <img src="/image.png" alt="ROGUE Logo" className="nav-logo-img" />
-            </Link>
-          </div>
-
-          {/* Desktop nav pill - Center aligned */}
-          <div className="nav-pill">
-            {navLinks.map((l, i) => (
-              <Link key={l.label} to={l.to} className="nav-pill-item">{l.label}</Link>
-            ))}
-          </div>
-
-          {/* Buttons - Right aligned */}
-          <div className="nav-btns-wrap">
-            <Link to="/login" className="desktop-only">
-              <button className="btn-nav-cta">
-                Login
-                <span className="btn-nav-cta-circle"><ArrowRight style={{ width: 14, height: 14 }} /></span>
-              </button>
-            </Link>
-            <Link to="/signup" className="desktop-only">
-              <button className="btn-nav-cta">
-                Sign Up
-                <span className="btn-nav-cta-circle"><ArrowRight style={{ width: 14, height: 14 }} /></span>
-              </button>
-            </Link>
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="hamburger-btn">
-              {mobileOpen ? <X style={{ width: 22, height: 22 }} /> : <Menu style={{ width: 22, height: 22 }} />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile menu */}
-        {mobileOpen && (
-          <div className="mobile-menu">
-            {navLinks.map(l => (
-              <Link key={l.label} to={l.to} onClick={() => setMobileOpen(false)} className="mobile-nav-link">
-                {l.label}
-              </Link>
-            ))}
-            <div className="mobile-menu-footer">
-              <Link to="/login" style={{ textDecoration: "none" }}>
-                <button className="btn-nav-cta" style={{ width: "100%", justifyContent: "center" }}>
-                  Login
-                  <span className="btn-nav-cta-circle"><ArrowRight style={{ width: 14, height: 14 }} /></span>
-                </button>
-              </Link>
-              <Link to="/signup" style={{ textDecoration: "none" }}>
-                <button className="btn-nav-cta" style={{ width: "100%", justifyContent: "center" }}>
-                  Sign Up
-                  <span className="btn-nav-cta-circle"><ArrowRight style={{ width: 14, height: 14 }} /></span>
-                </button>
-              </Link>
-            </div>
-          </div>
-        )}
-      </nav>
+      <Navbar />
 
       {/* 90% width line added just below the navbar */}
       <hr style={{ width: "90%", margin: "0 auto", border: "none", borderTop: "1px solid #ccc" }} />
@@ -283,7 +220,9 @@ const Home = () => {
                     </div>
                   ))}
                   <div style={{ textAlign: "center", marginTop: "16px", paddingBottom: "8px", borderTop: "1px solid #f0f0f0", paddingTop: "12px" }}>
-                    <span style={{ color: "#FF6A00", fontSize: "14px", fontWeight: "800", cursor: "pointer" }}>View All Categories &gt;</span>
+                    <Link to="/categories" style={{ textDecoration: "none" }}>
+                      <span style={{ color: "#FF6A00", fontSize: "14px", fontWeight: "800", cursor: "pointer" }}>View All Categories &gt;</span>
+                    </Link>
                   </div>
                 </nav>
               </div>
@@ -350,7 +289,7 @@ const Home = () => {
                   The ultimate platform for record breakers,<br />champions, and legends.
                 </p>
                 <div style={{ display: "flex", gap: 14 }}>
-                  <Link to="/submit" style={{ textDecoration: "none" }}>
+                  <Link to="/verify" style={{ textDecoration: "none" }}>
                     <button
                       style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "12px", padding: "15px 32px", fontSize: 16, fontWeight: 700, cursor: "pointer", transition: "transform 0.2s, box-shadow 0.2s", boxShadow: "0 4px 20px rgba(255,106,0,0.4)" }}
                       onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 28px rgba(255,106,0,0.5)"; }}
@@ -394,7 +333,9 @@ const Home = () => {
           {/* ── RIGHT SIDEBAR (Live Videos) ── */}
           <aside className="hero-v3-sidebar-right" style={{ display: "flex", flexDirection: "column", height: "600px", marginTop: "35px" }}>
             <div style={{ textAlign: "right", marginBottom: "8px", flexShrink: 0 }}>
-              <span style={{ color: "#FF6A00", fontSize: "14px", fontWeight: "700", cursor: "pointer" }}>View All Streams &gt;</span>
+              <Link to="/streams" style={{ textDecoration: "none" }}>
+                <span style={{ color: "#FF6A00", fontSize: "14px", fontWeight: "700", cursor: "pointer" }}>View All Streams &gt;</span>
+              </Link>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "15px", flex: 1 }}>
               {[
@@ -507,20 +448,31 @@ const Home = () => {
       </section>
 
       {/* ══════════════════ CATEGORIES ══════════════════ */}
-      <section className="cat-section">
+      <section className="cat-section" style={{ paddingBottom: "80px" }}>
         <div className="container">
           <div className="section-header" style={{ marginBottom: 40, display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
             <div className="section-header-left">
               <h2 className="section-title" style={{ color: "#FF6A00", marginBottom: 8, textAlign: "left" }}><ScrollReveal>Record Categories</ScrollReveal></h2>
               <p className="section-subtitle" style={{ color: "white", textAlign: "left" }}><ScrollReveal>Find your niche. Dominate your field.</ScrollReveal></p>
             </div>
-            <button
-              className="cat-toggle-btn"
+            <span 
               onClick={() => setShowAllCats(!showAllCats)}
+              style={{ 
+                color: "white", 
+                fontSize: "13px", 
+                fontWeight: "700", 
+                cursor: "pointer", 
+                display: "flex", 
+                alignItems: "center", 
+                gap: "8px", 
+                textTransform: "uppercase",
+                transition: "color 0.2s ease"
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = "#FF6A00"}
+              onMouseLeave={(e) => e.currentTarget.style.color = "white"}
             >
-              {showAllCats ? "Show Less" : "See All Categories"}
-              <ArrowRight style={{ width: 14, height: 14 }} />
-            </button>
+              {showAllCats ? "Show Fewer" : "See All Categories"} {showAllCats ? <ChevronUp size={14} /> : <ArrowRight size={14} />}
+            </span>
           </div>
         </div>
 
@@ -535,15 +487,17 @@ const Home = () => {
               { i: <Gamepad2 />, n: "Gaming", d: "From speedruns to high scores. Digital dominance, verified." },
               { i: <Waves />, n: "Water Sports", d: "Dominate the waves. Swimming, surfing, and aquatic achievements." },
               { i: <Zap />, n: "Reaction", d: "Fastest on two feet or four wheels. Every millisecond counts." },
-              { i: <Brain />, n: "Mind & Memory", d: "Cognitive greatness. Rubik's cubes, memory feats, and logic." },
-              { i: <Activity />, n: "Action Sports", d: "X-Games style adrenaline. Skating, BMX, and extreme feats." },
-            ].slice(0, showAllCats ? 10 : 8).map((c, idx) => (
-              <div key={c.n} className="cat-cell" role="button" tabIndex={0}>
+              { i: <Brain />, n: "Mind & Memory", d: "Solve the impossible. Mental feats that defy logic and speed." },
+              { i: <Activity />, n: "Action Sports", d: "High-octane performance. Adrenaline-fueled records on the edge." },
+              { i: <Settings />, n: "Technology", d: "Pushing boundaries with gear. Human-machine synergy records." },
+              { i: <Activity />, n: "Precision", d: "Accuracy at its peak. Hitting the mark when everything is on the line." }
+            ].slice(0, showAllCats ? 12 : 8).map((cat, i) => (
+              <div key={i} className="cat-cell" role="button" tabIndex={0}>
                 <div className="cat-cell-top">
-                  <span className="cat-cell-icon">{c.i}</span>
-                  <h3 className="cat-cell-name">{c.n}</h3>
+                  <div className="cat-cell-icon">{cat.i}</div>
+                  <h3 className="cat-cell-name">{cat.n}</h3>
                 </div>
-                <p className="cat-cell-desc">{c.d}</p>
+                <p className="cat-cell-desc">{cat.d}</p>
               </div>
             ))}
           </div>
@@ -664,7 +618,7 @@ const Home = () => {
               <p style={{ color: "#999", fontSize: 17, lineHeight: 1.7, maxWidth: 380, marginBottom: 36 }}>
                 <ScrollReveal>Browse our current active records across 20+ categories. Find your niche, submit your evidence, and claim your place in history.</ScrollReveal>
               </p>
-              <Link to="/submit" style={{ textDecoration: "none" }}>
+              <Link to="/verify" style={{ textDecoration: "none" }}>
                 <button className="btn btn-primary" style={{ fontSize: 15, padding: "16px 32px" }}>
                   Submit a Record <ArrowRight style={{ width: 16, height: 16 }} />
                 </button>
@@ -756,12 +710,12 @@ const Home = () => {
               <ScrollReveal>Step up, pass the official verification process, break a record, and prove you belong among the best.</ScrollReveal>
             </p>
             <div className="orange-cta-btns">
-              <Link to="/submit" style={{ textDecoration: "none" }}>
+              <Link to="/verify" style={{ textDecoration: "none" }}>
                 <button className="btn-v2 btn-v2-dark" style={{ background: "#111", color: "white", padding: "14px 28px", borderRadius: "100px", fontSize: "15px", fontWeight: "700", display: "flex", alignItems: "center", gap: "10px", border: "none", cursor: "pointer", boxShadow: "0 10px 30px rgba(0,0,0,0.15)" }}>
                   Submit a Record <ArrowRight style={{ width: 16, height: 16 }} />
                 </button>
               </Link>
-              <Link to="/explore" style={{ textDecoration: "none" }}>
+              <Link to="/categories" style={{ textDecoration: "none" }}>
                 <button
                   className="btn-v2"
                   style={{
@@ -801,67 +755,7 @@ const Home = () => {
       </section>
 
       {/* ══════════════════ FOOTER ══════════════════ */}
-      <footer className="footer" style={{ position: 'relative', overflow: 'hidden' }}>
-        <div className="container">
-          <div className="footer-inner" style={{ alignItems: 'flex-start' }}>
-
-            {/* Brand */}
-            <div className="footer-brand">
-              <div style={{ marginBottom: 10, marginTop: -25 }}>
-                <img src="/image.png" alt="ROGUE Logo" style={{ height: 180, width: "auto", marginLeft: -35, display: 'block' }} />
-              </div>
-              <p style={{ color: "white", fontSize: 15, lineHeight: 1.7, marginBottom: 28, maxWidth: 260 }}>
-                Structured divisions ensure fairness, increase participation, and scale record categories globally.
-              </p>
-              <div style={{ display: "flex", gap: 10 }}>
-                {["X", "IG", "YT"].map(s => (
-                  <div key={s} className="social-btn">{s}</div>
-                ))}
-              </div>
-            </div>
-
-            {/* Links */}
-            <div className="footer-links-grid">
-              {[
-                { t: "Platform", ls: ["Explore Records", "Submit a Record", "Challenge a Record", "Leaderboard"] },
-                { t: "Info", ls: ["About Us", "Contact Us", "Verification Process", "Support / FAQs"] },
-                { t: "Legal", ls: ["Terms of Service", "Privacy Policy", "Cookie Policy", "Adjudication Rules"] },
-              ].map(col => (
-                <div key={col.t}>
-                  <div className="footer-col-title">{col.t}</div>
-                  <ul className="footer-links">
-                    {col.ls.map(l => (
-                      <li key={l}><Link to="#" style={{ color: "white", textDecoration: "none", fontSize: 14, fontWeight: 500 }}>{l}</Link></li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-
-          </div>
-
-          {/* Bottom bar */}
-          <div className="footer-bottom">
-            <span>© {new Date().getFullYear()} Rogue World Records. All rights reserved.</span>
-          </div>
-
-          {/* Large Branding Image - Absolute Positioned */}
-          <img 
-            src="/image%20copy.png" 
-            alt="Rogue Branding" 
-            style={{ 
-              position: 'absolute', 
-              right: 40, 
-              bottom: 50, 
-              width: '300px', 
-              height: '200px', 
-              pointerEvents: 'none',
-              zIndex: 1
-            }} 
-          />
-
-        </div>
-      </footer>
+      <Footer />
 
     </div>
   );

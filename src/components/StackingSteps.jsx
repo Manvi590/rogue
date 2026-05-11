@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, ShieldCheck, Search, Globe, Clock, ChevronRight } from 'lucide-react';
 
 const GRID_LIGHT = 'linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)';
@@ -241,24 +242,26 @@ export default function StackingSteps() {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-                <button style={{ 
-                  background: '#FF6A00', 
-                  border: 'none', 
-                  borderRadius: '10px', 
-                  padding: '12px 24px', 
-                  color: 'white', 
-                  fontSize: 14, 
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  cursor: 'pointer'
-                }}>
-                  Learn More
-                  <div style={{ width: 20, height: 20, background: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <ArrowRight style={{ width: 12, height: 12, color: '#FF6A00' }} />
-                  </div>
-                </button>
+                <Link to="/verify" style={{ textDecoration: 'none' }}>
+                  <button style={{ 
+                    background: '#FF6A00', 
+                    border: 'none', 
+                    borderRadius: '10px', 
+                    padding: '12px 24px', 
+                    color: 'white', 
+                    fontSize: 14, 
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    cursor: 'pointer'
+                  }}>
+                    Learn More
+                    <div style={{ width: 20, height: 20, background: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <ArrowRight style={{ width: 12, height: 12, color: '#FF6A00' }} />
+                    </div>
+                  </button>
+                </Link>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#555', fontSize: 10 }}>
                   <ShieldCheck size={10} /> All submissions are confidential
                 </div>
