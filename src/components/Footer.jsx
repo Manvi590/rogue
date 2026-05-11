@@ -15,7 +15,7 @@ const Footer = () => {
           {/* Brand */}
           <div className="footer-brand">
             <div style={{ marginBottom: 5, marginTop: -30 }}>
-              <img src="/image.png" alt="ROGUE Logo" style={{ height: 150, width: "auto", display: 'block' }} />
+              <img src="/image copy 6.png" alt="ROGUE Logo" style={{ height: 150, width: "auto", display: 'block' }} />
             </div>
             <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "13px", lineHeight: "1.6", marginBottom: "24px", maxWidth: "260px" }}>
               Structured divisions ensure fairness, increase participation, and scale record categories globally.

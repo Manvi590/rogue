@@ -74,7 +74,7 @@ const Explore = () => {
         <Navbar />
 
         {/* HEADER */}
-        <header style={{ padding: "40px 5% 40px", maxWidth: "1400px", margin: "0 auto" }}>
+        <header style={{ padding: "40px 5% 40px", width: "100%", margin: "0" }}>
           <div style={{ color: "#FF6A00", fontWeight: "800", fontSize: "14px", textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "20px" }}>
             GLOBAL ARCHIVE
           </div>
@@ -122,7 +122,7 @@ const Explore = () => {
           </div>
 
           {/* RECORDS GRID */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", gap: "32px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" }}>
             {filteredRecords.map((rec) => (
               <div key={rec.id} style={{ background: "#161616", borderRadius: "24px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.03)", transition: "all 0.3s ease" }} onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-10px)"; e.currentTarget.style.borderColor = "rgba(255, 106, 0, 0.2)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.03)"; }}>
                 <div style={{ position: "relative", height: "240px" }}>

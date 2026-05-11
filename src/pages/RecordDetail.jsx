@@ -145,10 +145,7 @@ const RecordDetail = () => {
               </div>
             </div>
 
-            {/* SHARE */}
-            <button style={{ width: "100%", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px", padding: "20px", color: "white", fontSize: "14px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "12px" }}>
-              <Share2 size={18} /> SHARE ACHIEVEMENT
-            </button>
+
           </div>
         </section>
 
