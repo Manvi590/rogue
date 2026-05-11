@@ -56,7 +56,7 @@ const About = () => {
               </p>
             </div>
           </div>
-        </section>
+        </main>
 
         {/* VERIFICATION STANDARD */}
         <section style={{ padding: "100px 5%", background: "#0F0F0F" }}>
