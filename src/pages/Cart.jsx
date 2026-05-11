@@ -24,10 +24,10 @@ const Cart = () => {
 
   return (
     <PageTransition>
-      <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column" }}>
         <Navbar />
 
-        <div style={{ padding: "180px 5% 120px", maxWidth: "1200px", margin: "0 auto" }}>
+        <div style={{ padding: "180px 5% 120px", maxWidth: "1200px", margin: "0 auto", flex: 1 }}>
           <Link to="/shop" style={{ display: "flex", alignItems: "center", gap: "8px", color: "rgba(255,255,255,0.4)", textDecoration: "none", fontSize: "14px", fontWeight: "700", marginBottom: "40px", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "white"} onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.4)"}>
             <ArrowLeft size={16} /> BACK TO SHOP
           </Link>
@@ -119,7 +119,6 @@ const Cart = () => {
 
           </div>
         </div>
-
         <Footer />
       </div>
     </PageTransition>

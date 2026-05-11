@@ -9,18 +9,19 @@ import ScrollReveal from "../components/ScrollReveal";
 const Rules = () => {
   return (
     <PageTransition>
-      <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column" }}>
         <Navbar />
 
-        {/* Hero Section */}
-        <header style={{ padding: "180px 5% 40px", textAlign: "left", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(255,106,0,0.1)", color: "#FF6A00", padding: "8px 16px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", marginBottom: "20px" }}>
-            <Shield size={14} /> Official Guidelines
-          </div>
-          <h1 style={{ fontSize: "clamp(40px, 8vw, 80px)", fontWeight: "950", textTransform: "uppercase", marginBottom: "0", lineHeight: "1", color: "white" }}>
-            THE RULES OF <span style={{ color: "#FF6A00" }}>ENGAGEMENT</span>
-          </h1>
-        </header>
+        <div style={{ flex: 1 }}>
+          {/* Hero Section */}
+          <header style={{ padding: "180px 5% 40px", textAlign: "left", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(255,106,0,0.1)", color: "#FF6A00", padding: "8px 16px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", marginBottom: "20px" }}>
+              <Shield size={14} /> Official Guidelines
+            </div>
+            <h1 style={{ fontSize: "clamp(40px, 8vw, 80px)", fontWeight: "950", textTransform: "uppercase", marginBottom: "0", lineHeight: "1", color: "white" }}>
+              THE RULES OF <span style={{ color: "#FF6A00" }}>ENGAGEMENT</span>
+            </h1>
+          </header>
 
         {/* Rules Sections */}
         <section style={{ padding: "80px 5%", maxWidth: "1200px", margin: "0 auto" }}>
@@ -89,7 +90,7 @@ const Rules = () => {
             </Link>
           </div>
         </section>
-
+        </div>
         <Footer />
       </div>
     </PageTransition>

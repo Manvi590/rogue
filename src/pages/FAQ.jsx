@@ -47,12 +47,12 @@ const FAQ = () => {
 
   return (
     <PageTransition>
-      <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column" }}>
         
         {/* NAVBAR */}
         <Navbar />
 
-        <div style={{ padding: "180px 5% 120px" }}>
+        <div style={{ padding: "180px 5% 120px", flex: 1 }}>
         
         {/* HEADER */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "80px", maxWidth: "1200px", margin: "0 auto 80px" }}>
