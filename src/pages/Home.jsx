@@ -377,9 +377,9 @@ const Home = () => {
           {/* Right: Stats Boxes */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
             {[
-              { label: "Records Set", value: 1, suffix: " k+", icon: <Trophy style={{ width: 16, height: 16 }} /> },
-              { label: "Countries", value: 1, suffix: "+", icon: <Target style={{ width: 16, height: 16 }} /> },
-              { label: "Categories", value: 20, suffix: "+", icon: <Zap style={{ width: 16, height: 16 }} /> }
+              { label: "Records Set", value: 1, suffix: " k+", icon: <Trophy style={{ width: 16, height: 16 }} />, bg: "/assets/stats/records_set_bg.png" },
+              { label: "Countries", value: 1, suffix: "+", icon: <Target style={{ width: 16, height: 16 }} />, bg: "/assets/stats/countries_bg.png" },
+              { label: "Categories", value: 20, suffix: "+", icon: <Zap style={{ width: 16, height: 16 }} />, bg: "/assets/stats/categories_bg.png" }
             ].map((stat, idx) => (
               <div key={idx} style={{ 
                 background: "#222", 
@@ -394,6 +394,18 @@ const Home = () => {
                 position: 'relative',
                 overflow: 'hidden'
               }}>
+                {/* Background Image with low opacity */}
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundImage: `url(${stat.bg})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  opacity: 0.5,
+                  mixBlendMode: 'luminosity',
+                  zIndex: 0
+                }} />
+                
                 {/* Content */}
                 <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div style={{ background: "#333", width: 32, height: 32, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: "#FF6A00" }}>
