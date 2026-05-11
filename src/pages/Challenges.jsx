@@ -52,7 +52,7 @@ const Challenges = () => {
 
   return (
     <PageTransition>
-      <div style={{ background: "#0A0A0A", color: "white", fontFamily: "'Inter', sans-serif", minHeight: "100vh" }}>
+      <div style={{ background: "#0A0A0A", color: "white", fontFamily: "'Inter', sans-serif", minHeight: "100vh", paddingTop: "120px", display: "flex", flexDirection: "column" }}>
         
         {/* NAVBAR */}
         <Navbar />

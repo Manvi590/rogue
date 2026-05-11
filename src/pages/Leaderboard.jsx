@@ -86,7 +86,7 @@ const Leaderboard = () => {
         {/* NAVBAR */}
         <Navbar />
 
-        <div style={{ padding: "60px 5% 0" }}>
+        <div style={{ padding: "140px 5% 0" }}>
         
         <div style={{ textAlign: "center", marginBottom: "60px" }}>
            <h3 style={{ color: "#FF6A00", fontSize: "11px", fontWeight: "900", letterSpacing: "0.2em", marginBottom: "12px", textTransform: "uppercase" }}>LEADERBOARD</h3>

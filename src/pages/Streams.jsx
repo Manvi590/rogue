@@ -59,7 +59,7 @@ const Streams = () => {
       <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
         <Navbar />
 
-        <div style={{ padding: "60px 5% 120px", maxWidth: "1400px", margin: "0 auto" }}>
+        <div style={{ padding: "140px 5% 120px", maxWidth: "1400px", margin: "0 auto" }}>
           
           <header style={{ marginBottom: "60px" }}>
             <div style={{ color: "#FF6A00", fontWeight: "800", fontSize: "14px", textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "16px" }}>
