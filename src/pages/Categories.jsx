@@ -36,7 +36,11 @@ const Categories = () => {
             </h1>
           </header>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", gap: "24px" }}>
+          <div style={{ 
+            display: "grid", 
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 400px), 1fr))", 
+            gap: "32px" 
+          }}>
             {allCategories.map((cat, idx) => (
               <Link key={idx} to="/explore" style={{ textDecoration: "none", color: "inherit" }}>
                 <div style={{ background: "#161616", borderRadius: "32px", padding: "40px", border: "1px solid rgba(255,255,255,0.05)", position: "relative", overflow: "hidden", transition: "all 0.3s ease" }} onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-10px)"; e.currentTarget.style.borderColor = "#FF6A00"; }} onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)"; }}>
