@@ -377,9 +377,9 @@ const Home = () => {
           {/* Right: Stats Boxes */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
             {[
-              { label: "Records Set", value: 1, suffix: " k+", icon: <Trophy style={{ width: 16, height: 16 }} />, bgImg: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=500&q=80" },
-              { label: "Countries", value: 1, suffix: "+", icon: <Target style={{ width: 16, height: 16 }} />, bgImg: "https://images.unsplash.com/photo-1521295121783-8a321d551ad2?auto=format&fit=crop&w=500&q=80" },
-              { label: "Categories", value: 20, suffix: "+", icon: <Zap style={{ width: 16, height: 16 }} />, bgImg: "https://images.unsplash.com/photo-1517649763962-0c6234278a0b?auto=format&fit=crop&w=500&q=80" }
+              { label: "Records Set", value: 1, suffix: " k+", icon: <Trophy style={{ width: 16, height: 16 }} /> },
+              { label: "Countries", value: 1, suffix: "+", icon: <Target style={{ width: 16, height: 16 }} /> },
+              { label: "Categories", value: 20, suffix: "+", icon: <Zap style={{ width: 16, height: 16 }} /> }
             ].map((stat, idx) => (
               <div key={idx} style={{ 
                 background: "#222", 
@@ -394,22 +394,6 @@ const Home = () => {
                 position: 'relative',
                 overflow: 'hidden'
               }}>
-                {/* Low opacity background image */}
-                <img 
-                  src={stat.bgImg} 
-                  alt="" 
-                  style={{ 
-                    position: 'absolute', 
-                    inset: 0, 
-                    width: '100%', 
-                    height: '100%', 
-                    objectFit: 'cover', 
-                    opacity: 0.15,
-                    zIndex: 0,
-                    filter: 'grayscale(100%)'
-                  }} 
-                />
-                
                 {/* Content */}
                 <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div style={{ background: "#333", width: 32, height: 32, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: "#FF6A00" }}>

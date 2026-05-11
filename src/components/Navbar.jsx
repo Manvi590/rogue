@@ -26,7 +26,7 @@ const Navbar = () => {
         <div className="nav-logo-wrap">
           <Link to="/" className="nav-logo-link-main">
             <img 
-              src="/image copy 6.png" 
+              src={location.pathname === "/" ? "/image copy.png" : "/image copy 6.png"} 
               alt="ROGUE Logo" 
               className="nav-logo-img" 
             />
