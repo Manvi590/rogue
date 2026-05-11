@@ -230,7 +230,6 @@ const FAQ = () => {
         </div>
         <Footer />
       </div>
-    </div>
     </PageTransition>
   );
 };
