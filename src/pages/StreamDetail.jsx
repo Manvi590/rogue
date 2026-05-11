@@ -18,23 +18,23 @@ const StreamDetail = () => {
         <Navbar />
 
         {/* STREAM AREA */}
-        <section style={{ padding: "140px 5% 80px", maxWidth: "1600px", margin: "0 auto" }}>
+        <section style={{ padding: "40px 5% 80px", maxWidth: "1600px", margin: "0 auto" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "24px", height: "calc(100vh - 200px)", minHeight: "600px" }}>
-            
+
             {/* VIDEO PLAYER SIDE */}
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               <div style={{ position: "relative", flex: 1, background: "#000", borderRadius: "24px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)" }}>
-                <img 
-                  src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1600&q=80" 
-                  alt="Stream" 
-                  style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.6 }} 
+                <img
+                  src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1600&q=80"
+                  alt="Stream"
+                  style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.6 }}
                 />
                 <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                   <div style={{ width: "80px", height: "80px", borderRadius: "50%", background: "#FF6A00", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                     <Play fill="white" size={32} />
-                   </div>
+                  <div style={{ width: "80px", height: "80px", borderRadius: "50%", background: "#FF6A00", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                    <Play fill="white" size={32} />
+                  </div>
                 </div>
-                
+
                 {/* Overlay Info */}
                 <div style={{ position: "absolute", top: "24px", left: "24px", display: "flex", gap: "12px" }}>
                   <div style={{ background: "#FF6A00", padding: "6px 16px", borderRadius: "6px", fontSize: "12px", fontWeight: "900", display: "flex", alignItems: "center", gap: "8px" }}>
@@ -78,7 +78,7 @@ const StreamDetail = () => {
                 <span style={{ fontSize: "14px", fontWeight: "900", letterSpacing: "0.1em" }}>LIVE CHAT</span>
                 <Users size={18} color="rgba(255,255,255,0.3)" />
               </div>
-              
+
               {/* Messages */}
               <div style={{ flex: 1, padding: "24px", display: "flex", flexDirection: "column", gap: "16px", overflowY: "auto" }}>
                 {[
@@ -98,9 +98,9 @@ const StreamDetail = () => {
               {/* Input */}
               <div style={{ padding: "24px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
                 <div style={{ position: "relative" }}>
-                  <input 
-                    type="text" 
-                    placeholder="Send a message..." 
+                  <input
+                    type="text"
+                    placeholder="Send a message..."
                     style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "none", borderRadius: "100px", padding: "14px 20px", color: "white", fontSize: "13px", outline: "none" }}
                   />
                   <MessageSquare size={16} style={{ position: "absolute", right: "20px", top: "50%", transform: "translateY(-50%)", opacity: 0.3 }} />
@@ -112,7 +112,7 @@ const StreamDetail = () => {
         </section>
 
         <div style={{ padding: "120px 0 0" }}>
-           <Footer />
+          <Footer />
         </div>
       </div>
     </PageTransition>

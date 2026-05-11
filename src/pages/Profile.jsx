@@ -109,30 +109,30 @@ const Profile = () => {
   const athlete = ATHLETES[id] || ATHLETES["jamal-carter"]; // Fallback to jamal-carter if id not found
 
   return (
-    <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif", paddingTop: "80px" }}>
+    <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
       <Navbar />
 
       {/* Hero Header Section */}
       <section style={{ position: "relative", height: "500px", overflow: "hidden" }}>
-        <img 
-          src={athlete.cover} 
-          alt="Profile Cover" 
+        <img
+          src={athlete.cover}
+          alt="Profile Cover"
           style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.6 }}
         />
-        <div style={{ 
-          position: "absolute", 
-          bottom: 0, 
-          left: 0, 
-          right: 0, 
-          height: "300px", 
-          background: "linear-gradient(to top, #0A0A0A 10%, transparent 100%)" 
+        <div style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: "300px",
+          background: "linear-gradient(to top, #0A0A0A 10%, transparent 100%)"
         }} />
 
         <div className="container" style={{ position: "absolute", bottom: "40px", left: "50%", transform: "translateX(-50%)", width: "100%", display: "flex", alignItems: "flex-end", gap: "32px" }}>
           <div style={{ position: "relative" }}>
-            <img 
-              src={athlete.img} 
-              alt="Avatar" 
+            <img
+              src={athlete.img}
+              alt="Avatar"
               style={{ width: "180px", height: "180px", borderRadius: "24px", border: "4px solid #FF6A00", objectFit: "cover", boxShadow: "0 20px 40px rgba(0,0,0,0.5)" }}
             />
             <div style={{ position: "absolute", bottom: "-10px", right: "-10px", background: "#FF6A00", color: "white", padding: "8px 16px", borderRadius: "100px", fontWeight: "900", fontSize: "14px", border: "4px solid #0A0A0A" }}>
@@ -159,7 +159,7 @@ const Profile = () => {
 
       {/* Main Content */}
       <section className="container" style={{ padding: "80px 0", display: "grid", gridTemplateColumns: "1fr 350px", gap: "60px" }}>
-        
+
         {/* Left Column: Stats & Records */}
         <div>
           <div style={{ marginBottom: "60px" }}>
@@ -206,7 +206,7 @@ const Profile = () => {
             <p style={{ color: "#888", fontSize: "14px", lineHeight: "1.6", marginBottom: "24px" }}>
               {athlete.bio}
             </p>
-            
+
             <div style={{ display: "flex", flexDirection: "column", gap: "16px", borderTop: "1px solid #222", paddingTop: "24px" }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#555", fontSize: "13px" }}>Level</span>
