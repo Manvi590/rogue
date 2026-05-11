@@ -809,7 +809,8 @@ const Verify = () => {
           }
         `}</style>
       </div>
-    </PageTransition>
+    </div>
+</PageTransition>
   );
 };
 
