@@ -72,7 +72,7 @@ const VerificationProcess = () => {
         <Navbar />
 
         {/* HERO SECTION */}
-        <section style={{ position: "relative", padding: "100px 5% 60px", overflow: "hidden" }}>
+        <section style={{ position: "relative", padding: "180px 5% 60px", overflow: "hidden" }}>
           {/* Background Elements */}
           <div style={{ position: "absolute", top: 0, right: 0, width: "1000px", height: "1000px", background: "radial-gradient(circle, rgba(255,106,0,0.1) 0%, transparent 70%)", zIndex: 0 }} />
           

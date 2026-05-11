@@ -109,7 +109,7 @@ const Profile = () => {
   const athlete = ATHLETES[id] || ATHLETES["jamal-carter"]; // Fallback to jamal-carter if id not found
 
   return (
-    <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif", paddingTop: "80px" }}>
       <Navbar />
 
       {/* Hero Header Section */}

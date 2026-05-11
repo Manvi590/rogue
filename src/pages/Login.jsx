@@ -4,7 +4,7 @@ import Navbar from "../components/Navbar";
 
 const Login = () => {
   return (
-    <div style={{ background: "#0A0A0A", height: "100vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <div style={{ background: "#0A0A0A", height: "100vh", overflow: "hidden", display: "flex", flexDirection: "column", paddingTop: "140px" }}>
       <Navbar />
       <div style={{ 
       background: "#0A0A0A", 

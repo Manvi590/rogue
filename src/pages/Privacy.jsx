@@ -21,7 +21,7 @@ import ScrollReveal from "../components/ScrollReveal";
 const Privacy = () => {
   return (
     <PageTransition>
-      <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", paddingTop: "80px" }}>
+      <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", paddingTop: "120px" }}>
         
         {/* NAVBAR */}
         <Navbar />

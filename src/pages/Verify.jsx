@@ -498,8 +498,7 @@ const Verify = () => {
         background: "#0A0A0A", 
         color: "white", 
         minHeight: "100vh", 
-        padding: "140px 5% 120px", 
-        fontFamily: "'Inter', sans-serif" 
+        padding: "180px 5% 120px",         fontFamily: "'Inter', sans-serif" 
       }}>
         {/* GLOBAL PROGRESS BAR (TOP) */}
         <div style={{ position: "fixed", top: "0", left: "0", width: "100%", height: "4px", background: "rgba(255,255,255,0.05)", zIndex: 100 }}>

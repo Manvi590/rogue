@@ -70,7 +70,7 @@ const Shop = () => {
 
   return (
     <PageTransition>
-      <div style={{ background: "#0A0A0A", color: "white", fontFamily: "'Inter', sans-serif", minHeight: "100vh", paddingTop: "80px", display: "flex", flexDirection: "column" }}>
+      <div style={{ background: "#0A0A0A", color: "white", fontFamily: "'Inter', sans-serif", minHeight: "100vh", paddingTop: "120px", display: "flex", flexDirection: "column" }}>
         
         {/* NAVBAR */}
         <Navbar />
@@ -126,18 +126,18 @@ const Shop = () => {
 
         {/* PRODUCT GRID */}
         <section style={{ padding: "0 5% 100px", maxWidth: "1400px", margin: "0 auto" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "32px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" }}>
             {products
               .filter(p => activeTab === "ALL ITEMS" || p.category === activeTab)
               .map((product) => (
               <div key={product.id} style={{ background: "#161616", borderRadius: "32px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)", display: "flex", flexDirection: "column" }}>
-                <div style={{ position: "relative", height: "300px" }}>
+                <div style={{ position: "relative", height: "220px" }}>
                   <img src={product.img} alt={product.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   <div style={{ position: "absolute", top: "16px", right: "16px", background: "#FF6A00", color: "white", padding: "4px 12px", borderRadius: "8px", fontSize: "9px", fontWeight: "900" }}>
                     {product.badge}
                   </div>
                 </div>
-                <div style={{ padding: "32px", flex: 1, display: "flex", flexDirection: "column" }}>
+                <div style={{ padding: "24px", flex: 1, display: "flex", flexDirection: "column" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
                     <h3 style={{ fontSize: "16px", fontWeight: "900", textTransform: "uppercase", width: "70%", lineHeight: "1.2" }}>{product.title}</h3>
                     <div style={{ fontSize: "16px", fontWeight: "900", color: "#FF6A00" }}>{product.price}</div>

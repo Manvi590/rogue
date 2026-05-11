@@ -52,7 +52,7 @@ const FAQ = () => {
         {/* NAVBAR */}
         <Navbar />
 
-        <div style={{ padding: "60px 5% 120px" }}>
+        <div style={{ padding: "180px 5% 120px" }}>
         
         {/* HEADER */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "80px", maxWidth: "1200px", margin: "0 auto 80px" }}>

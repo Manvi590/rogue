@@ -18,7 +18,7 @@ const Schedule = () => {
     <PageTransition>
       <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
         <Navbar />
-        <div style={{ padding: "80px 5% 120px", maxWidth: "1200px", margin: "0 auto" }}>
+        <div style={{ padding: "180px 5% 120px", maxWidth: "1200px", margin: "0 auto" }}>
           <Link to="/events" style={{ display: "flex", alignItems: "center", gap: "8px", color: "#FF6A00", textDecoration: "none", fontSize: "14px", fontWeight: "900", marginBottom: "40px", textTransform: "uppercase" }}>
             <ArrowLeft size={16} /> BACK TO EVENTS
           </Link>

@@ -11,7 +11,7 @@ const EliteMembership = () => {
       <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
         <Navbar />
 
-        <div style={{ padding: "60px 5% 120px", maxWidth: "1200px", margin: "0 auto", textAlign: "center" }}>
+        <div style={{ padding: "180px 5% 120px", maxWidth: "1200px", margin: "0 auto", textAlign: "center" }}>
           <h1 style={{ fontSize: "clamp(40px, 8vw, 80px)", fontWeight: "950", textTransform: "uppercase", marginBottom: "24px", lineHeight: "1" }}>
             ROGUE <span style={{ color: "#FF6A00" }}>ELITE</span>
           </h1>

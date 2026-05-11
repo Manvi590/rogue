@@ -14,7 +14,7 @@ const Contact = () => {
         <Navbar />
 
         {/* MAIN CONTENT */}
-        <main style={{ padding: "120px 5% 120px", maxWidth: "1400px", margin: "0 auto" }}>
+        <main style={{ padding: "180px 5% 120px", maxWidth: "1400px", margin: "0 auto" }}>
           
           {/* HERO SECTION */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "60px", marginBottom: "100px", flexWrap: "wrap" }}>

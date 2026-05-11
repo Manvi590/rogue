@@ -16,7 +16,7 @@ const About = () => {
         <Navbar />
 
         {/* HERO SECTION */}
-        <header style={{ position: "relative", height: "90vh", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+        <header style={{ position: "relative", height: "90vh", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", paddingTop: "80px" }}>
           <img 
             src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1600&q=80" 
             alt="Athlete Lifting" 
@@ -37,7 +37,7 @@ const About = () => {
         </header>
 
         {/* MISSION & VISION */}
-        <section style={{ padding: "120px 5%", maxWidth: "1200px", margin: "0 auto" }}>
+        <main style={{ padding: "180px 5% 120px", maxWidth: "1400px", margin: "0 auto" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "40px", alignItems: "stretch" }}>
             <div style={{ textAlign: "left", background: "rgba(255,255,255,0.02)", padding: "48px", borderRadius: "32px", border: "1px solid rgba(255,255,255,0.1)" }}>
               <h2 style={{ fontSize: "40px", fontWeight: "900", textTransform: "uppercase", marginBottom: "24px", color: "white" }}>

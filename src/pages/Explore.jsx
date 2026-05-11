@@ -68,7 +68,7 @@ const Explore = () => {
 
   return (
     <PageTransition>
-      <div style={{ background: "#0A0A0A", color: "white", fontFamily: "'Inter', sans-serif", minHeight: "100vh", paddingTop: "80px", display: "flex", flexDirection: "column" }}>
+      <div style={{ background: "#0A0A0A", color: "white", fontFamily: "'Inter', sans-serif", minHeight: "100vh", paddingTop: "140px", display: "flex", flexDirection: "column" }}>
         
         {/* NAVBAR */}
         <Navbar />

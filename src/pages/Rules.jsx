@@ -13,7 +13,7 @@ const Rules = () => {
         <Navbar />
 
         {/* Hero Section */}
-        <header style={{ padding: "60px 5% 40px", textAlign: "left", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+        <header style={{ padding: "180px 5% 40px", textAlign: "left", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(255,106,0,0.1)", color: "#FF6A00", padding: "8px 16px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", marginBottom: "20px" }}>
             <Shield size={14} /> Official Guidelines
           </div>

@@ -18,7 +18,7 @@ const StreamDetail = () => {
         <Navbar />
 
         {/* STREAM AREA */}
-        <section style={{ padding: "40px 5% 80px", maxWidth: "1600px", margin: "0 auto" }}>
+        <section style={{ padding: "140px 5% 80px", maxWidth: "1600px", margin: "0 auto" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "24px", height: "calc(100vh - 200px)", minHeight: "600px" }}>
             
             {/* VIDEO PLAYER SIDE */}
