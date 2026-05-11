@@ -63,7 +63,6 @@ const Categories = () => {
           </div>
 
         </div>
-        </div>
         <Footer />
       </div>
     </PageTransition>
