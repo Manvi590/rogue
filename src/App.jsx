@@ -25,6 +25,7 @@ import Categories from './pages/Categories'
 import Profile from './pages/Profile'
 import Rules from './pages/Rules'
 import LoadingScreen from './components/LoadingScreen'
+import ScrollToTop from './components/ScrollToTop'
 import './App.css'
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
       {loading && <LoadingScreen onFinish={handleFinish} />}
       <ReactLenis root>
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
