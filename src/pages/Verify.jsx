@@ -24,13 +24,64 @@ import {
   Scan
 } from "lucide-react";
 import PageTransition from "../components/PageTransition";
+import Navbar from "../components/Navbar";
+import { Link } from "react-router-dom";
 
 const Verify = () => {
   const [step, setStep] = useState(1);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const totalSteps = 6;
 
-  const nextStep = () => setStep((prev) => Math.min(prev + 1, totalSteps));
+  const [formData, setFormData] = useState({
+    fullName: "",
+    athleteId: "",
+    country: "UNITED STATES",
+    category: "STRENGTH",
+    event: "Log Press (Max Weight)",
+    venueName: "",
+    city: "",
+    witnessName: "",
+    witnessCredentials: ""
+  });
+
+  const nextStep = () => {
+    if (step < totalSteps) {
+      setStep((prev) => prev + 1);
+    } else {
+      setIsSubmitted(true);
+    }
+  };
+
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
+
+  const isStepValid = () => {
+    if (step === 1) return formData.fullName.trim().length > 2 && formData.athleteId.trim().length > 5;
+    if (step === 2) return formData.category !== "" && formData.event !== "";
+    if (step === 3) return formData.venueName.trim() !== "" && formData.city.trim() !== "" && formData.witnessName.trim() !== "";
+    return true;
+  };
+
+  // SUCCESS PAGE
+  const SuccessPage = () => (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      style={{ textAlign: "center", padding: "60px 20px" }}
+    >
+      <div style={{ width: "120px", height: "120px", background: "rgba(74, 222, 128, 0.1)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 40px", border: "2px solid #4ADE80" }}>
+        <CheckCircle2 size={60} color="#4ADE80" />
+      </div>
+      <h1 style={{ fontSize: "clamp(32px, 6vw, 56px)", fontWeight: "950", textTransform: "uppercase", marginBottom: "20px" }}>SUBMITTED <span style={{ color: "#FF6A00" }}>SUCCESSFULLY</span></h1>
+      <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "18px", maxWidth: "600px", margin: "0 auto 40px", lineHeight: "1.6" }}>
+        Your record attempt has been indexed in our secure ledger. Our global adjudication team will now begin the final biometric audit and evidence review.
+      </p>
+      <Link to="/" style={{ textDecoration: "none" }}>
+        <button style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "18px 48px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "12px", margin: "0 auto", boxShadow: "0 20px 40px rgba(255,106,0,0.2)" }}>
+          <Globe size={18} /> RETURN TO HOME BASE
+        </button>
+      </Link>
+    </motion.div>
+  );
 
   // STEP 1: ESTABLISH IDENTITY
   const Step1 = () => (
@@ -100,7 +151,23 @@ const Verify = () => {
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "40px" }}>
           <button 
             onClick={nextStep}
-            style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 40px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.2)" }}
+            disabled={!isStepValid()}
+            style={{ 
+              background: isStepValid() ? "#FF6A00" : "rgba(255,255,255,0.05)", 
+              color: isStepValid() ? "white" : "rgba(255,255,255,0.2)", 
+              border: "none", 
+              borderRadius: "100px", 
+              padding: "16px 40px", 
+              fontSize: "14px", 
+              fontWeight: "900", 
+              textTransform: "uppercase", 
+              cursor: isStepValid() ? "pointer" : "not-allowed", 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "10px", 
+              boxShadow: isStepValid() ? "0 20px 40px rgba(255, 106, 0, 0.2)" : "none",
+              transition: "all 0.3s"
+            }}
           >
             NEXT STEP <ArrowRight size={18} />
           </button>
@@ -138,12 +205,23 @@ const Verify = () => {
             { id: "agility", label: "AGILITY", icon: <Zap size={24} />, desc: "Obstacle courses, parkour, and speed-based precision." },
             { id: "combat", label: "COMBAT", icon: <Crosshair size={24} />, desc: "Strike counts, grappling duration, and martial arts feats." }
           ].map((cat) => (
-            <div key={cat.id} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", padding: "24px", cursor: "pointer", transition: "all 0.3s" }}>
+            <div 
+              key={cat.id} 
+              onClick={() => setFormData({...formData, category: cat.label})}
+              style={{ 
+                background: formData.category === cat.label ? "rgba(255,106,0,0.1)" : "rgba(255,255,255,0.03)", 
+                border: formData.category === cat.label ? "1px solid #FF6A00" : "1px solid rgba(255,255,255,0.08)", 
+                borderRadius: "24px", 
+                padding: "24px", 
+                cursor: "pointer", 
+                transition: "all 0.3s" 
+              }}
+            >
               <div style={{ color: "#FF6A00", marginBottom: "16px" }}>{cat.icon}</div>
               <h4 style={{ fontSize: "18px", fontWeight: "900", marginBottom: "10px" }}>{cat.label}</h4>
               <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", lineHeight: "1.5", marginBottom: "16px" }}>{cat.desc}</p>
               <div style={{ fontSize: "11px", fontWeight: "900", color: "#FF6A00", display: "flex", alignItems: "center", gap: "4px" }}>
-                SELECT <span style={{ fontSize: "14px" }}>+</span>
+                {formData.category === cat.label ? "SELECTED" : "SELECT"} <span style={{ fontSize: "14px" }}>{formData.category === cat.label ? "✓" : "+"}</span>
               </div>
             </div>
           ))}
@@ -158,7 +236,21 @@ const Verify = () => {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {["Deadlift (1RM)", "Log Press (Max Weight)", "Atlas Stone Load", "Farmer's Walk (Distance)"].map((event, idx) => (
-              <div key={idx} style={{ padding: "16px 20px", background: idx === 1 ? "rgba(255,106,0,0.05)" : "transparent", border: idx === 1 ? "1px solid rgba(255,106,0,0.3)" : "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", fontSize: "13px", fontWeight: "700", cursor: "pointer", color: idx === 1 ? "white" : "rgba(255,255,255,0.6)" }}>
+              <div 
+                key={idx} 
+                onClick={() => setFormData({...formData, event})}
+                style={{ 
+                  padding: "16px 20px", 
+                  background: formData.event === event ? "rgba(255,106,0,0.05)" : "transparent", 
+                  border: formData.event === event ? "1px solid rgba(255,106,0,0.3)" : "1px solid rgba(255,255,255,0.05)", 
+                  borderRadius: "12px", 
+                  fontSize: "13px", 
+                  fontWeight: "700", 
+                  cursor: "pointer", 
+                  color: formData.event === event ? "white" : "rgba(255,255,255,0.6)",
+                  transition: "all 0.2s"
+                }}
+              >
                 {event}
               </div>
             ))}
@@ -178,7 +270,26 @@ const Verify = () => {
         <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
           <ArrowLeft size={16} /> PREVIOUS STEP
         </button>
-        <button onClick={nextStep} style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 40px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.2)" }}>
+        <button 
+          onClick={nextStep} 
+          disabled={!isStepValid()}
+          style={{ 
+            background: isStepValid() ? "#FF6A00" : "rgba(255,255,255,0.05)", 
+            color: isStepValid() ? "white" : "rgba(255,255,255,0.2)", 
+            border: "none", 
+            borderRadius: "100px", 
+            padding: "16px 40px", 
+            fontSize: "14px", 
+            fontWeight: "900", 
+            textTransform: "uppercase", 
+            cursor: isStepValid() ? "pointer" : "not-allowed", 
+            display: "flex", 
+            alignItems: "center", 
+            gap: "10px", 
+            boxShadow: isStepValid() ? "0 20px 40px rgba(255, 106, 0, 0.2)" : "none",
+            transition: "all 0.3s"
+          }}
+        >
           NEXT STEP <ArrowRight size={18} />
         </button>
       </div>
@@ -229,12 +340,24 @@ const Verify = () => {
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               <div>
                 <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "10px", textTransform: "uppercase" }}>VENUE NAME</label>
-                <input type="text" placeholder="E.G., ROGUE HQ PERFORMANCE CENTER" style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none" }} />
+                <input 
+                  type="text" 
+                  placeholder="E.G., ROGUE HQ PERFORMANCE CENTER" 
+                  value={formData.venueName}
+                  onChange={(e) => setFormData({...formData, venueName: e.target.value})}
+                  style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none" }} 
+                />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
                 <div>
                   <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "10px", textTransform: "uppercase" }}>CITY / REGION</label>
-                  <input type="text" placeholder="COLUMBUS, OH" style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none" }} />
+                  <input 
+                    type="text" 
+                    placeholder="COLUMBUS, OH" 
+                    value={formData.city}
+                    onChange={(e) => setFormData({...formData, city: e.target.value})}
+                    style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none" }} 
+                  />
                 </div>
                 <div>
                   <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "10px", textTransform: "uppercase" }}>GPS COORDINATES (OPTIONAL)</label>
@@ -258,11 +381,23 @@ const Verify = () => {
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               <div>
                 <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "10px", textTransform: "uppercase" }}>WITNESS NAME</label>
-                <input type="text" placeholder="FULL LEGAL NAME" style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none" }} />
+                <input 
+                  type="text" 
+                  placeholder="FULL LEGAL NAME" 
+                  value={formData.witnessName}
+                  onChange={(e) => setFormData({...formData, witnessName: e.target.value})}
+                  style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none" }} 
+                />
               </div>
               <div>
                 <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "10px", textTransform: "uppercase" }}>PROFESSIONAL CREDENTIALS / TITLE</label>
-                <textarea rows="3" placeholder="E.G., CERTIFIED STRENGTH COACH (CSCS), INTERNATIONAL POWERLIFTING FEDERATION REF" style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", resize: "none" }}></textarea>
+                <textarea 
+                  rows="3" 
+                  placeholder="E.G., CERTIFIED STRENGTH COACH (CSCS), INTERNATIONAL POWERLIFTING FEDERATION REF" 
+                  value={formData.witnessCredentials}
+                  onChange={(e) => setFormData({...formData, witnessCredentials: e.target.value})}
+                  style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", resize: "none" }}
+                ></textarea>
               </div>
               <div style={{ display: "flex", gap: "12px", background: "rgba(255,255,255,0.02)", padding: "12px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.05)" }}>
                 <Activity size={16} color="rgba(255,255,255,0.4)" />
@@ -279,7 +414,26 @@ const Verify = () => {
         <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
           <ArrowLeft size={16} /> PREVIOUS STEP
         </button>
-        <button onClick={nextStep} style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 40px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.2)" }}>
+        <button 
+          onClick={nextStep} 
+          disabled={!isStepValid()}
+          style={{ 
+            background: isStepValid() ? "#FF6A00" : "rgba(255,255,255,0.05)", 
+            color: isStepValid() ? "white" : "rgba(255,255,255,0.2)", 
+            border: "none", 
+            borderRadius: "100px", 
+            padding: "16px 40px", 
+            fontSize: "14px", 
+            fontWeight: "900", 
+            textTransform: "uppercase", 
+            cursor: isStepValid() ? "pointer" : "not-allowed", 
+            display: "flex", 
+            alignItems: "center", 
+            gap: "10px", 
+            boxShadow: isStepValid() ? "0 20px 40px rgba(255, 106, 0, 0.2)" : "none",
+            transition: "all 0.3s"
+          }}
+        >
           NEXT STEP <ArrowRight size={18} />
         </button>
       </div>
@@ -498,8 +652,19 @@ const Verify = () => {
         background: "#0A0A0A", 
         color: "white", 
         minHeight: "100vh", 
-        padding: "180px 5% 120px",         fontFamily: "'Inter', sans-serif" 
+        fontFamily: "'Inter', sans-serif",
+        display: "flex",
+        flexDirection: "column"
       }}>
+        <Navbar />
+
+        <div style={{ 
+          padding: "180px 5% 120px", 
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: isSubmitted ? "center" : "flex-start"
+        }}>
         {/* GLOBAL PROGRESS BAR (TOP) */}
         <div style={{ position: "fixed", top: "0", left: "0", width: "100%", height: "4px", background: "rgba(255,255,255,0.05)", zIndex: 100 }}>
           <motion.div 
@@ -509,14 +674,18 @@ const Verify = () => {
           />
         </div>
 
-        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
           <AnimatePresence mode="wait">
-            {step === 1 && <Step1 key="step1" />}
-            {step === 2 && <Step2 key="step2" />}
-            {step === 3 && <Step3 key="step3" />}
-            {step === 4 && <Step4 key="step4" />}
-            {step === 5 && <Step5 key="step5" />}
-            {step === 6 && (
+            {isSubmitted ? (
+              <SuccessPage key="success" />
+            ) : (
+              <>
+                {step === 1 && <Step1 key="step1" />}
+                {step === 2 && <Step2 key="step2" />}
+                {step === 3 && <Step3 key="step3" />}
+                {step === 4 && <Step4 key="step4" />}
+                {step === 5 && <Step5 key="step5" />}
+                {step === 6 && (
               <motion.div 
                 key="step6"
                 initial={{ opacity: 0, x: 20 }}
@@ -612,11 +781,13 @@ const Verify = () => {
                   <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                     <ArrowLeft size={16} /> PREVIOUS STEP
                   </button>
-                  <button style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 40px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.3)" }}>
+                  <button onClick={nextStep} style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 40px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.3)" }}>
                     SUBMIT TO GLOBAL LEDGER
                   </button>
                 </div>
               </motion.div>
+                )}
+              </>
             )}
           </AnimatePresence>
         </div>
