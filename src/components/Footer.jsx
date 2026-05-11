@@ -64,18 +64,19 @@ const Footer = () => {
 
         {/* Large Branding Image - Positioned at bottom right, partially off-screen for cool effect */}
         <img 
-          src="/image%20copy.png" 
+          src="/image copy 5.png" 
           alt="Rogue Branding" 
           style={{ 
             position: 'absolute', 
-            right: "40px", 
-            bottom: "40px", 
-            width: '300px', 
-            height: '180px', 
+            right: "0", 
+            bottom: "0",
+            width: 'auto', 
+            height: '350px', 
             pointerEvents: 'none',
             zIndex: 1,
             borderRadius: '12px',
-            opacity: 0.9
+            opacity: 0.9,
+            transform: 'scaleX(-1)'
           }} 
         />
 
