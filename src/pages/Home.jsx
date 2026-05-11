@@ -63,7 +63,7 @@ const HolderCard = ({ img, badge, name, records, rank }) => (
       <div className="holder-name">{name}</div>
       <div className="holder-records">{records} World Records</div>
       <Link to={`/profile/${name.toLowerCase().replace(/\s+/g, '-')}`} style={{ textDecoration: "none" }}>
-        <div className="holder-view-link" style={{ transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "white"} onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}>
+        <div className="holder-view-link" style={{ transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "white"} onMouseLeave={(e) => e.currentTarget.style.color = "#FF6A00"}>
           View Profile <ArrowRight style={{ width: 12, height: 12 }} />
         </div>
       </Link>
