@@ -55,7 +55,7 @@ const FAQ = () => {
         <div style={{ padding: "180px 5% 120px", flex: 1 }}>
         
         {/* HEADER */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "80px", maxWidth: "1200px", margin: "0 auto 80px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", maxWidth: "1200px", margin: "0 auto 80px" }}>
           <div>
             <h3 style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px", fontWeight: "900", letterSpacing: "0.2em", marginBottom: "12px", textTransform: "uppercase" }}>SUPPORT CENTER</h3>
             <h1 style={{ fontSize: "72px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.04em", lineHeight: "0.9" }}>FAQ | ROGUE WORLD <br /> RECORDS</h1>
