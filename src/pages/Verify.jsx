@@ -151,21 +151,20 @@ const Verify = () => {
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "40px" }}>
           <button 
             onClick={nextStep}
-            disabled={!isStepValid()}
             style={{ 
-              background: isStepValid() ? "#FF6A00" : "rgba(255,255,255,0.05)", 
-              color: isStepValid() ? "white" : "rgba(255,255,255,0.2)", 
+              background: "#FF6A00", 
+              color: "white", 
               border: "none", 
               borderRadius: "100px", 
               padding: "16px 40px", 
               fontSize: "14px", 
               fontWeight: "900", 
               textTransform: "uppercase", 
-              cursor: isStepValid() ? "pointer" : "not-allowed", 
+              cursor: "pointer", 
               display: "flex", 
               alignItems: "center", 
               gap: "10px", 
-              boxShadow: isStepValid() ? "0 20px 40px rgba(255, 106, 0, 0.2)" : "none",
+              boxShadow: "0 20px 40px rgba(255, 106, 0, 0.2)",
               transition: "all 0.3s"
             }}
           >
@@ -272,21 +271,20 @@ const Verify = () => {
         </button>
         <button 
           onClick={nextStep} 
-          disabled={!isStepValid()}
           style={{ 
-            background: isStepValid() ? "#FF6A00" : "rgba(255,255,255,0.05)", 
-            color: isStepValid() ? "white" : "rgba(255,255,255,0.2)", 
+            background: "#FF6A00", 
+            color: "white", 
             border: "none", 
             borderRadius: "100px", 
             padding: "16px 40px", 
             fontSize: "14px", 
             fontWeight: "900", 
             textTransform: "uppercase", 
-            cursor: isStepValid() ? "pointer" : "not-allowed", 
+            cursor: "pointer", 
             display: "flex", 
             alignItems: "center", 
             gap: "10px", 
-            boxShadow: isStepValid() ? "0 20px 40px rgba(255, 106, 0, 0.2)" : "none",
+            boxShadow: "0 20px 40px rgba(255, 106, 0, 0.2)",
             transition: "all 0.3s"
           }}
         >
@@ -416,21 +414,20 @@ const Verify = () => {
         </button>
         <button 
           onClick={nextStep} 
-          disabled={!isStepValid()}
           style={{ 
-            background: isStepValid() ? "#FF6A00" : "rgba(255,255,255,0.05)", 
-            color: isStepValid() ? "white" : "rgba(255,255,255,0.2)", 
+            background: "#FF6A00", 
+            color: "white", 
             border: "none", 
             borderRadius: "100px", 
             padding: "16px 40px", 
             fontSize: "14px", 
             fontWeight: "900", 
             textTransform: "uppercase", 
-            cursor: isStepValid() ? "pointer" : "not-allowed", 
+            cursor: "pointer", 
             display: "flex", 
             alignItems: "center", 
             gap: "10px", 
-            boxShadow: isStepValid() ? "0 20px 40px rgba(255, 106, 0, 0.2)" : "none",
+            boxShadow: "0 20px 40px rgba(255, 106, 0, 0.2)",
             transition: "all 0.3s"
           }}
         >
