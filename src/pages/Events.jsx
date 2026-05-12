@@ -63,7 +63,7 @@ const Events = () => {
 
 
         {/* FEATURED LIVE EVENT */}
-        <div style={{ position: "relative", width: "100%", height: "700px", borderRadius: "48px", overflow: "hidden", marginBottom: "80px", boxShadow: "0 50px 100px rgba(0,0,0,0.5)" }}>
+        <div style={{ position: "relative", width: "100%", height: "700px", borderRadius: "48px", overflow: "hidden", marginTop: "40px", marginBottom: "80px", boxShadow: "0 50px 100px rgba(0,0,0,0.5)" }}>
           <img src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1600&q=80" alt="Live Event" style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.7)" }} />
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%, rgba(0,0,0,0.4) 100%)" }}></div>
           

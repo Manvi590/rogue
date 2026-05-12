@@ -11,6 +11,7 @@ import Shop from './pages/Shop'
 import Explore from './pages/Explore'
 import Challenges from './pages/Challenges'
 import Verify from './pages/Verify'
+import ChallengeVerify from './pages/ChallengeVerify'
 import VerificationProcess from './pages/VerificationProcess'
 import FAQ from './pages/FAQ'
 import Events from './pages/Events'
@@ -52,6 +53,7 @@ function App() {
             <Route path="/explore" element={<Explore />} />
             <Route path="/challenge" element={<Challenges />} />
             <Route path="/verify" element={<Verify />} />
+            <Route path="/challenge-verify" element={<ChallengeVerify />} />
             <Route path="/process" element={<VerificationProcess />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/events" element={<Events />} />

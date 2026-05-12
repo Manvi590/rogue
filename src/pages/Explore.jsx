@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { ArrowRight, Search } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
@@ -7,7 +7,14 @@ import Footer from "../components/Footer";
 import ScrollReveal from "../components/ScrollReveal";
 
 const Explore = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState("All");
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q !== null) setSearchQuery(q);
+  }, [searchParams]);
 
   const categories = ["All", "Athletics", "Strength", "Endurance", "Gaming", "Skills"];
 
@@ -62,9 +69,23 @@ const Explore = () => {
     }
   ];
 
-  const filteredRecords = activeCategory === "All" 
-    ? records 
-    : records.filter(r => r.cat === activeCategory);
+  const filteredRecords = records.filter(rec => {
+    const matchesCategory = activeCategory === "All" || rec.cat === activeCategory;
+    const matchesSearch = rec.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          rec.athlete.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          rec.cat.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    if (value) {
+      setSearchParams({ q: value });
+    } else {
+      setSearchParams({});
+    }
+  };
 
   return (
     <PageTransition>
@@ -95,6 +116,8 @@ const Explore = () => {
               <input 
                 type="text" 
                 placeholder="Search by athlete, record or category..." 
+                value={searchQuery}
+                onChange={handleSearchChange}
                 style={{ width: "100%", background: "#161616", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "100px", padding: "16px 20px 16px 50px", color: "white", fontSize: "14px", outline: "none" }}
               />
             </div>

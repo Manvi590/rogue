@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Play, Check, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Menu, X, Dumbbell, Zap, Timer, Gamepad2, Target, Infinity, Trophy, LayoutGrid, Activity, Waves, Settings, Brain, Gamepad, Search, Eye, Volume2, Maximize } from "lucide-react";
 import InfiniteSlider from "../components/InfiniteSlider";
 import FlowingMenu from "../components/FlowingMenu";
@@ -141,8 +141,17 @@ const AnimatedStat = ({ end, suffix, duration = 2000 }) => {
 ───────────────────────────────────────────────────────── */
 
 const Home = () => {
+  const navigate = useNavigate();
   const [showAllCats, setShowAllCats] = useState(false);
   const [showCats, setShowCats] = useState(true);
+  const [homeSearchQuery, setHomeSearchQuery] = useState("");
+
+  const handleHomeSearch = (e) => {
+    e.preventDefault();
+    if (homeSearchQuery.trim()) {
+      navigate(`/explore?q=${encodeURIComponent(homeSearchQuery.trim())}`);
+    }
+  };
 
   return (
     <div style={{ background: "#FFF8F5", color: "#111", fontFamily: "'Inter', sans-serif", paddingTop: "80px" }}>
@@ -654,7 +663,7 @@ const Home = () => {
 
             {/* Right: Search Bar */}
             <div className="dark-cta-right" style={{ flex: "1" }}>
-              <div style={{ position: "relative", maxWidth: "500px" }}>
+              <form onSubmit={handleHomeSearch} style={{ position: "relative", maxWidth: "500px" }}>
                 <p style={{ color: "#FF6A00", fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 20 }}>
                   Search Trending Topics
                 </p>
@@ -663,6 +672,8 @@ const Home = () => {
                   <input
                     type="text"
                     placeholder="Search records, categories, or athletes..."
+                    value={homeSearchQuery}
+                    onChange={(e) => setHomeSearchQuery(e.target.value)}
                     style={{
                       width: "100%",
                       background: "rgba(255,255,255,0.03)",
@@ -686,33 +697,41 @@ const Home = () => {
                       e.currentTarget.style.boxShadow = "0 10px 30px rgba(0,0,0,0.2)";
                     }}
                   />
-                  <button style={{
-                    position: "absolute",
-                    right: 10,
-                    background: "#FF6A00",
-                    border: "none",
-                    borderRadius: "10px",
-                    padding: "10px 20px",
-                    color: "white",
-                    fontWeight: "700",
-                    fontSize: "14px",
-                    cursor: "pointer",
-                    transition: "all 0.3s ease"
-                  }}
+                  <button 
+                    type="submit"
+                    style={{
+                      position: "absolute",
+                      right: 10,
+                      background: "#FF6A00",
+                      border: "none",
+                      borderRadius: "10px",
+                      padding: "10px 20px",
+                      color: "white",
+                      fontWeight: "700",
+                      fontSize: "14px",
+                      cursor: "pointer",
+                      transition: "all 0.3s ease"
+                    }}
                     onMouseEnter={(e) => e.currentTarget.style.background = "#e65f00"}
                     onMouseLeave={(e) => e.currentTarget.style.background = "#FF6A00"}
                   >
                     Find
                   </button>
                 </div>
-                <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap" }}>
-                  <span style={{ color: "#666", fontSize: 13 }}>Popular:</span>
-                  {["#Endurance", "#Strength", "#Speed", "#Gaming"].map(tag => (
-                    <span key={tag} style={{ color: "#aaa", fontSize: 13, cursor: "pointer", transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#FF6A00"} onMouseLeave={(e) => e.currentTarget.style.color = "#aaa"}>
-                      {tag}
-                    </span>
-                  ))}
-                </div>
+              </form>
+              <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <span style={{ color: "#666", fontSize: 13 }}>Popular:</span>
+                {["#Endurance", "#Strength", "#Speed", "#Gaming"].map(tag => (
+                  <span 
+                    key={tag} 
+                    onClick={() => navigate(`/explore?q=${encodeURIComponent(tag.replace("#", ""))}`)}
+                    style={{ color: "#aaa", fontSize: 13, cursor: "pointer", transition: "color 0.2s" }} 
+                    onMouseEnter={(e) => e.currentTarget.style.color = "#FF6A00"} 
+                    onMouseLeave={(e) => e.currentTarget.style.color = "#aaa"}
+                  >
+                    {tag}
+                  </span>
+                ))}
               </div>
             </div>
 

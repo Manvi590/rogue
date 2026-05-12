@@ -4,7 +4,7 @@ import Navbar from "../components/Navbar";
 
 const Signup = () => {
   return (
-    <div style={{ background: "#0A0A0A", height: "100vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <div style={{ background: "#0A0A0A", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <Navbar />
       <div style={{
         background: "#0A0A0A",
@@ -14,9 +14,9 @@ const Signup = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "40px 5%",
+        padding: "80px 5% 40px",
         position: "relative",
-        overflow: "hidden"
+        minHeight: "calc(100vh - 80px)"
       }}>
         {/* BACKGROUND IMAGE */}
         <div style={{
@@ -29,10 +29,10 @@ const Signup = () => {
           filter: "blur(4px)"
         }} />
 
-        <div style={{ position: "relative", zIndex: 2, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "60px", maxWidth: "1200px", width: "100%", alignItems: "center" }}>
+        <div style={{ position: "relative", zIndex: 2, display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "60px", maxWidth: "1200px", width: "100%", alignItems: "start" }}>
 
           {/* LEFT CONTENT */}
-          <div>
+          <div style={{ position: "sticky", top: "120px" }}>
             <div style={{
               display: "inline-flex",
               alignItems: "center",
@@ -70,7 +70,7 @@ const Signup = () => {
               maxWidth: "450px",
               marginBottom: "40px"
             }}>
-              Become a verified member of the world's most prestigious athletic record-keeping platform.
+              Become a verified member of the world's most prestigious athletic record-keeping platform. Complete your profile to start competing.
             </p>
 
             <div style={{ display: "flex", gap: "40px" }}>
@@ -89,44 +89,79 @@ const Signup = () => {
           <div style={{
             background: "rgba(22, 22, 22, 0.8)",
             backdropFilter: "blur(20px)",
-            padding: "24px 40px",
+            padding: "32px 40px",
             borderRadius: "40px",
             border: "1px solid rgba(255, 255, 255, 0.05)",
             boxShadow: "0 40px 100px rgba(0,0,0,0.5)",
-            marginTop: "100px",
-            marginBottom: "20px"
+            marginTop: "60px"
           }}>
-            <form style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <form style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {/* Row 1: Name & Username */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "4px", textTransform: "uppercase" }}>FULL NAME</label>
-                  <input type="text" placeholder="John Doe" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "10px", padding: "10px 16px", color: "white", outline: "none", fontSize: "12px" }} />
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>FULL NAME</label>
+                  <input type="text" placeholder="John Doe" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "4px", textTransform: "uppercase" }}>USERNAME</label>
-                  <input type="text" placeholder="elite_athlete_01" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "10px", padding: "10px 16px", color: "white", outline: "none", fontSize: "12px" }} />
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>USERNAME</label>
+                  <input type="text" placeholder="elite_athlete_01" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} />
                 </div>
               </div>
 
+              {/* Row 2: Email & Phone */}
+              <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "16px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>EMAIL ADDRESS</label>
+                  <input type="email" placeholder="champion@rogue.com" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>PHONE NUMBER</label>
+                  <input type="tel" placeholder="+1 (555) 000-0000" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} />
+                </div>
+              </div>
+
+              {/* Row 3: Password */}
               <div>
-                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "4px", textTransform: "uppercase" }}>EMAIL ADDRESS</label>
-                <input type="email" placeholder="champion@rogue.com" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "10px", padding: "10px 16px", color: "white", outline: "none", fontSize: "12px" }} />
+                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>PASSWORD</label>
+                <input type="password" placeholder="********" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} />
               </div>
 
-              <div>
-                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "4px", textTransform: "uppercase" }}>PASSWORD</label>
-                <input type="password" placeholder="********" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "10px", padding: "10px 16px", color: "white", outline: "none", fontSize: "12px" }} />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              {/* Row 4: Gender & DOB */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "4px", textTransform: "uppercase" }}>DATE OF BIRTH</label>
-                  <input type="text" placeholder="dd-mm-yyyy" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "10px", padding: "10px 16px", color: "white", outline: "none", fontSize: "12px" }} />
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>GENDER</label>
+                  <select style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", appearance: "none", fontSize: "13px" }}>
+                    <option value="" style={{ background: "#111" }}>Select Gender</option>
+                    <option value="male" style={{ background: "#111" }}>Male</option>
+                    <option value="female" style={{ background: "#111" }}>Female</option>
+                    <option value="other" style={{ background: "#111" }}>Other</option>
+                    <option value="prefer_not_to_say" style={{ background: "#111" }}>Prefer not to say</option>
+                  </select>
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "4px", textTransform: "uppercase" }}>COUNTRY</label>
-                  <select style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "10px", padding: "10px 16px", color: "white", outline: "none", appearance: "none", fontSize: "12px" }}>
-                    <option>Select Country</option>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>DATE OF BIRTH</label>
+                  <input type="date" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px", colorScheme: "dark" }} />
+                </div>
+              </div>
+
+              {/* Row 5: Weight & Height */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>WEIGHT (KG)</label>
+                  <input type="text" placeholder="75" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>HEIGHT (CM)</label>
+                  <input type="text" placeholder="180" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} />
+                </div>
+              </div>
+
+              {/* Row 6: Country & City */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>COUNTRY</label>
+                  <select style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", appearance: "none", fontSize: "13px" }}>
+                    <option value="" style={{ background: "#111" }}>Select Country</option>
                     {[
                       "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
                       "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi",
@@ -157,14 +192,13 @@ const Signup = () => {
                     ))}
                   </select>
                 </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>CITY / STATE</label>
+                  <input type="text" placeholder="Los Angeles, CA" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} />
+                </div>
               </div>
 
-              <div>
-                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "4px", textTransform: "uppercase" }}>CITY / STATE</label>
-                <input type="text" placeholder="Los Angeles, CA" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "10px", padding: "10px 16px", color: "white", outline: "none", fontSize: "12px" }} />
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px" }}>
                 <input type="checkbox" id="terms" style={{ accentColor: "#FF6A00" }} />
                 <label htmlFor="terms" style={{ fontSize: "11px", color: "rgba(255, 255, 255, 0.6)" }}>
                   I agree to the <Link to="/terms" style={{ color: "#FF6A00", textDecoration: "none" }}>Terms of Service</Link> and <Link to="/privacy" style={{ color: "#FF6A00", textDecoration: "none" }}>Privacy Policy</Link>
@@ -176,8 +210,8 @@ const Signup = () => {
                 color: "white",
                 border: "none",
                 borderRadius: "100px",
-                padding: "14px",
-                fontSize: "13px",
+                padding: "16px",
+                fontSize: "14px",
                 fontWeight: "900",
                 textTransform: "uppercase",
                 cursor: "pointer",
@@ -185,13 +219,14 @@ const Signup = () => {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "10px",
-                marginTop: "4px",
-                boxShadow: "0 10px 30px rgba(255, 106, 0, 0.3)"
+                marginTop: "8px",
+                boxShadow: "0 10px 30px rgba(255, 106, 0, 0.3)",
+                transition: "all 0.3s ease"
               }}>
-                CREATE ACCOUNT <ArrowRight size={16} />
+                CREATE ACCOUNT <ArrowRight size={18} />
               </button>
 
-              <div style={{ textAlign: "center", marginTop: "8px", fontSize: "11px", color: "rgba(255, 255, 255, 0.4)" }}>
+              <div style={{ textAlign: "center", marginTop: "12px", fontSize: "11px", color: "rgba(255, 255, 255, 0.4)" }}>
                 Already have an account? <Link to="/login" style={{ color: "#FF6A00", textDecoration: "none", fontWeight: "800" }}>LOGIN</Link>
               </div>
             </form>

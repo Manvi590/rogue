@@ -4,38 +4,38 @@ import {
   ArrowRight, 
   ArrowLeft, 
   Shield, 
-  User, 
-  IdCard, 
   Globe, 
-  Dumbbell, 
-  Timer, 
-  Zap, 
-  Crosshair,
   MapPin,
   ClipboardCheck,
   Video,
   Camera,
   BarChart3,
   CheckCircle2,
-  Lock,
-  Cpu,
-  Activity,
-  Maximize2,
   Scan,
+  Activity,
   Plus,
   Trash2,
   Trophy,
   Award,
-  Edit3
+  Edit3,
+  User,
+  IdCard,
+  Dumbbell,
+  Timer,
+  Zap,
+  Crosshair,
+  Lock,
+  Cpu,
+  Maximize2
 } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
 import { Link } from "react-router-dom";
 
-const Verify = () => {
+const ChallengeVerify = () => {
   const [step, setStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const totalSteps = 6;
+  const totalSteps = 5;
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -149,7 +149,7 @@ const Verify = () => {
                   </div>
                   <h1 style={{ fontSize: "clamp(32px, 6vw, 56px)", fontWeight: "950", textTransform: "uppercase", marginBottom: "20px" }}>SUBMITTED <span style={{ color: "#FF6A00" }}>SUCCESSFULLY</span></h1>
                   <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "18px", maxWidth: "600px", margin: "0 auto 40px", lineHeight: "1.6" }}>
-                    Your record attempt has been indexed in our secure ledger. Our global adjudication team will now begin the final biometric audit and evidence review.
+                    Your challenge attempt has been indexed. Our global adjudication team will now begin the final biometric audit and evidence review.
                   </p>
                   <Link to="/" style={{ textDecoration: "none" }}>
                     <button style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "18px 48px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "12px", margin: "0 auto", boxShadow: "0 20px 40px rgba(255,106,0,0.2)" }}>
@@ -171,10 +171,10 @@ const Verify = () => {
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 01</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                           <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>ATHLETE IDENTITY</h1>
-                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 1 OF 6</div>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 1 OF 5</div>
                         </div>
                         <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
-                          <div style={{ width: "16.6%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
+                          <div style={{ width: "20%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
                         </div>
                       </div>
 
@@ -262,120 +262,15 @@ const Verify = () => {
                   )}
 
                   {step === 2 && (
-                    <div style={{ width: "100%", maxWidth: "1000px", margin: "0 auto" }}>
+                    <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
                       <div style={{ marginBottom: "40px" }}>
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 02</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-                          <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>CREATING A RECORD</h1>
-                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 2 OF 6</div>
-                        </div>
-                        <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
-                          <div style={{ width: "33.3%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
-                        </div>
-                      </div>
-
-                      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "40px" }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-                          {[
-                            { id: "strength", label: "STRENGTH", icon: <Dumbbell size={24} />, desc: "Powerlifting, Strongman, and explosive weight disciplines." },
-                            { id: "endurance", label: "ENDURANCE", icon: <Timer size={24} />, desc: "Ultra-marathons, cycling, and long-form cardio feats." },
-                            { id: "agility", label: "AGILITY", icon: <Zap size={24} />, desc: "Obstacle courses, parkour, and speed-based precision." },
-                            { id: "combat", label: "COMBAT", icon: <Crosshair size={24} />, desc: "Strike counts, grappling duration, and martial arts feats." }
-                          ].map((cat) => (
-                            <div 
-                              key={cat.id} 
-                              onClick={() => setFormData({...formData, category: cat.label})}
-                              style={{ 
-                                background: formData.category === cat.label ? "rgba(255,106,0,0.1)" : "rgba(255,255,255,0.03)", 
-                                border: formData.category === cat.label ? "1px solid #FF6A00" : "1px solid rgba(255,255,255,0.08)", 
-                                borderRadius: "24px", 
-                                padding: "24px", 
-                                cursor: "pointer", 
-                                transition: "all 0.3s" 
-                              }}
-                            >
-                              <div style={{ color: "#FF6A00", marginBottom: "16px" }}>{cat.icon}</div>
-                              <h4 style={{ fontSize: "18px", fontWeight: "900", marginBottom: "10px" }}>{cat.label}</h4>
-                              <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", lineHeight: "1.5", marginBottom: "16px" }}>{cat.desc}</p>
-                              <div style={{ fontSize: "11px", fontWeight: "900", color: "#FF6A00", display: "flex", alignItems: "center", gap: "4px" }}>
-                                {formData.category === cat.label ? "SELECTED" : "SELECT"} <span style={{ fontSize: "14px" }}>{formData.category === cat.label ? "✓" : "+"}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", padding: "32px" }}>
-                          <div style={{ display: "flex", gap: "10px", marginBottom: "24px" }}>
-                            <div style={{ width: "2px", height: "14px", background: "#FF6A00" }}></div>
-                            <span style={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.1em" }}>SELECT SPECIFIC EVENT</span>
-                          </div>
-
-                          <div 
-                            data-lenis-prevent
-                            style={{ 
-                              display: "flex", 
-                              flexDirection: "column", 
-                              gap: "12px", 
-                              maxHeight: "350px", 
-                              overflowY: "auto", 
-                              paddingRight: "10px",
-                              scrollbarWidth: "thin",
-                              scrollbarColor: "#FF6A00 transparent"
-                            }} 
-                            className="custom-scrollbar"
-                          >
-                            {[
-                              "Deadlift (1RM)", "Log Press (Max Weight)", "Atlas Stone Load", "Farmer's Walk (Distance)", "Squat (1RM)", "Bench Press (Max)", "Push Press", "Deadlift (Reps)", "Overhead Press", "Clean & Jerk", "Snatch", "Kettlebell Swing (100 Reps)", "Burpees (1 Minute)", "Pull-ups (Max Reps)", "Plank (Max Time)", "Wall Sit (Max Time)", "Box Jump (Max Height)", "Battle Ropes (Duration)"
-                            ].map((event, idx) => (
-                              <div 
-                                key={idx} 
-                                onClick={() => setFormData({...formData, event})}
-                                style={{ 
-                                  padding: "16px 20px", 
-                                  background: formData.event === event ? "rgba(255,106,0,0.05)" : "transparent", 
-                                  border: formData.event === event ? "1px solid rgba(255,106,0,0.3)" : "1px solid rgba(255,255,255,0.05)", 
-                                  borderRadius: "12px", fontSize: "13px", fontWeight: "700", cursor: "pointer", 
-                                  color: formData.event === event ? "white" : "rgba(255,255,255,0.6)", transition: "all 0.2s"
-                                }}
-                              >
-                                {event}
-                              </div>
-                            ))}
-                          </div>
-
-                          {/* CURRENT RECORD BOX */}
-                          <div style={{ marginTop: "32px", background: "rgba(255,106,0,0.05)", border: "1px solid rgba(255,106,0,0.2)", borderRadius: "20px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <div>
-                              <div style={{ fontSize: "10px", fontWeight: "900", color: "#FF6A00", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "4px" }}>CURRENT WORLD RECORD</div>
-                              <div style={{ fontSize: "28px", fontWeight: "950", color: "white" }}>185.0 KG</div>
-                            </div>
-                            <div style={{ textAlign: "right" }}>
-                              <div style={{ fontSize: "12px", fontWeight: "800", color: "white" }}>DAVID MILLER</div>
-                              <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", fontWeight: "600" }}>OCTOBER 2023</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "40px" }}>
-                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                          <ArrowLeft size={16} /> PREVIOUS STEP
-                        </button>
-                        <button onClick={nextStep} style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 40px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.2)" }}>
-                          NEXT STEP <ArrowRight size={18} />
-                        </button>
-                      </div>
-                    </div>
-                  )}                  {step === 3 && (
-                    <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
-                      <div style={{ marginBottom: "40px" }}>
-                        <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 03</h3>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                           <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>ENVIRONMENT VALIDATION</h1>
-                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 3 OF 6</div>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 2 OF 5</div>
                         </div>
                         <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
-                          <div style={{ width: "50%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
+                          <div style={{ width: "40%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
                         </div>
                       </div>
 
@@ -506,27 +401,27 @@ const Verify = () => {
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", marginTop: "40px" }}>
                         <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><ArrowLeft size={16} /> PREVIOUS STEP</button>
-                        <button onClick={nextStep} style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 40px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px" }}>NEXT STEP <ArrowRight size={18} /></button>
+                        <button onClick={nextStep} style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 40px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.2)" }}>
+                          NEXT STEP <ArrowRight size={18} />
+                        </button>
                       </div>
                     </div>
                   )}
 
-                  {step === 4 && (
+                  {step === 3 && (
                     <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
                       <div style={{ marginBottom: "40px" }}>
-                        <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 04</h3>
+                        <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 03</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                           <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>MEDIA EVIDENCE</h1>
-                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 4 OF 6</div>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 3 OF 5</div>
                         </div>
                         <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
-                          <div style={{ width: "66.6%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
+                          <div style={{ width: "60%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
                         </div>
                       </div>
 
-                      {/* MAIN CONTENT GRID */}
                       <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "24px", marginBottom: "32px" }}>
-                        {/* PRIMARY VIDEO CARD */}
                         <div 
                           onClick={() => videoInputRef.current?.click()}
                           style={{ position: "relative", borderRadius: "32px", overflow: "hidden", background: "#111", border: "1px solid rgba(255,255,255,0.05)", minHeight: "480px", cursor: "pointer" }}
@@ -583,7 +478,6 @@ const Verify = () => {
                         </div>
                       </div>
 
-                      {/* FEATURE BADGES */}
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "20px", marginBottom: "48px" }}>
                         {[
                           { label: "4K / 1080P RECOMMENDED", icon: <CheckCircle2 size={16} /> },
@@ -596,7 +490,6 @@ const Verify = () => {
                         ))}
                       </div>
 
-                      {/* NAVIGATION */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
                           <ArrowLeft size={18} /> PREVIOUS STEP
@@ -625,19 +518,19 @@ const Verify = () => {
                     </div>
                   )}
 
-                  {step === 5 && (
+                  {step === 4 && (
                     <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
                       <div style={{ marginBottom: "40px" }}>
-                        <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 05</h3>
+                        <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 04</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                           <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>BIOMETRIC AUDIT</h1>
-                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 5 OF 6</div>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 4 OF 5</div>
                         </div>
                         <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
-                          <div style={{ width: "83.3%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
+                          <div style={{ width: "80%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
                         </div>
                       </div>
-
+                      
                       <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "32px", marginBottom: "40px" }}>
                         {/* AI SCANNER HUD */}
                         <div style={{ position: "relative", height: "480px", borderRadius: "32px", overflow: "hidden", border: "1px solid rgba(255,106,0,0.2)", background: "#000" }}>
@@ -736,13 +629,13 @@ const Verify = () => {
                     </div>
                   )}
 
-                  {step === 6 && (
+                  {step === 5 && (
                     <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
                       <div style={{ marginBottom: "40px" }}>
-                        <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 06</h3>
+                        <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 05</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                           <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>FINAL LEDGER SUBMISSION</h1>
-                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 6 OF 6</div>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 5 OF 5</div>
                         </div>
                         <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
                           <div style={{ width: "100%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
@@ -904,14 +797,10 @@ const Verify = () => {
         <style>{`
           @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
           input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.2) !important; }
-          .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-          .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 10px; }
-          .custom-scrollbar::-webkit-scrollbar-thumb { background: #FF6A00; border-radius: 10px; }
-          select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23FF6A00' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 24px center; background-size: 16px; }
         `}</style>
       </div>
     </PageTransition>
   );
 };
 
-export default Verify;
+export default ChallengeVerify;

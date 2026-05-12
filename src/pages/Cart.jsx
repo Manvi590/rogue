@@ -32,7 +32,7 @@ const Cart = () => {
             <ArrowLeft size={16} /> BACK TO SHOP
           </Link>
 
-          <div style={{ display: "grid", gridTemplateColumns: items.length > 0 ? "1fr 400px" : "1fr", gap: "60px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: "60px" }}>
             
             {/* ITEM LIST */}
             <div>

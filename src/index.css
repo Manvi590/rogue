@@ -338,6 +338,47 @@ a:hover svg {
   box-shadow: 0 0 0 4px rgba(17, 17, 17, 0.15);
 }
 
+.btn-liquid {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(270deg, #FF6A00, #FFA14A, #FF3D00, #FF8C00);
+  background-size: 300% 300%;
+  animation: liquid-bg 4s ease infinite;
+  color: white;
+  border: none;
+  border-radius: 100px;
+  padding: 16px 32px;
+  font-weight: 900;
+  font-size: 14px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 20px 40px rgba(255, 106, 0, 0.2);
+}
+
+.btn-liquid:hover {
+  animation: liquid-bg 2s ease infinite;
+  box-shadow: 0 12px 32px rgba(255, 106, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-liquid-circle {
+  width: 28px;
+  height: 28px;
+  background: #111;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: transform 0.2s ease;
+}
+
+.btn-liquid:hover .btn-liquid-circle {
+  transform: translateX(4px);
+}
+
 /* ── HAMBURGER ── */
 .hamburger-btn {
   background: none;

@@ -5,6 +5,7 @@ import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ScrollReveal from "../components/ScrollReveal";
+import LiquidButton from "../components/LiquidButton";
 
 const Challenges = () => {
   const categories = ["ALL", "STRENGTH", "ENDURANCE", "AGILITY", "COMBAT"];
@@ -108,11 +109,10 @@ const Challenges = () => {
               </div>
             </div>
 
-            <Link to="/verify" style={{ textDecoration: "none" }}>
-              <button style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "18px 40px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "12px", transition: "all 0.3s" }}>
-                ACCEPT CHALLENGE <ArrowRight size={18} />
-              </button>
-            </Link>
+            <LiquidButton 
+              text="CHALLENGE RECORD" 
+              to="/challenge-verify" 
+            />
           </div>
         </div>
 
@@ -153,11 +153,13 @@ const Challenges = () => {
 
               <div style={{ position: "absolute", bottom: "32px", left: "32px", right: "32px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                 <h3 style={{ fontSize: "28px", fontWeight: "900", textTransform: "uppercase" }}>{card.title}</h3>
-                <Link to="/verify" style={{ textDecoration: "none" }}>
-                  <button style={{ background: "white", color: "black", border: "none", borderRadius: "100px", padding: "12px 24px", fontSize: "11px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
-                    JOIN CHALLENGE <span style={{ width: "16px", height: "16px", background: "black", borderRadius: "50%", color: "white", display: "flex", alignItems: "center", justifyContent: "center" }}>+</span>
-                  </button>
-                </Link>
+                <LiquidButton 
+                  text="CHALLENGE RECORD" 
+                  to="/challenge-verify" 
+                  style={{ padding: "12px 24px", fontSize: "11px" }} 
+                  circleStyle={{ width: "20px", height: "20px" }} 
+                  iconSize={12} 
+                />
               </div>
             </div>
           ))}

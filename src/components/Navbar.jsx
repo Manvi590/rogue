@@ -10,8 +10,10 @@ const Navbar = () => {
     { label: "Home", to: "/" },
     { label: "Records", to: "/explore" },
     { label: "Challenge", to: "/challenge" },
+    { label: "Submit", to: "/verify" },
     { label: "Live Events", to: "/events" },
     { label: "Shop", to: "/shop" },
+  
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -91,7 +93,7 @@ const Navbar = () => {
               {l.label}
             </Link>
           ))}
-          <div className="mobile-menu-footer">
+          <div className="mobile-menu-footer" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <Link to="/login" style={{ textDecoration: "none" }}>
               <button className="btn-nav-cta" style={{ width: "100%", justifyContent: "center", color: location.pathname === "/" ? "#111" : "white" }}>
                 Login <span className="btn-nav-cta-circle"><ArrowRight style={{ width: 14, height: 14 }} /></span>
