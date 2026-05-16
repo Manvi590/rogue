@@ -1,0 +1,836 @@
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight, Play, Check, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Menu, X, Dumbbell, Zap, Timer, Gamepad2, Target, Infinity, Trophy, LayoutGrid, Activity, Waves, Settings, Brain, Gamepad, Search, Eye, Volume2, Maximize, Bike, Star, Palette, Baby, Globe } from "lucide-react";
+import InfiniteSlider from "../components/InfiniteSlider";
+import FlowingMenu from "../components/FlowingMenu";
+import StackingSteps from "../components/StackingSteps";
+import DecryptedText from "../components/DecryptedText";
+import ScrollReveal from "../components/ScrollReveal";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+
+/* ─────────────────────────────────────────────────────────
+   REUSABLE SUB-COMPONENTS
+───────────────────────────────────────────────────────── */
+
+const NewestCard = ({ img, cat, title, avatar, name, value }) => (
+  <div className="holder-card" style={{ width: '100%', height: '360px' }}>
+    <img src={img} alt={title} className="holder-card-img" />
+    <div className="holder-card-gradient" />
+    <div className="holder-side-strip" />
+    <div className="holder-card-top">
+      <span className="holder-badge-pill">{cat}</span>
+      <span className="holder-rank-num">NEW</span>
+    </div>
+    <div className="holder-card-bottom">
+      <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'white', marginBottom: '12px', lineHeight: '1.2', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{title}</h3>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <img src={avatar} alt={name} style={{ width: '28px', height: '28px', borderRadius: '50%', border: '1.5px solid #FF6A00' }} />
+          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>{name}</span>
+        </div>
+        <div style={{ color: '#FF6A00', fontWeight: '900', fontSize: '15px' }}>{value}</div>
+      </div>
+    </div>
+  </div>
+);
+
+const RecCard = ({ img, cat, title, by }) => (
+  <div className="rec-card">
+    <img src={img} alt={title} className="rec-card-img" />
+    <div className="rec-card-overlay" />
+    <div className="rec-card-top">
+      <span className="rec-card-cat">{cat}</span>
+      <span className="rec-card-new">NEW</span>
+    </div>
+    <div className="rec-card-bottom">
+      <div className="rec-card-title">{title}</div>
+      <div className="rec-card-by">by {by}</div>
+    </div>
+  </div>
+);
+
+const HolderCard = ({ img, badge, name, records, rank }) => (
+  <div className="holder-card">
+    <img src={img} alt={name} className="holder-card-img" />
+    <div className="holder-card-gradient" />
+    <div className="holder-side-strip" />
+    <div className="holder-card-top">
+      <span className="holder-badge-pill">{badge}</span>
+      <span className="holder-rank-num">#{String(rank).padStart(2, "0")}</span>
+    </div>
+    <div className="holder-card-bottom">
+      <div className="holder-name">{name}</div>
+      <div className="holder-records">{records} World Records</div>
+      <Link to={`/profile/${name.toLowerCase().replace(/\s+/g, '-')}`} style={{ textDecoration: "none" }}>
+        <div className="holder-view-link" style={{ transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "white"} onMouseLeave={(e) => e.currentTarget.style.color = "#FF6A00"}>
+          View Profile <ArrowRight style={{ width: 12, height: 12 }} />
+        </div>
+      </Link>
+    </div>
+  </div>
+);
+
+const AnimatedStat = ({ end, suffix, duration = 2000 }) => {
+  const [count, setCount] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = React.useRef(null);
+
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  React.useEffect(() => {
+    if (!isVisible) return;
+    let timer;
+    let animationFrame;
+
+    // Check if loading screen is still present to delay the count up
+    const checkLoadingAndStart = () => {
+      // Find element with zIndex 9999 that App.jsx uses for loading screen
+      const isLoading = Array.from(document.querySelectorAll('div')).some(el => el.style.zIndex === '9999');
+      if (isLoading) {
+        timer = setTimeout(checkLoadingAndStart, 200);
+      } else {
+        startAnimation();
+      }
+    };
+
+    const startAnimation = () => {
+      let startTime = null;
+      const step = (timestamp) => {
+        if (!startTime) startTime = timestamp;
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+        const easeOutQuad = 1 - (1 - progress) * (1 - progress);
+        setCount(Math.floor(easeOutQuad * end));
+
+        if (progress < 1) {
+          animationFrame = requestAnimationFrame(step);
+        }
+      };
+      animationFrame = requestAnimationFrame(step);
+    };
+
+    // A small buffer to avoid jitter right when it unmounts
+    timer = setTimeout(checkLoadingAndStart, 100);
+
+    return () => {
+      clearTimeout(timer);
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+    };
+  }, [isVisible, end, duration]);
+
+  return (
+    <div ref={ref} className="hero-v3-mini-num">
+      {count}{suffix}
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────────────────
+   MAIN COMPONENT
+───────────────────────────────────────────────────────── */
+
+const Home = () => {
+  const navigate = useNavigate();
+  const [showAllCats, setShowAllCats] = useState(false);
+  const [showCats, setShowCats] = useState(true);
+  const [homeSearchQuery, setHomeSearchQuery] = useState("");
+
+  const handleHomeSearch = (e) => {
+    e.preventDefault();
+    if (homeSearchQuery.trim()) {
+      navigate(`/explore?q=${encodeURIComponent(homeSearchQuery.trim())}`);
+    }
+  };
+
+  return (
+    <div style={{ background: "#FFF8F5", color: "#111", fontFamily: "'Inter', sans-serif", paddingTop: "80px" }}>
+
+      {/* ══════════════════ NAVBAR ══════════════════ */}
+      <Navbar />
+
+      {/* 90% width line added just below the navbar */}
+      <hr style={{ width: "90%", margin: "0 auto", border: "none", borderTop: "1px solid #ccc" }} />
+
+      {/* ══════════════════ HERO ══════════════════ */}
+      <header className="hero hero-v3">
+        {/* Dark block behind bottom of image */}
+        <div className="hero-v3-bg-block" style={{ background: "#111", height: "320px" }} />
+
+        <div className="container hero-v3-inner" style={{ marginTop: "-40px" }}>
+
+          {/* ── LEFT SIDEBAR (Explore Categories) ── */}
+          <aside
+            className="hero-v3-sidebar-left"
+            style={{ display: "flex", flexDirection: "column", position: "relative" }}
+          >
+            <div
+              style={{
+                background: "white",
+                color: "#111",
+                padding: "16px",
+                borderRadius: "12px",
+                fontWeight: "700",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
+                border: "1px solid #f0f0f0"
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <LayoutGrid style={{ width: 20, height: 20, color: "#FF6A00" }} />
+                <span style={{ fontSize: "15px" }}>Explore Categories</span>
+              </div>
+            </div>
+
+            {showCats && (
+              <div style={{
+                background: "white",
+                padding: "16px",
+                borderRadius: "12px",
+                boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+                display: "flex",
+                flexDirection: "column",
+                marginTop: "12px",
+                border: "1px solid #f0f0f0",
+                width: "100%",
+                zIndex: 10
+              }}>
+                <nav style={{ display: "flex", flexDirection: "column" }}>
+                  {[
+                    { name: "Athletics", icon: <Activity style={{ width: 18, height: 18, color: "#FF6A00" }} /> },
+                    { name: "Strength", icon: <Dumbbell style={{ width: 18, height: 18, color: "#FF6A00" }} /> },
+                    { name: "Endurance", icon: <Timer style={{ width: 18, height: 18, color: "#FF6A00" }} /> },
+                    { name: "Balance", icon: <Target style={{ width: 18, height: 18, color: "#FF6A00" }} /> },
+                    { name: "Skills", icon: <Trophy style={{ width: 18, height: 18, color: "#FF6A00" }} /> },
+                    { name: "Gaming", icon: <Gamepad2 style={{ width: 18, height: 18, color: "#FF6A00" }} /> },
+                    { name: "Water Sports", icon: <Waves style={{ width: 18, height: 18, color: "#FF6A00" }} /> },
+                    { name: "Reaction", icon: <Zap style={{ width: 18, height: 18, color: "#FF6A00" }} /> },
+                    { name: "Mind & Memory", icon: <Brain style={{ width: 18, height: 18, color: "#FF6A00" }} /> },
+                    { name: "Action Sports", icon: <Bike style={{ width: 18, height: 18, color: "#FF6A00" }} /> }
+                  ].map((cat, i, arr) => (
+                    <div key={cat.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 8px", cursor: "pointer", borderBottom: i === arr.length - 1 ? "none" : "1px solid #f0f0f0", fontSize: "14px", color: "#111", fontWeight: "600", transition: "background 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.background = "#fff8f5"} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        {cat.icon}
+                        <span>{cat.name}</span>
+                      </div>
+                      <ChevronRight style={{ width: 14, height: 14, color: "#ccc" }} />
+                    </div>
+                  ))}
+                  <div style={{ textAlign: "center", marginTop: "16px", paddingBottom: "8px", borderTop: "1px solid #f0f0f0", paddingTop: "12px" }}>
+                    <Link to="/categories" style={{ textDecoration: "none" }}>
+                      <span style={{ color: "#FF6A00", fontSize: "14px", fontWeight: "800", cursor: "pointer" }}>View All Categories &gt;</span>
+                    </Link>
+                  </div>
+                </nav>
+              </div>
+            )}
+          </aside>
+
+          {/* ── CENTER HERO CONTENT ── */}
+          <main className="hero-v3-center" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+
+            {/* Top: Headline Only */}
+            <div className="hero-v3-header" style={{ marginBottom: "32px", width: "100%" }}>
+              <h1 className="hero-title hero-v3-title" style={{ fontSize: "clamp(16px, 2.4vw, 32px)", margin: "0 auto", lineHeight: 1.1, letterSpacing: "-0.01em", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", fontWeight: "900", textTransform: "uppercase" }}>
+                <span style={{ color: "#FF6A00" }}>
+                  <DecryptedText text="SET" animateOn="inViewHover" speed={75} maxIterations={14} />
+                </span>
+                <span style={{ color: "#000" }}>
+                  <DecryptedText text="RECORD," animateOn="inViewHover" speed={75} maxIterations={14} />
+                </span>
+                <span style={{ color: "#FF6A00", marginLeft: "4px" }}>
+                  <DecryptedText text="BREAK" animateOn="inViewHover" speed={75} maxIterations={14} />
+                </span>
+                <span style={{ color: "#000" }}>
+                  <DecryptedText text="RECORD," animateOn="inViewHover" speed={75} maxIterations={14} />
+                </span>
+                <span style={{ color: "#FF6A00", marginLeft: "4px" }}>
+                  <DecryptedText text="GO" animateOn="inViewHover" speed={75} maxIterations={14} />
+                </span>
+                <span style={{ color: "#000" }}>
+                  <DecryptedText text="LIVE." animateOn="inViewHover" speed={75} maxIterations={14} />
+                </span>
+              </h1>
+            </div>
+
+            {/* Middle: Video Frame */}
+            <article style={{ width: "100%", height: "550px", marginBottom: "32px", position: "relative", borderRadius: "20px", overflow: "hidden", boxShadow: "0 32px 80px rgba(0,0,0,0.5)", background: "#000" }}>
+              <img
+                src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1600&q=80"
+                alt="Hero Athlete"
+                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+              />
+
+              {/* Left gradient for text readability */}
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.45) 50%, transparent 100%)", pointerEvents: "none" }} />
+              {/* Bottom gradient for controls */}
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "30%", background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)", pointerEvents: "none" }} />
+
+              {/* LIVE badge + viewers — top left */}
+              <div style={{ position: "absolute", top: 20, left: 20, display: "flex", gap: 12, alignItems: "center" }}>
+                <div style={{ background: "#ef4444", color: "white", padding: "5px 12px", borderRadius: "6px", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", gap: 6, letterSpacing: "0.08em", boxShadow: "0 2px 12px rgba(239,68,68,0.5)" }}>
+                  <Play size={10} fill="white" /> LIVE
+                </div>
+                <div style={{ color: "white", display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>
+                  <Eye size={15} /> 12.4K
+                </div>
+              </div>
+
+              {/* Text + Buttons overlay — left center */}
+              <div style={{ position: "absolute", left: 48, top: "50%", transform: "translateY(-50%)", maxWidth: 500, textAlign: "left" }}>
+                <h2 style={{ fontSize: "clamp(42px, 5.5vw, 80px)", fontWeight: 900, lineHeight: 0.95, letterSpacing: "-0.03em", color: "white", marginBottom: 20, textTransform: "uppercase" }}>
+                  Break Limits.<br />
+                  <span style={{ color: "#FF6A00" }}>Make History.</span>
+                </h2>
+                <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 17, lineHeight: 1.65, marginBottom: 36 }}>
+                  The ultimate platform for record breakers,<br />champions, and legends.
+                </p>
+                <div style={{ display: "flex", gap: 14 }}>
+                  <Link to="/verify" style={{ textDecoration: "none" }}>
+                    <button
+                      style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "12px", padding: "15px 32px", fontSize: 16, fontWeight: 700, cursor: "pointer", transition: "transform 0.2s, box-shadow 0.2s", boxShadow: "0 4px 20px rgba(255,106,0,0.4)" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 28px rgba(255,106,0,0.5)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(255,106,0,0.4)"; }}
+                    >
+                      Submit Record
+                    </button>
+                  </Link>
+                  <Link to="/explore" style={{ textDecoration: "none" }}>
+                    <button
+                      style={{ background: "transparent", color: "white", border: "1.5px solid rgba(255,255,255,0.4)", borderRadius: "12px", padding: "15px 32px", fontSize: 16, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 10, backdropFilter: "blur(6px)", transition: "all 0.2s" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.7)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.4)"; }}
+                    >
+                      <Search size={17} /> Explore Records
+                    </button>
+                  </Link>
+                </div>
+              </div>
+
+              {/* Bottom Video Controls Bar */}
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "18px 28px", display: "flex", alignItems: "center", gap: 20, color: "white" }}>
+                <Play size={22} fill="white" style={{ cursor: "pointer", flexShrink: 0 }} />
+                <Volume2 size={20} style={{ cursor: "pointer", flexShrink: 0 }} />
+                {/* Progress Bar */}
+                <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, opacity: 0.9, whiteSpace: "nowrap" }}>01:12</span>
+                  <div style={{ flex: 1, height: 3, background: "rgba(255,255,255,0.25)", borderRadius: 2, position: "relative", cursor: "pointer" }}>
+                    <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "45%", background: "#FF6A00", borderRadius: 2 }} />
+                    <div style={{ position: "absolute", left: "45%", top: "50%", transform: "translate(-50%, -50%)", width: 11, height: 11, background: "#FF6A00", borderRadius: "50%", boxShadow: "0 0 8px rgba(255,106,0,0.7)" }} />
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 600, opacity: 0.5, whiteSpace: "nowrap" }}>02:45</span>
+                </div>
+                <Settings size={18} style={{ cursor: "pointer", opacity: 0.8, flexShrink: 0 }} />
+                <Maximize size={18} style={{ cursor: "pointer", opacity: 0.8, flexShrink: 0 }} />
+              </div>
+            </article>
+
+          </main>
+
+          {/* ── RIGHT SIDEBAR (Live Videos) ── */}
+          <aside className="hero-v3-sidebar-right" style={{ display: "flex", flexDirection: "column", height: "600px", marginTop: "35px" }}>
+            <div style={{ textAlign: "right", marginBottom: "8px", flexShrink: 0 }}>
+              <Link to="/streams" style={{ textDecoration: "none" }}>
+                <span style={{ color: "#FF6A00", fontSize: "14px", fontWeight: "700", cursor: "pointer" }}>View All Streams &gt;</span>
+              </Link>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "15px", flex: 1 }}>
+              {[
+                { time: "0:53", img: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=400&q=80" },
+                { time: "0:48", img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=400&q=80" },
+                { time: "0:47", img: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=400&q=80" },
+                { time: "0:46", img: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=400&q=80" },
+                { time: "0:45", img: "https://images.unsplash.com/photo-1591123720164-de1348028a82?auto=format&fit=crop&w=400&q=80" },
+                { time: "0:44", img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=400&q=80" }
+              ].map((video, idx) => (
+                <div key={idx} style={{ position: "relative", borderRadius: "12px", overflow: "hidden", height: "78px", boxShadow: "0 4px 12px rgba(0,0,0,0.15)", cursor: "pointer", flexShrink: 0 }}>
+                  <img src={video.img} alt="Live Stream" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)" }} />
+                  <div style={{ position: "absolute", bottom: "8px", left: "12px", color: "white", fontSize: "12px", fontWeight: "700" }}>{video.time}</div>
+                  <Play style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", color: "#FF6A00", fill: "#FF6A00", width: 40, height: 40, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.4))" }} />
+                </div>
+              ))}
+            </div>
+          </aside>
+
+        </div>
+
+        {/* ── FULL-WIDTH FOOTER: Stats + Headline ── */}
+        <footer style={{ background: "#111", borderTop: "1px solid rgba(255,255,255,0.08)", marginTop: 40, padding: "50px 5% 50px", position: "relative", display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "20px", alignItems: "center" }}>
+
+          {/* Left: Headline & Info */}
+          <div style={{ textAlign: "left" }}>
+            <div style={{ color: "#FF6A00", fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: 16 }}>
+              The Future of Records
+            </div>
+            <h2 style={{ fontSize: "clamp(40px, 4vw, 68px)", fontWeight: 900, color: "white", lineHeight: 1.0, marginBottom: 20, letterSpacing: "-0.03em" }}>
+              Join the global<br />platform.
+            </h2>
+            <p style={{ color: "#999", fontSize: 16, lineHeight: 1.6, maxWidth: 420, marginBottom: 24 }}>
+              For world record creators and challengers. Prove your greatness to the world and claim your place in history.
+            </p>
+            <Link to="/global-leaderboard" style={{ textDecoration: "none" }}>
+              <button className="btn btn-primary" style={{ padding: "12px 24px", fontSize: "13px" }}>
+                View Global Rankings <Globe style={{ width: 14, height: 14 }} />
+              </button>
+            </Link>
+          </div>
+
+          {/* Right: Stats Boxes */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+            {[
+              { label: "Records Set", value: 1, suffix: " k+", icon: <Trophy style={{ width: 16, height: 16 }} />, bg: "/assets/stats/records_set_bg.png" },
+              { label: "Countries", value: 1, suffix: "+", icon: <Target style={{ width: 16, height: 16 }} />, bg: "/assets/stats/countries_bg.png" },
+              { label: "Categories", value: 20, suffix: "+", icon: <Zap style={{ width: 16, height: 16 }} />, bg: "/assets/stats/categories_bg.png" }
+            ].map((stat, idx) => (
+              <div key={idx} style={{ 
+                background: "#222", 
+                border: "1.5px solid #FF6A00", 
+                padding: "20px", 
+                borderRadius: "16px", 
+                display: "flex", 
+                flexDirection: "column", 
+                justifyContent: "space-between", 
+                boxShadow: "0 4px 15px rgba(255,106,0,0.1)", 
+                aspectRatio: "1 / 1",
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                {/* Background Image with low opacity */}
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundImage: `url(${stat.bg})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  opacity: 0.5,
+                  mixBlendMode: 'luminosity',
+                  zIndex: 0
+                }} />
+                
+                {/* Content */}
+                <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div style={{ background: "#333", width: 32, height: 32, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: "#FF6A00" }}>
+                    {stat.icon}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 26, fontWeight: 900, color: "#fff", letterSpacing: "-0.02em" }}>
+                      <AnimatedStat end={stat.value} suffix={stat.suffix} />
+                    </div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#fff", opacity: 1, textTransform: "uppercase", letterSpacing: "0.05em", marginTop: 4 }}>{stat.label}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Global Leaderboard — absolute bottom right */}
+          <Link to="/global-leaderboard" style={{ position: "absolute", bottom: 16, right: 16, textDecoration: "none" }}>
+            <div style={{ background: "#FF6A00", padding: "8px 16px", borderRadius: "8px", color: "white", fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", gap: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.3)" }}>
+              <Activity style={{ width: 14, height: 14 }} /> Global Leaderboard
+            </div>
+          </Link>
+        </footer>
+
+      </header>
+
+      {/* ══════════════════ NEWEST RECORDS ACHIEVERS ══════════════════ */}
+      <section className="section newest-section">
+        <div className="container">
+          <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
+            <div className="section-header-left">
+              <h2 style={{ fontSize: "36px", fontWeight: "800", color: "#111", letterSpacing: "-0.5px", display: "flex", alignItems: "center" }}>
+                <ScrollReveal>Newest Records</ScrollReveal>
+                <span style={{ background: "#FF6A00", color: "white", padding: "4px 8px", borderRadius: "6px", fontSize: "12px", marginLeft: "12px", verticalAlign: "middle", fontWeight: "bold" }}>NEW</span>
+              </h2>
+              <p className="section-subtitle" style={{ marginTop: 8, color: '#555', fontSize: '16px' }}>
+                <ScrollReveal>Check out the latest records broken around the world.</ScrollReveal>
+              </p>
+            </div>
+            <Link to="/explore" style={{ color: '#FF6A00', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, fontSize: '15px' }}>
+              View All Records <ChevronRight style={{ width: 16, height: 16 }} />
+            </Link>
+          </div>
+        </div>
+
+        <div className="newest-slider-wrap" style={{ marginTop: "20px", position: "relative", width: "100%", overflow: "hidden" }}>
+          {/* White gradients at the start and end */}
+          <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "150px", background: "linear-gradient(to right, rgba(255,255,255,0.9) 0%, transparent 100%)", zIndex: 5, pointerEvents: "none" }} />
+          <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "150px", background: "linear-gradient(to left, rgba(255,255,255,0.9) 0%, transparent 100%)", zIndex: 5, pointerEvents: "none" }} />
+
+          <InfiniteSlider speed={40} gap={24} cardWidth="300px">
+            {[
+              { img: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80", cat: "ATHLETICS", title: "Most Basketball Three-Pointers in 1 Minute", avatar: "https://randomuser.me/api/portraits/men/32.jpg", name: "James Carter", value: "42 Shots" },
+              { img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80", cat: "FITNESS", title: "Fastest 100m Sand Sprint", avatar: "https://randomuser.me/api/portraits/women/44.jpg", name: "Elena Petrov", value: "11.2 Sec" },
+              { img: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=600&q=80", cat: "STRENGTH", title: "Most Consecutive Pull-Ups", avatar: "https://randomuser.me/api/portraits/men/85.jpg", name: "Marcus S.", value: "89 Reps" },
+              { img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=600&q=80", cat: "ENDURANCE", title: "Longest Plank Hold (Under 18)", avatar: "https://randomuser.me/api/portraits/men/12.jpg", name: "Leo Rossi", value: "1h 12m" },
+              { img: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=600&q=80", cat: "GAMING", title: "Highest Score in Retro Tetris", avatar: "https://randomuser.me/api/portraits/women/15.jpg", name: "Sarah Kim", value: "999,999" },
+              { img: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=600&q=80", cat: "ACTION", title: "Fastest 360 Flip on Skateboard", avatar: "https://randomuser.me/api/portraits/men/45.jpg", name: "Ryan G.", value: "0.8 Sec" },
+              { img: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80", cat: "REACTION", title: "Fastest Light Button Hits", avatar: "https://randomuser.me/api/portraits/women/22.jpg", name: "Mina Chen", value: "24 Hits/s" },
+              { img: "https://images.unsplash.com/photo-1591123720164-de1348028a82?auto=format&fit=crop&w=600&q=80", cat: "MIND", title: "Blindfolded Rubik's Solve", avatar: "https://randomuser.me/api/portraits/men/76.jpg", name: "David Lu", value: "14.5 Sec" },
+              { img: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=600&q=80", cat: "SPEED", title: "Fastest 50m Crawl", avatar: "https://randomuser.me/api/portraits/women/67.jpg", name: "Alice B.", value: "9.8 Sec" }
+            ].map((rec, idx) => (
+              <NewestCard key={idx} {...rec} />
+            ))}
+          </InfiniteSlider>
+        </div>
+      </section>
+
+      {/* ══════════════════ CATEGORIES ══════════════════ */}
+      <section className="cat-section" style={{ paddingBottom: "80px" }}>
+        <div className="container">
+          <div className="section-header" style={{ marginBottom: 40, display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+            <div className="section-header-left">
+              <h2 className="section-title" style={{ color: "#FF6A00", marginBottom: 8, textAlign: "left" }}><ScrollReveal>Record Categories</ScrollReveal></h2>
+              <p className="section-subtitle" style={{ color: "white", textAlign: "left" }}><ScrollReveal>Find your niche. Dominate your field.</ScrollReveal></p>
+            </div>
+            <span 
+              onClick={() => setShowAllCats(!showAllCats)}
+              style={{ 
+                color: "white", 
+                fontSize: "13px", 
+                fontWeight: "700", 
+                cursor: "pointer", 
+                display: "flex", 
+                alignItems: "center", 
+                gap: "8px", 
+                textTransform: "uppercase",
+                transition: "color 0.2s ease"
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = "#FF6A00"}
+              onMouseLeave={(e) => e.currentTarget.style.color = "white"}
+            >
+              {showAllCats ? "Show Fewer" : "See All Categories"} {showAllCats ? <ChevronUp size={14} /> : <ArrowRight size={14} />}
+            </span>
+          </div>
+        </div>
+
+        <div className="container cat-grid-wrap">
+          <div className="cat-grid">
+            {[
+              { i: <Activity />, n: "Athletics", d: "Classic track and field events. Speed, agility, and pure athleticism." },
+              { i: <Dumbbell />, n: "Strength", d: "Lift more than anyone on the planet. Pure power, zero excuses." },
+              { i: <Timer />, n: "Endurance", d: "Go the distance. Push the absolute limits of human stamina." },
+              { i: <Target />, n: "Balance", d: "Steady hands and focus. Mastery of equilibrium in any situation." },
+              { i: <Trophy />, n: "Skills", d: "Precision, technique, mastery. Show the world what you can do." },
+              { i: <Gamepad2 />, n: "Gaming", d: "From speedruns to high scores. Digital dominance, verified." },
+              { i: <Waves />, n: "Water Sports", d: "Dominate the waves. Swimming, surfing, and aquatic achievements." },
+              { i: <Zap />, n: "Reaction", d: "Fastest on two feet or four wheels. Every millisecond counts." },
+              { i: <Brain />, n: "Mind & Memory", d: "Solve the impossible. Mental feats that defy logic and speed." },
+              { i: <Bike />, n: "Action Sports", d: "High-octane performance. Adrenaline-fueled records on the edge." },
+              { i: <Star />, n: "Entertainment", d: "Show-stopping performances. Magic, stunts, and stage records." },
+              { i: <Palette />, n: "Creative", d: "Art, design, and unique creations. Breaking boundaries through creativity." },
+              { i: <Baby />, n: "Youth", d: "Just for the next generation. Safe, fun, and highly competitive." }
+            ].slice(0, showAllCats ? 13 : 8).map((cat, i) => (
+              <div 
+                key={i} 
+                className="cat-cell" 
+                role="button" 
+                tabIndex={0}
+                onClick={() => navigate("/categories")}
+                style={{ cursor: "pointer" }}
+              >
+                <div className="cat-cell-top">
+                  <div className="cat-cell-icon">{cat.i}</div>
+                  <h3 className="cat-cell-name">{cat.n}</h3>
+                </div>
+                <p className="cat-cell-desc" style={{ marginBottom: "20px" }}>{cat.d}</p>
+                <div style={{ 
+                  color: "#FF6A00", 
+                  fontSize: "12px", 
+                  fontWeight: "800", 
+                  textTransform: "uppercase", 
+                  letterSpacing: "0.1em",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  marginTop: "auto"
+                }}>
+                  Learn More <ArrowRight size={14} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════ FEATURED RECORD HOLDERS ══════════════════ */}
+      <section className="section holders-section">
+        <div className="holders-bg-word"><ScrollReveal>CHAMPIONS</ScrollReveal></div>
+        <div className="container">
+          <div className="holders-header">
+            <div className="holders-header-left">
+              <span className="holders-label"><Trophy style={{ width: 14, height: 14 }} /> Top Athletes</span>
+              <h2 className="holders-title"><ScrollReveal>Featured Record Holders</ScrollReveal></h2>
+              <p className="holders-subtitle"><ScrollReveal>The athletes rewriting history, one record at a time.</ScrollReveal></p>
+            </div>
+            <Link to="/leaderboard" className="holders-cta">
+              View Leaderboard <ArrowRight style={{ width: 15, height: 15 }} />
+            </Link>
+          </div>
+        </div>
+        <div className="slider-wrapper holders-slider-wrapper">
+          <InfiniteSlider gap={20} speed={32} reverse={true} cardWidth="260px">
+            <HolderCard img="https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=700&q=80" badge="Strength" name="Leo Vance" records="4" rank={2} />
+            <HolderCard img="https://images.unsplash.com/photo-1594882645126-14020914d58d?auto=format&fit=crop&w=800&q=80" badge="Speed" name="Jamal Carter" records="7" rank={1} />
+            <HolderCard img="https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=700&q=80" badge="Endurance" name="Elena Petrov" records="2" rank={4} />
+            <HolderCard img="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=700&q=80" badge="Gym" name="Iron K." records="5" rank={3} />
+            <HolderCard img="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=700&q=80" badge="Track" name="Marcus S." records="3" rank={5} />
+          </InfiniteSlider>
+        </div>
+      </section>
+
+      {/* ══════════════════ COMPETE IN YOUR DIVISION ══════════════════ */}
+      <section className="division-flowing">
+        <div className="container">
+          <div className="section-header center" style={{ marginBottom: 0, paddingBottom: 56 }}>
+            <h2 className="section-title" style={{ color: "white" }}><ScrollReveal>Compete in Your Division</ScrollReveal></h2>
+            <p className="section-subtitle" style={{ color: "white" }}><ScrollReveal>Age is just a number. But divisions keep it fair.</ScrollReveal></p>
+          </div>
+        </div>
+        <div style={{ height: 600 }}>
+          <FlowingMenu
+            speed={12}
+            items={[
+              {
+                link: "/leaderboard", text: "2–9", label: "Youth",
+                images: [
+                  "https://static.vecteezy.com/system/resources/thumbnails/076/981/260/small/young-asian-boy-with-glasses-studying-at-his-desk-for-back-to-school-free-photo.jpeg",
+                  "https://images.unsplash.com/photo-1502086223501-7ea244bce1e0?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=400&q=80"
+                ]
+              },
+              {
+                link: "/leaderboard", text: "10–12", label: "Pre-Teen",
+                images: [
+                  "https://media.istockphoto.com/id/498211233/photo/young-children-with-bikes-and-scooters-in-park.jpg?s=612x612&w=0&k=20&c=3XXhIYQ3-BeBbcpGLyoWz6JugQUrrR6LmTDisAM78sM=",
+                  "https://images.unsplash.com/photo-1503917988258-f19782f11b6e?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=400&q=80"
+                ]
+              },
+              {
+                link: "/leaderboard", text: "13–17", label: "Teen",
+                images: [
+                  "https://media.istockphoto.com/id/2165383037/photo/diverse-group-of-friends-enjoying-summer-outdoors-multicultural-family-bonding-on-wooden.jpg?s=612x612&w=0&k=20&c=yjTbwaD6NBGw30-Gw5sxlKQmFAMswEgs4reo-mY-uDA=",
+                  "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1523301343968-6a6ebf63c672?auto=format&fit=crop&w=400&q=80"
+                ]
+              },
+              {
+                link: "/leaderboard", text: "18–35", label: "Young Adult",
+                images: [
+                  "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=400&q=80"
+                ]
+              },
+              {
+                link: "/leaderboard", text: "36–50", label: "Adult",
+                images: [
+                  "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1594882645126-14020914d58d?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=400&q=80"
+                ]
+              },
+              {
+                link: "/leaderboard", text: "51+", label: "Senior",
+                images: [
+                  "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1441123100240-f9f3f77ed41b?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1444464666168-49d633b867ad?auto=format&fit=crop&w=400&q=80"
+                ]
+              },
+            ]}
+          />
+        </div>
+      </section>
+
+      {/* ══════════════════ PATH TO GLORY — Stacking Cards ══════════════════ */}
+      <StackingSteps />
+
+      {/* ══════════════════ DARK CTA ══════════════════ */}
+      <section className="section" style={{ background: "#FFF8F5" }}>
+        <div className="container">
+          <div className="dark-cta">
+            <div className="dark-cta-bg">
+              <img src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1600&q=80" alt="" />
+            </div>
+            <div className="dark-cta-overlay" />
+
+            {/* Left */}
+            <div className="dark-cta-left">
+              <div style={{ color: "#FF6A00", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: 20 }}>
+                Challenge a Record
+              </div>
+              <h2 style={{ fontSize: "clamp(36px, 4vw, 56px)", fontWeight: 900, color: "white", lineHeight: 1, marginBottom: 24 }}>
+                Think you have<br />what it takes?
+              </h2>
+              <p style={{ color: "#999", fontSize: 17, lineHeight: 1.7, maxWidth: 380, marginBottom: 36 }}>
+                <ScrollReveal>Browse our current active records across 20+ categories. Find your niche, submit your evidence, and claim your place in history.</ScrollReveal>
+              </p>
+              <Link to="/verify" style={{ textDecoration: "none" }}>
+                <button className="btn btn-primary" style={{ fontSize: 15, padding: "16px 32px" }}>
+                  Submit a Record <ArrowRight style={{ width: 16, height: 16 }} />
+                </button>
+              </Link>
+            </div>
+
+            {/* Right: Search Bar */}
+            <div className="dark-cta-right" style={{ flex: "1" }}>
+              <form onSubmit={handleHomeSearch} style={{ position: "relative", maxWidth: "500px" }}>
+                <p style={{ color: "#FF6A00", fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 20 }}>
+                  Search Trending Topics
+                </p>
+                <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                  <Search style={{ position: "absolute", left: 20, color: "#888", width: 20, height: 20 }} />
+                  <input
+                    type="text"
+                    placeholder="Search records, categories, or athletes..."
+                    value={homeSearchQuery}
+                    onChange={(e) => setHomeSearchQuery(e.target.value)}
+                    style={{
+                      width: "100%",
+                      background: "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: "16px",
+                      padding: "20px 20px 20px 60px",
+                      color: "white",
+                      fontSize: "16px",
+                      outline: "none",
+                      transition: "all 0.3s ease",
+                      boxShadow: "0 10px 30px rgba(0,0,0,0.2)"
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = "#FF6A00";
+                      e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                      e.currentTarget.style.boxShadow = "0 10px 40px rgba(255,106,0,0.15)";
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                      e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                      e.currentTarget.style.boxShadow = "0 10px 30px rgba(0,0,0,0.2)";
+                    }}
+                  />
+                  <button 
+                    type="submit"
+                    style={{
+                      position: "absolute",
+                      right: 10,
+                      background: "#FF6A00",
+                      border: "none",
+                      borderRadius: "10px",
+                      padding: "10px 20px",
+                      color: "white",
+                      fontWeight: "700",
+                      fontSize: "14px",
+                      cursor: "pointer",
+                      transition: "all 0.3s ease"
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "#e65f00"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "#FF6A00"}
+                  >
+                    Find
+                  </button>
+                </div>
+              </form>
+              <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <span style={{ color: "#666", fontSize: 13 }}>Popular:</span>
+                {["#Endurance", "#Strength", "#Speed", "#Gaming"].map(tag => (
+                  <span 
+                    key={tag} 
+                    onClick={() => navigate(`/explore?q=${encodeURIComponent(tag.replace("#", ""))}`)}
+                    style={{ color: "#aaa", fontSize: 13, cursor: "pointer", transition: "color 0.2s" }} 
+                    onMouseEnter={(e) => e.currentTarget.style.color = "#FF6A00"} 
+                    onMouseLeave={(e) => e.currentTarget.style.color = "#aaa"}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════ ENHANCED ORANGE CTA ══════════════════ */}
+      <section className="orange-cta-section">
+        <div className="orange-cta">
+          {/* Dynamic backgrounds */}
+          <div className="orange-cta-bg" />
+          <div className="orange-cta-grid" />
+          <div className="orange-cta-glow" />
+
+          <div className="orange-cta-content">
+            <span className="orange-cta-badge">Join the Elite</span>
+            <h2 className="orange-cta-title">
+              <ScrollReveal>Ready to make </ScrollReveal><span className="orange-cta-highlight"><ScrollReveal>history?</ScrollReveal></span>
+            </h2>
+            <p className="orange-cta-subtitle">
+              <ScrollReveal>Step up, pass the official verification process, break a record, and prove you belong among the best.</ScrollReveal>
+            </p>
+            <div className="orange-cta-btns">
+              <Link to="/verify" style={{ textDecoration: "none" }}>
+                <button className="btn-v2 btn-v2-dark" style={{ background: "#111", color: "white", padding: "14px 28px", borderRadius: "100px", fontSize: "15px", fontWeight: "700", display: "flex", alignItems: "center", gap: "10px", border: "none", cursor: "pointer", boxShadow: "0 10px 30px rgba(0,0,0,0.15)" }}>
+                  Submit a Record <ArrowRight style={{ width: 16, height: 16 }} />
+                </button>
+              </Link>
+              <Link to="/categories" style={{ textDecoration: "none" }}>
+                <button
+                  className="btn-v2"
+                  style={{
+                    background: "#FFFFFF",
+                    color: "#FF6A00",
+                    border: "1px solid #FFFFFF",
+                    padding: "14px 28px",
+                    borderRadius: "100px",
+                    fontSize: "15px",
+                    fontWeight: "700",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                    boxShadow: "0 10px 20px rgba(0,0,0,0.1)"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+                    e.currentTarget.style.color = "#FFFFFF";
+                    e.currentTarget.style.backdropFilter = "blur(10px)";
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.3)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#FFFFFF";
+                    e.currentTarget.style.color = "#FF6A00";
+                    e.currentTarget.style.backdropFilter = "none";
+                    e.currentTarget.style.borderColor = "#FFFFFF";
+                  }}
+                >
+                  Explore Categories
+                </button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════ FOOTER ══════════════════ */}
+      <Footer />
+
+    </div>
+  );
+};
+
+export default Home;

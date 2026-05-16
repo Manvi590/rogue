@@ -1,0 +1,1294 @@
+import React, { useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  ArrowRight, 
+  ArrowLeft, 
+  Shield, 
+  User, 
+  IdCard, 
+  Globe, 
+  Dumbbell, 
+  Timer, 
+  Zap, 
+  Crosshair,
+  MapPin,
+  ClipboardCheck,
+  Video,
+  Camera,
+  BarChart3,
+  CheckCircle2,
+  Lock,
+  Cpu,
+  Activity,
+  Maximize2,
+  Scan,
+  Plus,
+  Trash2,
+  Trophy,
+  Award,
+  Edit3,
+  Link2
+} from "lucide-react";
+import PageTransition from "../components/PageTransition";
+import Navbar from "../components/Navbar";
+import { Link } from "react-router-dom";
+import ScrollReveal from "../components/ScrollReveal";
+import { apiCall } from "../utils/api";
+import { useAuth } from "../context/AuthContext";
+
+const categoriesData = {
+  Athletics: {
+    Running: ["Sprinting", "Long Distance Running", "Relay Races", "Obstacle Running", "Backwards Running", "Other"],
+    Jumping: ["High Jump", "Long Jump", "Vertical Jump", "Standing Broad Jump", "Other"],
+    Throwing: ["Javelin Throw", "Discus Throw", "Shot Put", "Accuracy Throws", "Other"],
+    "Speed Challenges": ["Fastest Mile", "Fastest Shuttle Run", "Stair Sprinting", "Cone Drills", "Other"],
+    Agility: ["Ladder Drills", "Footwork Challenges", "Speed Course Runs", "Other"]
+  },
+  Strength: {
+    "Upper Body Strength": ["Bench Press", "Push-Ups", "Pull-Ups", "Arm Wrestling", "Grip Strength", "Other"],
+    "Lower Body Strength": ["Squats", "Leg Press", "Wall Sits", "Lunges", "Other"],
+    "Full Body Strength": ["Deadlifts", "Tire Flips", "Atlas Stone Lifts", "Weighted Carries", "Other"],
+    "Functional Strength": ["Rope Pulling", "Object Carrying", "Vehicle Pulls", "Sandbag Challenges", "Other"],
+    "Power Challenges": ["Punch Strength", "Kicking Power", "Sledgehammer Challenges", "Other"]
+  },
+  Endurance: {
+    "Cardio Endurance": ["Long Distance Cycling", "Treadmill Challenges", "Stair Climbing", "Continuous Running", "Other"],
+    "Strength Endurance": ["Push-Up Marathons", "Pull-Up Endurance", "Plank Holds", "Squat Repetitions", "Other"],
+    "Mental Endurance": ["Sleep Deprivation Challenges", "Long Concentration Challenges", "Other"],
+    "Environmental Endurance": ["Cold Exposure", "Heat Challenges", "Survival Endurance", "Other"],
+    "Multi-Day Challenges": ["Longest Activity Duration", "Continuous Exercise Records", "Other"]
+  },
+  Balance: {
+    "Static Balance": ["One-Leg Stands", "Handstands", "Headstands", "Balance Beam Holds", "Other"],
+    "Object Balancing": ["Chair Balancing", "Pole Balancing", "Stack Balancing", "Other"],
+    "Dynamic Balance": ["Slackline Walking", "Tightrope Challenges", "Rolling Balance Challenges", "Other"],
+    "Extreme Balance": ["Elevated Balance Challenges", "Moving Surface Balancing", "Other"]
+  },
+  Skills: {
+    "Precision Skills": ["Card Throwing", "Trick Shots", "Accuracy Challenges", "Dart Challenges", "Other"],
+    Coordination: ["Juggling", "Cup Stacking", "Hand-Eye Coordination", "Other"],
+    "Speed Skills": ["Fastest Puzzle Solving", "Rubik’s Cube Solving", "Typing Speed", "Other"],
+    "Creative Skills": ["Fastest Drawing", "Artistic Challenges", "Crafting Challenges", "Other"],
+    "Object Manipulation": ["Yo-Yo Tricks", "Pen Spinning", "Coin Tricks", "Other"]
+  },
+  Gaming: {
+    Speedrunning: ["Fastest Game Completion", "Category Speedruns", "Other"],
+    "Score Challenges": ["Highest Scores", "Kill Records", "Combo Records", "Other"],
+    "Competitive Gaming": ["Tournament Win Streaks", "Ranked Challenges", "Other"],
+    "VR Gaming": ["Virtual Reality Challenges", "VR Endurance", "Other"],
+    "Mobile Gaming": ["Mobile High Scores", "Mobile Speed Challenges", "Other"],
+    "Retro Gaming": ["Arcade Records", "Classic Console Challenges", "Other"]
+  },
+  "Water Sports": {
+    Swimming: ["Sprint Swimming", "Distance Swimming", "Underwater Swimming", "Other"],
+    Diving: ["High Diving", "Trick Diving", "Deep Diving", "Other"],
+    Surfing: ["Longest Ride", "Biggest Wave", "Trick Surfing", "Other"],
+    "Paddle Sports": ["Kayaking", "Canoeing", "Paddle Boarding", "Other"],
+    "Water Endurance": ["Treading Water", "Floating Endurance", "Ice Water Challenges", "Other"],
+    "Water Tricks": ["Water Skiing", "Wakeboarding", "Jet Ski Challenges", "Other"]
+  },
+  Reaction: {
+    "Reflex Speed": ["Light Reaction Challenges", "Sound Reaction Challenges", "Other"],
+    "Catching Challenges": ["Fast Catch Records", "Object Grab Challenges", "Other"],
+    "Combat Reaction": ["Dodge Challenges", "Punch Reaction Tests", "Other"],
+    "Gaming Reaction": ["Reaction Time Tests", "Aim Speed Challenges", "Other"],
+    "Multi-Target Reactions": ["Rapid Response Courses", "Split Decision Challenges", "Other"]
+  },
+  "Mind & Memory": {
+    "Memory Challenges": ["Number Memorization", "Card Memorization", "Name Recall", "Other"],
+    "Mental Math": ["Fast Calculations", "Equation Solving", "Other"],
+    "Puzzle Challenges": ["Puzzle Completion", "Logic Challenges", "Other"],
+    Concentration: ["Focus Duration", "Meditation Challenges", "Other"],
+    "Intelligence Challenges": ["Trivia Competitions", "Knowledge Records", "Other"],
+    "Strategy Challenges": ["Chess", "Strategy Games", "Planning Challenges", "Other"]
+  },
+  "Action Sports": {
+    Skateboarding: ["Trick Records", "Distance Challenges", "Rail Grinding", "Other"],
+    BMX: ["Trick Challenges", "Jump Distance", "Rotation Records", "Other"],
+    Scooters: ["Trick Combos", "Air Time Challenges", "Other"],
+    Parkour: ["Wall Runs", "Vault Challenges", "Obstacle Courses", "Other"],
+    "Martial Arts": ["Board Breaking", "Kick Height", "Punch Speed", "Other"],
+    "Extreme Sports": ["Base Jumping", "Stunt Challenges", "Freestyle Challenges", "Other"],
+    "Bike Sports": ["Wheelie Distance", "Drift Challenges", "Mountain Bike Challenges", "Other"]
+  },
+  Entertainment: {
+    Music: ["Instrument Speed", "Vocal Records", "Composition Speed", "Other"],
+    Performance: ["Dance Records", "Acting Challenges", "Stage Skills", "Other"],
+    Talent: ["Unique Skills", "Varied Talents", "Other"],
+    Magic: ["Slight of Hand", "Illusion Records", "Other"],
+    Circus: ["Acrobatics", "Aerial Arts", "Other"],
+    "Digital Content": ["Viral Challenges", "Streaming Records", "Other"]
+  },
+  "Creative Challenges": {
+    Art: ["Fastest Painting", "Sculpting Challenges", "Other"],
+    Craft: ["Building Challenges", "Knitting/Weaving", "Other"],
+    Design: ["Graphic Design Records", "3D Modeling", "Other"],
+    Innovation: ["New Inventions", "Prototype Speed", "Other"],
+    Architecture: ["Fastest Modeling", "Lego Architecture", "Other"],
+    Fashion: ["Sewing Speed", "Outfit Design", "Other"]
+  },
+  Youth: {
+    "Kids Categories": ["Fastest Cup Stacking", "Longest Hula Hoop Time", "Most Basketball Shots in 1 Minute", "Fastest Puzzle Completion", "Jump Rope Challenges", "Balloon Balancing", "Toy Building Challenges", "Memory Games", "Beginner Gaming Challenges", "Other"]
+  }
+};
+
+const Verify = () => {
+  const { user } = useAuth();
+  const [step, setStep] = useState(1);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const totalSteps = 6;
+
+  const [formData, setFormData] = useState({
+    // Section 1
+    fullName: "",
+    username: "",
+    dob: "",
+    ageDivision: "ADULT", // UNDER_13, TEEN, ADULT, MASTERS
+    email: "",
+    phone: "",
+    country: "UNITED STATES",
+    socialMedia: "",
+    
+    // Section 2
+    recordTitle: "",
+    category: "STRENGTH",
+    subCategoryGroup: "",
+    subCategory: "",
+    attemptType: "NEW_RECORD", // NEW_RECORD, BREAK_RECORD, NEW_PROPOSAL
+    
+    // Section 3
+    date: "",
+    time: "",
+    venueName: "",
+    city: "",
+    resultScore: "",
+    unit: "TIME", // TIME, DISTANCE, WEIGHT, REPETITIONS, POINTS, OTHER
+    explanation: "",
+    
+    // Section 4
+    equipment: "",
+    
+    // Section 5
+    witnesses: [
+      { name: "", contact: "", role: "", showOther: false, otherValue: "", signed: false }
+    ],
+    
+    // Section 6 (Evidence)
+    youtubeLink: "",
+    
+    // Section 7 (Safety)
+    safetyConfirmed: false,
+    noIllegalActivity: false,
+    authenticEvidence: false,
+    followedRules: false,
+    
+    // Section 8
+    declarationSigned: false,
+    declarationDate: ""
+  });
+
+  const [uploadedFiles, setUploadedFiles] = useState({
+    video: null,
+    images: []
+  });
+
+  const videoInputRef = useRef(null);
+  const imageInputRef = useRef(null);
+
+  const handleVideoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setUploadedFiles(prev => ({ ...prev, video: file }));
+    }
+  };
+
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setUploadedFiles(prev => ({ ...prev, images: [...prev.images, ...files] }));
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!user) {
+      setError("Please login to submit a record");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const submissionData = {
+        title: formData.recordTitle,
+        category: formData.category,
+        description: formData.explanation,
+        athleteId: formData.username,
+        venueName: formData.venueName,
+        city: formData.city,
+        witnesses: formData.witnesses,
+        recordType: 'standard',
+        value: formData.resultScore,
+        unit: formData.unit,
+        evidenceUrl: formData.youtubeLink || "pending_upload",
+        thumbnailUrl: "pending_upload"
+      };
+
+      await apiCall('/records', 'POST', submissionData, user.token);
+      setIsSubmitted(true);
+    } catch (err) {
+      setError(err.message || "Failed to submit record");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const nextStep = () => {
+    if (step < totalSteps) {
+      setStep((prev) => prev + 1);
+    } else {
+      handleSubmit();
+    }
+  };
+
+  const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
+
+  const addWitness = () => {
+    if (formData.witnesses.length < 5) {
+      setFormData({
+        ...formData,
+        witnesses: [...formData.witnesses, { name: "", contact: "", role: "", showOther: false, otherValue: "", signed: false }]
+      });
+    }
+  };
+
+  const removeWitness = (index) => {
+    if (formData.witnesses.length > 1) {
+      const newWitnesses = [...formData.witnesses];
+      newWitnesses.splice(index, 1);
+      setFormData({ ...formData, witnesses: newWitnesses });
+    }
+  };
+
+  const updateWitness = (index, field, value) => {
+    const newWitnesses = [...formData.witnesses];
+    newWitnesses[index] = { ...newWitnesses[index], [field]: value };
+    setFormData({ ...formData, witnesses: newWitnesses });
+  };
+
+  return (
+    <PageTransition>
+      <div style={{ 
+        background: "#0A0A0A", 
+        color: "white", 
+        minHeight: "100vh", 
+        fontFamily: "'Inter', sans-serif",
+        display: "flex",
+        flexDirection: "column"
+      }}>
+        <Navbar />
+
+        <div style={{ 
+          padding: "180px 5% 120px", 
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: isSubmitted ? "center" : "flex-start"
+        }}>
+          {/* GLOBAL PROGRESS BAR (TOP) */}
+          <div style={{ position: "fixed", top: "0", left: "0", width: "100%", height: "4px", background: "rgba(255,255,255,0.05)", zIndex: 100 }}>
+            <motion.div 
+              animate={{ width: `${(step / totalSteps) * 100}%` }}
+              transition={{ duration: 0.5 }}
+              style={{ height: "100%", background: "#FF6A00", boxShadow: "0 0 10px #FF6A00" }}
+            />
+          </div>
+
+          <div style={{ maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
+            <AnimatePresence mode="wait">
+              {isSubmitted ? (
+                <motion.div 
+                  key="success"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  style={{ textAlign: "center", padding: "60px 20px" }}
+                >
+                  <div style={{ width: "120px", height: "120px", background: "rgba(74, 222, 128, 0.1)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 40px", border: "2px solid #4ADE80" }}>
+                    <CheckCircle2 size={60} color="#4ADE80" />
+                  </div>
+                  <h1 style={{ fontSize: "clamp(32px, 6vw, 56px)", fontWeight: "950", textTransform: "uppercase", marginBottom: "20px" }}>SUBMITTED <span style={{ color: "#FF6A00" }}>SUCCESSFULLY</span></h1>
+                  <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "18px", maxWidth: "600px", margin: "0 auto 40px", lineHeight: "1.6" }}>
+                    Your record attempt has been indexed in our secure ledger. Our global adjudication team will now begin the final biometric audit and evidence review.
+                  </p>
+                  <div style={{ display: "flex", justifyContent: "center", gap: "20px", flexWrap: "wrap" }}>
+                    <Link to="/" style={{ textDecoration: "none" }}>
+                      <button style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "18px 48px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "12px", boxShadow: "0 20px 40px rgba(255,106,0,0.2)" }}>
+                        <Globe size={18} /> RETURN TO HOME BASE
+                      </button>
+                    </Link>
+                    <Link to="/appeals" style={{ textDecoration: "none" }}>
+                      <button style={{ background: "transparent", color: "white", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "100px", padding: "18px 48px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "12px" }}>
+                        <FileText size={18} /> APPEAL A DECISION
+                      </button>
+                    </Link>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key={step}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  {step === 1 && (
+                    <ScrollReveal>
+                      <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+                      <div style={{ marginBottom: "40px" }}>
+                        <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 01</h3>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                          <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>ATHLETE IDENTITY</h1>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 1 OF 6</div>
+                        </div>
+                        <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
+                          <div style={{ width: "16.6%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>FULL LEGAL NAME</label>
+                          <input 
+                            type="text" 
+                            placeholder="AS APPEARS ON PASSPORT" 
+                            value={formData.fullName}
+                            onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                            style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>USERNAME / PROFILE NAME</label>
+                          <input 
+                            type="text" 
+                            placeholder="ATHLETE HANDLE" 
+                            value={formData.username}
+                            onChange={(e) => setFormData({...formData, username: e.target.value})}
+                            style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none" }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>DATE OF BIRTH</label>
+                          <input 
+                            type="date" 
+                            value={formData.dob}
+                            onChange={(e) => setFormData({...formData, dob: e.target.value})}
+                            style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none", colorScheme: "dark" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>AGE DIVISION</label>
+                          <select 
+                            value={formData.ageDivision}
+                            onChange={(e) => setFormData({...formData, ageDivision: e.target.value})}
+                            style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none", appearance: "none" }}
+                          >
+                            <option value="UNDER_13">UNDER 13</option>
+                            <option value="TEEN">TEEN (13-17)</option>
+                            <option value="ADULT">ADULT (18-49)</option>
+                            <option value="MASTERS">MASTERS (50+)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>EMAIL ADDRESS</label>
+                          <input 
+                            type="email" 
+                            placeholder="OFFICIAL CONTACT EMAIL" 
+                            value={formData.email}
+                            onChange={(e) => setFormData({...formData, email: e.target.value})}
+                            style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>PHONE NUMBER</label>
+                          <input 
+                            type="tel" 
+                            placeholder="+X XXX XXX XXXX" 
+                            value={formData.phone}
+                            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                            style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none" }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>COUNTRY OF ORIGIN</label>
+                          <select 
+                            value={formData.country}
+                            onChange={(e) => setFormData({...formData, country: e.target.value})}
+                            style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none", appearance: "none" }}
+                          >
+                            <option>UNITED STATES</option>
+                            <option>UNITED KINGDOM</option>
+                            <option>GERMANY</option>
+                            <option>CANADA</option>
+                            <option>AUSTRALIA</option>
+                            <option>OTHER</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>SOCIAL MEDIA (OPTIONAL)</label>
+                          <input 
+                            type="text" 
+                            placeholder="@INSTAGRAM / X / FB" 
+                            value={formData.socialMedia}
+                            onChange={(e) => setFormData({...formData, socialMedia: e.target.value})}
+                            style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none" }}
+                          />
+                        </div>
+                      </div>
+
+                        <div style={{ background: "rgba(255, 106, 0, 0.03)", border: "1px solid rgba(255, 106, 0, 0.2)", borderRadius: "24px", padding: "24px", marginTop: "20px" }}>
+                          <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
+                            <Shield size={20} color="#FF6A00" />
+                            <span style={{ fontSize: "12px", fontWeight: "900", color: "#FF6A00", textTransform: "uppercase", letterSpacing: "0.1em" }}>VERIFICATION PROTOCOL</span>
+                          </div>
+                          <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.6)", lineHeight: "1.6" }}>
+                            Identity must be confirmed via our <span style={{ color: "white", fontWeight: "700" }}>Biometric Audit Engine</span>. This process ensures the integrity of the World Record leaderboard by cryptographically linking your physical performance to your verified athlete profile.
+                          </p>
+                          <Link to="/rules" style={{ textDecoration: "none" }}>
+                            <div style={{ marginTop: "16px", display: "flex", alignItems: "center", gap: "8px", color: "#FF6A00", fontSize: "11px", fontWeight: "800", cursor: "pointer" }}>
+                              <div style={{ width: "6px", height: "6px", background: "#FF6A00", borderRadius: "50%" }}></div> LEARN MORE
+                            </div>
+                          </Link>
+                        </div>
+
+                        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "40px" }}>
+                          <button 
+                            onClick={nextStep}
+                            style={{ 
+                              background: "#FF6A00", 
+                              color: "white", 
+                              border: "none", 
+                              borderRadius: "100px", 
+                              padding: "16px 40px", 
+                              fontSize: "14px", 
+                              fontWeight: "900", 
+                              textTransform: "uppercase", 
+                              cursor: "pointer", 
+                              display: "flex", 
+                              alignItems: "center", 
+                              gap: "10px", 
+                              boxShadow: "0 20px 40px rgba(255, 106, 0, 0.2)",
+                              transition: "all 0.3s"
+                            }}
+                          >
+                            NEXT STEP <ArrowRight size={18} />
+                          </button>
+                        </div>
+                      </div>
+                </ScrollReveal>
+                    )}                  {step === 2 && (
+                    <ScrollReveal>
+                      <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+                      <div style={{ marginBottom: "40px" }}>
+                        <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 02</h3>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                          <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>RECORD INFORMATION</h1>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 2 OF 6</div>
+                        </div>
+                        <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
+                          <div style={{ width: "33.3%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "40px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+                          {/* RECORD TITLE */}
+                          <div>
+                            <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>RECORD TITLE</label>
+                            <input 
+                              type="text" 
+                              placeholder="E.G. MOST PUSH-UPS IN ONE MINUTE" 
+                              value={formData.recordTitle}
+                              onChange={(e) => setFormData({...formData, recordTitle: e.target.value})}
+                              style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none" }}
+                            />
+                          </div>
+
+                          {/* CATEGORY SELECTION */}
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>MAIN CATEGORY</label>
+                              <select 
+                                value={formData.category}
+                                onChange={(e) => {
+                                  const cat = e.target.value;
+                                  const groups = Object.keys(categoriesData[cat]);
+                                  setFormData({
+                                    ...formData, 
+                                    category: cat,
+                                    subCategoryGroup: groups[0],
+                                    subCategory: categoriesData[cat][groups[0]][0]
+                                  });
+                                }}
+                                style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none", appearance: "none" }}
+                              >
+                                {Object.keys(categoriesData).map(cat => (
+                                  <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>SUBCATEGORY GROUP</label>
+                              <select 
+                                value={formData.subCategoryGroup}
+                                onChange={(e) => {
+                                  const group = e.target.value;
+                                  setFormData({
+                                    ...formData, 
+                                    subCategoryGroup: group,
+                                    subCategory: categoriesData[formData.category][group][0]
+                                  });
+                                }}
+                                style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none", appearance: "none" }}
+                              >
+                                {Object.keys(categoriesData[formData.category] || {}).map(group => (
+                                  <option key={group} value={group}>{group}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>SPECIFIC EVENT / SUBCATEGORY</label>
+                            <select 
+                              value={formData.subCategory}
+                              onChange={(e) => setFormData({...formData, subCategory: e.target.value})}
+                              style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none", appearance: "none" }}
+                            >
+                              {(categoriesData[formData.category]?.[formData.subCategoryGroup] || []).map(item => (
+                                <option key={item} value={item}>{item}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* ATTEMPT TYPE */}
+                          <div>
+                            <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>IS THIS A:</label>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
+                              {[
+                                { id: "NEW_RECORD", label: "NEW ATTEMPT" },
+                                { id: "BREAK_RECORD", label: "BREAK RECORD" },
+                                { id: "NEW_PROPOSAL", label: "NEW CATEGORY" }
+                              ].map((type) => (
+                                <button
+                                  key={type.id}
+                                  onClick={() => setFormData({...formData, attemptType: type.id})}
+                                  style={{ 
+                                    padding: "16px", 
+                                    background: formData.attemptType === type.id ? "rgba(255,106,0,0.1)" : "rgba(255,255,255,0.03)", 
+                                    border: formData.attemptType === type.id ? "1px solid #FF6A00" : "1px solid rgba(255,255,255,0.08)", 
+                                    borderRadius: "12px",
+                                    color: formData.attemptType === type.id ? "#FF6A00" : "white",
+                                    fontSize: "11px",
+                                    fontWeight: "900",
+                                    cursor: "pointer",
+                                    transition: "all 0.3s"
+                                  }}
+                                >
+                                  {type.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* PERFORMANCE DATA */}
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>RESULT / SCORE</label>
+                              <input 
+                                type="text" 
+                                placeholder="E.G. 502.5" 
+                                value={formData.resultScore}
+                                onChange={(e) => setFormData({...formData, resultScore: e.target.value})}
+                                style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none" }}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>UNIT OF MEASUREMENT</label>
+                              <select 
+                                value={formData.unit}
+                                onChange={(e) => setFormData({...formData, unit: e.target.value})}
+                                style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none", appearance: "none" }}
+                              >
+                                <option value="TIME">TIME (H:M:S)</option>
+                                <option value="DISTANCE">DISTANCE (M/KM)</option>
+                                <option value="WEIGHT">WEIGHT (KG/LBS)</option>
+                                <option value="REPETITIONS">REPETITIONS</option>
+                                <option value="POINTS">POINTS / SCORE</option>
+                                <option value="OTHER">OTHER</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                          {/* ATTEMPT DETAILS */}
+                          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "24px", padding: "32px" }}>
+                            <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "#FF6A00", marginBottom: "20px", textTransform: "uppercase", letterSpacing: "0.1em" }}>ATTEMPT LOGISTICS</label>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "20px" }}>
+                              <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
+                              <input type="time" value={formData.time} onChange={(e) => setFormData({...formData, time: e.target.value})} style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
+                            </div>
+                            <input 
+                              type="text" placeholder="VENUE / FACILITY NAME" value={formData.venueName} 
+                              onChange={(e) => setFormData({...formData, venueName: e.target.value})}
+                              style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", marginBottom: "12px" }} 
+                            />
+                            <input 
+                              type="text" placeholder="CITY / COUNTRY" value={formData.city} 
+                              onChange={(e) => setFormData({...formData, city: e.target.value})}
+                              style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none" }} 
+                            />
+                          </div>
+
+                          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "24px", padding: "32px" }}>
+                            <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "#FF6A00", marginBottom: "20px", textTransform: "uppercase", letterSpacing: "0.1em" }}>EXPLAIN YOUR ATTEMPT</label>
+                            <textarea 
+                              placeholder="DESCRIBE THE PROCESS AND METHODS USED..." 
+                              value={formData.explanation}
+                              onChange={(e) => setFormData({...formData, explanation: e.target.value})}
+                              style={{ width: "100%", minHeight: "150px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "13px", resize: "none" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "40px" }}>
+                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                          <ArrowLeft size={16} /> PREVIOUS STEP
+                        </button>
+                        <button onClick={nextStep} style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 40px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.2)" }}>
+                          NEXT STEP <ArrowRight size={18} />
+                        </button>
+                      </div>
+                      </div>
+                    </ScrollReveal>
+                  )}
+
+                  {step === 3 && (
+                    <ScrollReveal>
+                      <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+                      <div style={{ marginBottom: "40px" }}>
+                        <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 03</h3>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                          <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>EQUIPMENT & WITNESSES</h1>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 3 OF 6</div>
+                        </div>
+                        <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
+                          <div style={{ width: "50%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "0.8fr 1.2fr", gap: "40px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                          {/* EQUIPMENT SECTION */}
+                          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", padding: "32px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+                              <Dumbbell size={18} color="#FF6A00" />
+                              <span style={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.1em" }}>EQUIPMENT USED</span>
+                            </div>
+                            <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", marginBottom: "20px", lineHeight: "1.5" }}>
+                              List all specialized gear, weights, or tools used during the attempt. Include calibration details if applicable.
+                            </p>
+                            <textarea 
+                              placeholder="E.G. ROGUE OHIO BAR, 25KG CALIBRATED PLATES, OFFICIAL TIMER..." 
+                              value={formData.equipment}
+                              onChange={(e) => setFormData({...formData, equipment: e.target.value})}
+                              style={{ width: "100%", minHeight: "200px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "13px", resize: "none" }} 
+                            />
+                          </div>
+
+                          <div style={{ background: "rgba(255, 106, 0, 0.03)", border: "1px solid rgba(255, 106, 0, 0.2)", borderRadius: "24px", padding: "24px" }}>
+                            <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
+                              <Shield size={20} color="#FF6A00" />
+                              <span style={{ fontSize: "12px", fontWeight: "900", color: "#FF6A00", textTransform: "uppercase", letterSpacing: "0.1em" }}>ADJUDICATION POLICY</span>
+                            </div>
+                            <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.6)", lineHeight: "1.6" }}>
+                              Witnesses must be present throughout the entire attempt. Falsifying witness information will lead to <span style={{ color: "white", fontWeight: "700" }}>permanent exclusion</span> from the platform.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* WITNESSES SECTION */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                          {formData.witnesses.map((witness, index) => (
+                            <div key={index} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", padding: "32px", position: "relative" }}>
+                              {formData.witnesses.length > 1 && (
+                                <button 
+                                  onClick={() => removeWitness(index)}
+                                  style={{ position: "absolute", top: "20px", right: "20px", background: "rgba(255,0,0,0.1)", border: "none", borderRadius: "50%", padding: "8px", cursor: "pointer", color: "#FF4D4D" }}
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              )}
+                              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+                                <ClipboardCheck size={18} color="#FF6A00" />
+                                <span style={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.1em" }}>WITNESS {index + 1} DATA</span>
+                              </div>
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
+                                <input 
+                                  type="text" placeholder="FULL LEGAL NAME" value={witness.name} 
+                                  onChange={(e) => updateWitness(index, "name", e.target.value)}
+                                  style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none" }} 
+                                />
+                                <input 
+                                  type="text" placeholder="CONTACT (EMAIL/PHONE)" value={witness.contact} 
+                                  onChange={(e) => updateWitness(index, "contact", e.target.value)}
+                                  style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none" }} 
+                                />
+                              </div>
+                              
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "20px" }}>
+                                {["COACH", "OFFICIAL", "TRAINER", "MEDIA", "OTHER"].map((role) => (
+                                  <button 
+                                    key={role} 
+                                    onClick={() => updateWitness(index, "role", role)}
+                                    style={{ 
+                                      padding: "12px", 
+                                      background: witness.role === role ? "rgba(255,106,0,0.1)" : "rgba(0,0,0,0.2)", 
+                                      borderRadius: "12px", 
+                                      border: witness.role === role ? "1px solid #FF6A00" : "1px solid rgba(255,255,255,0.05)", 
+                                      cursor: "pointer", fontSize: "11px", fontWeight: "800", color: witness.role === role ? "#FF6A00" : "rgba(255,255,255,0.6)", transition: "all 0.2s" 
+                                    }}
+                                  >
+                                    {role}
+                                  </button>
+                                ))}
+                              </div>
+
+                              <label style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer", background: witness.signed ? "rgba(74, 222, 128, 0.05)" : "transparent", padding: "16px", borderRadius: "12px", border: witness.signed ? "1px solid #4ADE80" : "1px solid rgba(255,255,255,0.05)", transition: "all 0.3s" }}>
+                                <input 
+                                  type="checkbox" 
+                                  checked={witness.signed}
+                                  onChange={(e) => updateWitness(index, "signed", e.target.checked)}
+                                  style={{ width: "18px", height: "18px", accentColor: "#4ADE80" }}
+                                />
+                                <span style={{ fontSize: "12px", fontWeight: "800", color: witness.signed ? "#4ADE80" : "rgba(255,255,255,0.4)" }}>
+                                  WITNESS CONFIRMS SIGNATURE & AUTHENTICITY
+                                </span>
+                              </label>
+                            </div>
+                          ))}
+                          
+                          {formData.witnesses.length < 5 && (
+                            <button 
+                              onClick={addWitness}
+                              style={{ 
+                                background: "rgba(255,106,0,0.1)", border: "1px dashed #FF6A00", borderRadius: "16px", padding: "16px", color: "#FF6A00", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", transition: "all 0.3s"
+                              }}
+                            >
+                              <Plus size={18} /> ADD ANOTHER WITNESS
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "40px" }}>
+                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><ArrowLeft size={16} /> PREVIOUS STEP</button>
+                        <button onClick={nextStep} style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 40px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.2)" }}>
+                          NEXT STEP <ArrowRight size={18} />
+                        </button>
+                      </div>
+                      </div>
+                    </ScrollReveal>
+                  )}
+
+                  {step === 4 && (
+                    <ScrollReveal>
+                      <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+                      <div style={{ marginBottom: "40px" }}>
+                        <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 04</h3>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                          <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>MEDIA EVIDENCE</h1>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 4 OF 6</div>
+                        </div>
+                        <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
+                          <div style={{ width: "66.6%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
+                        </div>
+                      </div>
+
+                      {/* MAIN CONTENT GRID */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "24px", marginBottom: "32px" }}>
+                        {/* PRIMARY VIDEO CARD */}
+                        <div 
+                          onClick={() => videoInputRef.current?.click()}
+                          style={{ position: "relative", borderRadius: "32px", overflow: "hidden", background: "#111", border: "1px solid rgba(255,255,255,0.05)", minHeight: "480px", cursor: "pointer" }}
+                        >
+                          <input 
+                            type="file" 
+                            ref={videoInputRef} 
+                            style={{ display: "none" }} 
+                            accept="video/*" 
+                            onChange={handleVideoUpload} 
+                          />
+                          <img src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1200&q=80" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.3 }} />
+                          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px", textAlign: "center" }}>
+                            <div style={{ width: "90px", height: "90px", background: "#FF6A00", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px", boxShadow: "0 15px 30px rgba(255,106,0,0.3)" }}>
+                              <Video size={40} color="white" />
+                            </div>
+                            <h2 style={{ fontSize: "32px", fontWeight: "950", textTransform: "uppercase", marginBottom: "16px" }}>{uploadedFiles.video ? "VIDEO SELECTED" : "PRIMARY VIDEO (UNCUT)"}</h2>
+                            <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.6)", lineHeight: "1.6", maxWidth: "450px", marginBottom: "32px" }}>
+                              {uploadedFiles.video ? `File: ${uploadedFiles.video.name}` : "Continuous footage starting from 1 minute prior to the attempt. Must include equipment verification."}
+                            </p>
+                            <button style={{ background: "white", color: "black", border: "none", borderRadius: "100px", padding: "18px 40px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", transition: "all 0.3s" }}>
+                              {uploadedFiles.video ? "CHANGE FILE" : "BROWSE FILES"} <ArrowRight size={18} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* SIDEBAR CARDS */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                          {/* YOUTUBE/VIMEO LINK */}
+                          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", padding: "32px" }}>
+                            <h3 style={{ fontSize: "16px", fontWeight: "900", textTransform: "uppercase", marginBottom: "16px", display: "flex", alignItems: "center", gap: "10px" }}>
+                              <Link2 size={18} color="#FF6A00" /> VIDEO LINK URL
+                            </h3>
+                            <input 
+                              type="text" 
+                              placeholder="HTTPS://YOUTUBE.COM/..." 
+                              value={formData.youtubeLink}
+                              onChange={(e) => setFormData({...formData, youtubeLink: e.target.value})}
+                              style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "16px 20px", color: "white", outline: "none", fontSize: "13px" }} 
+                            />
+                            <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", marginTop: "12px" }}>
+                              If your raw footage is over 2GB, please provide an unlisted YouTube or Vimeo link.
+                            </p>
+                          </div>
+
+                          {/* PHOTO EVIDENCE */}
+                          <div 
+                            onClick={() => imageInputRef.current?.click()}
+                            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", padding: "32px", position: "relative", cursor: "pointer", flex: 1 }}
+                          >
+                            <input 
+                              type="file" 
+                              ref={imageInputRef} 
+                              style={{ display: "none" }} 
+                              multiple 
+                              accept="image/*" 
+                              onChange={handleImageUpload} 
+                            />
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
+                              <Camera size={24} color="#FF6A00" />
+                              <span style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)" }}>MAX 250MB</span>
+                            </div>
+                            <h3 style={{ fontSize: "20px", fontWeight: "900", textTransform: "uppercase", marginBottom: "10px" }}>PHOTO EVIDENCE</h3>
+                            <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)", lineHeight: "1.5", marginBottom: "20px" }}>
+                              {uploadedFiles.images.length > 0 ? `${uploadedFiles.images.length} files selected` : "High-resolution stills of equipment and finish line."}
+                            </p>
+                            <div style={{ paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,0.05)", fontSize: "11px", fontWeight: "900", color: "#FF6A00", letterSpacing: "0.1em" }}>
+                              {uploadedFiles.images.length > 0 ? "ADD MORE IMAGES" : "DROP IMAGES HERE"}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* FEATURE BADGES */}
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "20px", marginBottom: "48px" }}>
+                        {[
+                          { label: "4K / 1080P RECOMMENDED", icon: <CheckCircle2 size={16} /> },
+                          { label: "NO CUTS OR EDITS", icon: <CheckCircle2 size={16} /> }
+                        ].map((badge, bIdx) => (
+                          <div key={bIdx} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "16px 24px", display: "flex", alignItems: "center", gap: "12px" }}>
+                            <div style={{ color: "#FF6A00" }}>{badge.icon}</div>
+                            <span style={{ fontSize: "11px", fontWeight: "900", letterSpacing: "0.05em", color: "rgba(255,255,255,0.6)" }}>{badge.label}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* NAVIGATION */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+                          <ArrowLeft size={18} /> PREVIOUS STEP
+                        </button>
+                        <button 
+                          onClick={nextStep} 
+                          style={{ 
+                            background: "linear-gradient(90deg, #FF6A00, #FF8F3F)", 
+                            color: "white", 
+                            border: "none", 
+                            borderRadius: "100px", 
+                            padding: "20px 60px", 
+                            fontSize: "14px", 
+                            fontWeight: "900", 
+                            textTransform: "uppercase", 
+                            cursor: "pointer", 
+                            display: "flex", 
+                            alignItems: "center", 
+                            gap: "15px", 
+                            boxShadow: "0 20px 40px rgba(255, 106, 0, 0.3)" 
+                          }}
+                        >
+                          SUBMIT EVIDENCE <ArrowRight size={20} />
+                        </button>
+                      </div>
+                      </div>
+                    </ScrollReveal>
+                  )}
+
+                  {step === 5 && (
+                    <ScrollReveal>
+                      <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+                      <div style={{ marginBottom: "40px" }}>
+                        <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 05</h3>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                          <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>BIOMETRIC AUDIT</h1>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 5 OF 6</div>
+                        </div>
+                        <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
+                          <div style={{ width: "83.3%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "32px", marginBottom: "40px" }}>
+                        {/* AI SCANNER HUD */}
+                        <div style={{ position: "relative", height: "480px", borderRadius: "32px", overflow: "hidden", border: "1px solid rgba(255,106,0,0.2)", background: "#000" }}>
+                          <img src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1200&q=80" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.5 }} />
+                          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent, rgba(0,0,0,0.6))" }}></div>
+                          
+                          {/* HUD TOP LEFT */}
+                          <div style={{ position: "absolute", top: "24px", left: "24px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#FF6A00", fontSize: "10px", fontWeight: "900", letterSpacing: "0.1em" }}>
+                              <div style={{ width: "6px", height: "6px", background: "#FF6A00", borderRadius: "50%", animation: "pulse 1s infinite" }}></div> SCANNING_ACTIVE
+                            </div>
+                            <div style={{ fontSize: "14px", fontWeight: "900", color: "white", letterSpacing: "0.05em" }}>FPS: 120.4</div>
+                          </div>
+
+                          {/* SCAN LINE ANIMATION */}
+                          <motion.div 
+                            animate={{ top: ["0%", "100%", "0%"] }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                            style={{ position: "absolute", left: 0, width: "100%", height: "2px", background: "linear-gradient(90deg, transparent, #FF6A00, transparent)", boxShadow: "0 0 15px #FF6A00", zIndex: 2 }}
+                          />
+
+                          {/* HUD BOTTOM LEFT */}
+                          <div style={{ position: "absolute", bottom: "24px", left: "24px" }}>
+                            <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "4px" }}>TRACKING IDENTITY</div>
+                            <div style={{ fontSize: "16px", fontWeight: "950", color: "white" }}>ELITE_ATHLETE_#124</div>
+                          </div>
+
+                          {/* HUD BOTTOM RIGHT */}
+                          <div style={{ position: "absolute", bottom: "24px", right: "24px", textAlign: "right" }}>
+                            <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "4px" }}>CONFIDENCE SCORE</div>
+                            <div style={{ fontSize: "32px", fontWeight: "950", color: "#FF6A00" }}>98.4%</div>
+                          </div>
+                        </div>
+
+                        {/* STATUS & ACTIONS */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "32px", padding: "32px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
+                              <h3 style={{ fontSize: "18px", fontWeight: "900", textTransform: "uppercase" }}>STATUS REPORT</h3>
+                              <Shield size={18} color="#FF6A00" />
+                            </div>
+                            
+                            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                              {[
+                                { label: "PARSING MOVEMENT", status: "COMPLETE" },
+                                { label: "AUTHENTICITY CHECK", status: "VERIFIED" },
+                                { label: "SPATIAL GEOMETRY", status: "99.2% MATCH" },
+                                { label: "FRAME SYNCING", status: "LOCKED" }
+                              ].map((item, i) => (
+                                <div key={i} style={{ display: "flex", justifyContent: "space-between", paddingBottom: "12px", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+                                  <span style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.4)" }}>{item.label}</span>
+                                  <span style={{ fontSize: "11px", fontWeight: "900", color: "#FF6A00" }}>{item.status}</span>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div style={{ marginTop: "32px", background: "rgba(255,106,0,0.05)", border: "1px solid rgba(255,106,0,0.1)", borderRadius: "12px", padding: "16px", fontSize: "10px", color: "rgba(255,255,255,0.6)", textAlign: "center", fontWeight: "700" }}>
+                              AI engine is currently reconciling multi-angle biometric signatures. System state: NOMINAL.
+                            </div>
+                          </div>
+
+                          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "32px", padding: "32px" }}>
+                             <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)", lineHeight: "1.6", marginBottom: "24px" }}>
+                               Biometric validation is reaching terminal phase. Confirm data integrity to proceed to final record indexing.
+                             </p>
+                             <button 
+                               onClick={nextStep}
+                               style={{ width: "100%", background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "20px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", boxShadow: "0 20px 40px rgba(255,106,0,0.2)" }}
+                             >
+                               CONFIRM VERIFICATION <ArrowRight size={18} />
+                             </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "32px", padding: "40px" }}>
+                        <h4 style={{ fontSize: "20px", fontWeight: "950", textTransform: "uppercase", marginBottom: "16px" }}>AUTHENTICITY PROTOCOL_v4.2</h4>
+                        <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.5)", lineHeight: "1.6", marginBottom: "32px", maxWidth: "800px" }}>
+                          Our AI Vision Analysis scrutinizes 420 unique joint positions per second. By comparing your movement signature against the global standard for this record, we ensure the absolute integrity of the ROGUE ecosystem.
+                        </p>
+                        <div style={{ display: "flex", gap: "48px" }}>
+                           <div>
+                             <div style={{ fontSize: "24px", fontWeight: "950", color: "white" }}>0.002s</div>
+                             <div style={{ fontSize: "10px", fontWeight: "900", color: "#FF6A00", textTransform: "uppercase" }}>LATENCY</div>
+                           </div>
+                           <div>
+                             <div style={{ fontSize: "24px", fontWeight: "950", color: "white" }}>TERABYTE+</div>
+                             <div style={{ fontSize: "10px", fontWeight: "900", color: "#FF6A00", textTransform: "uppercase" }}>DATA_PARSED</div>
+                           </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", justifyContent: "flex-start", marginTop: "40px" }}>
+                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><ArrowLeft size={16} /> PREVIOUS STEP</button>
+                      </div>
+                      </div>
+                    </ScrollReveal>
+                  )}
+
+                  {step === 6 && (
+                    <ScrollReveal>
+                      <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+                      <div style={{ marginBottom: "40px" }}>
+                        <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 06</h3>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                          <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>FINAL LEDGER SUBMISSION</h1>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 6 OF 6</div>
+                        </div>
+                        <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
+                          <div style={{ width: "100%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "32px", marginBottom: "64px" }}>
+                        {/* RECORD SUMMARY */}
+                        <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,106,0,0.2)", borderRadius: "32px", padding: "48px", position: "relative", overflow: "hidden" }}>
+                          <div style={{ position: "absolute", top: "40px", right: "40px", opacity: 0.1 }}>
+                            <Trophy size={120} color="#FF6A00" />
+                          </div>
+                          
+                          <div style={{ position: "relative", zIndex: 2 }}>
+                            <div style={{ color: "#FF6A00", fontSize: "11px", fontWeight: "900", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: "32px" }}>VERIFIED RECORD DATA</div>
+                            
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", marginBottom: "48px" }}>
+                              <div>
+                                <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>ATHLETE NAME</div>
+                                <div style={{ fontSize: "24px", fontWeight: "950" }}>MARCUS THORNE</div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>CATEGORY</div>
+                                <div style={{ fontSize: "24px", fontWeight: "950" }}>MAX DEADLIFT</div>
+                              </div>
+                            </div>
+
+                            <div style={{ marginBottom: "48px" }}>
+                              <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "12px" }}>FINAL PERFORMANCE METRIC</div>
+                              <div style={{ fontSize: "96px", fontWeight: "950", color: "#FF6A00", lineHeight: "1", letterSpacing: "-0.04em" }}>
+                                502.5 <span style={{ fontSize: "32px", color: "white", marginLeft: "12px" }}>KG</span>
+                              </div>
+                            </div>
+
+                            <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: "24px", padding: "24px", display: "flex", alignItems: "center", gap: "20px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                              <div style={{ width: "64px", height: "64px", borderRadius: "12px", background: "#111", overflow: "hidden" }}>
+                                <img src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=200&q=80" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.5 }} />
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: "13px", fontWeight: "900", marginBottom: "4px" }}>LIFT_VERIFICATION_V082.MOV</div>
+                                <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", fontWeight: "700" }}>4K Resolution • GPS Logged • Biometric Verified</div>
+                              </div>
+                              <button style={{ background: "none", border: "none", color: "#FF6A00", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                                EDIT <Edit3 size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* SIDEBAR INFO */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "32px", padding: "32px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
+                              <Shield size={18} color="#FF6A00" />
+                              <h4 style={{ fontSize: "14px", fontWeight: "900", textTransform: "uppercase" }}>TRUST & SAFETY</h4>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                              {[
+                                "Biometric signature confirmed via heart rate strap log.",
+                                "Location data matches Rogue Certified Facility #422.",
+                                "Equipment calibration certificate uploaded."
+                              ].map((text, i) => (
+                                <div key={i} style={{ display: "flex", gap: "12px", fontSize: "12px", color: "rgba(255,255,255,0.6)", lineHeight: "1.4" }}>
+                                  <div style={{ color: "#FF6A00", marginTop: "2px" }}><CheckCircle2 size={14} /></div>
+                                  {text}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div style={{ background: "rgba(255,106,0,0.05)", border: "1px solid rgba(255,106,0,0.2)", borderRadius: "32px", padding: "32px", textAlign: "center" }}>
+                            <Award size={32} color="#FF6A00" style={{ margin: "0 auto 16px" }} />
+                            <h4 style={{ fontSize: "12px", fontWeight: "900", color: "#FF6A00", marginBottom: "8px", letterSpacing: "0.1em" }}>ELITE MEMBERSHIP</h4>
+                            <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.6)", fontWeight: "700" }}>This submission is eligible for the Global Leaderboard Top 1% bonus.</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* POST-SUBMISSION PREVIEW */}
+                      <div style={{ textAlign: "center", marginBottom: "80px" }}>
+                        <div style={{ color: "white", fontSize: "24px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "40px" }}>POST-SUBMISSION PREVIEW</div>
+                        <div style={{ 
+                          background: "linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80')", 
+                          backgroundSize: "cover", 
+                          backgroundPosition: "center",
+                          borderRadius: "40px", 
+                          padding: "100px 40px",
+                          border: "1px solid rgba(255,255,255,0.05)"
+                        }}>
+                          <div style={{ 
+                            fontSize: "120px", 
+                            fontWeight: "950", 
+                            lineHeight: "0.8", 
+                            color: "transparent", 
+                            WebkitTextStroke: "1px rgba(255,106,0,0.3)",
+                            textTransform: "uppercase",
+                            marginBottom: "20px"
+                          }}>
+                            BROKEN
+                          </div>
+                          <div style={{ fontSize: "56px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", color: "white", marginBottom: "24px" }}>
+                            YOUR NAME IN STONE.
+                          </div>
+                          <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "16px", maxWidth: "600px", margin: "0 auto", lineHeight: "1.6" }}>
+                            Once submitted, your record will be etched into the Rogue Global Ledger, visible to every athlete across the world.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* FINAL ACTION */}
+                      <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+                        <div style={{ textAlign: "center", marginBottom: "40px" }}>
+                          <div style={{ fontSize: "11px", fontWeight: "900", color: "#FF6A00", textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "16px" }}>LEGAL DISCLAIMER</div>
+                          <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", lineHeight: "1.6" }}>
+                            By hitting 'Submit to Global Ledger', you certify that all performance data, video evidence, and biometric logs are 100% authentic and unmanipulated. Any attempt to falsify record data will result in immediate permanent disqualification and revocation of Elite Membership. The Rogue World Records committee reserves the right to request a live re-verification of any performance.
+                          </p>
+                        </div>
+
+                        {/* SAFETY & RULES CONFIRMATION */}
+                        <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "24px", padding: "32px", marginBottom: "32px", display: "flex", flexDirection: "column", gap: "16px" }}>
+                          {[
+                            { id: "safetyConfirmed", label: "I confirm that all safety protocols were followed during this attempt." },
+                            { id: "noIllegalActivity", label: "I certify that no performance-enhancing drugs or illegal equipment were used." },
+                            { id: "authenticEvidence", label: "I verify that the uploaded media is raw, uncut, and unedited." },
+                            { id: "followedRules", label: "I have read and adhered to the specific category rules for this record." }
+                          ].map((item) => (
+                            <label key={item.id} style={{ display: "flex", alignItems: "center", gap: "16px", cursor: "pointer", background: formData[item.id] ? "rgba(74, 222, 128, 0.05)" : "rgba(0,0,0,0.2)", padding: "16px 24px", borderRadius: "12px", border: formData[item.id] ? "1px solid #4ADE80" : "1px solid rgba(255,255,255,0.05)", transition: "all 0.3s" }}>
+                              <input 
+                                type="checkbox" 
+                                checked={formData[item.id]}
+                                onChange={(e) => setFormData({...formData, [item.id]: e.target.checked})}
+                                style={{ width: "20px", height: "20px", accentColor: "#4ADE80", cursor: "pointer" }}
+                              />
+                              <span style={{ fontSize: "13px", fontWeight: "700", color: formData[item.id] ? "white" : "rgba(255,255,255,0.6)" }}>{item.label}</span>
+                            </label>
+                          ))}
+                        </div>
+
+                        {/* DIGITAL SIGNATURE */}
+                        <div style={{ background: "rgba(255,106,0,0.03)", border: "1px solid rgba(255,106,0,0.2)", borderRadius: "24px", padding: "32px", marginBottom: "48px" }}>
+                          <h4 style={{ fontSize: "14px", fontWeight: "900", color: "#FF6A00", textTransform: "uppercase", marginBottom: "20px" }}>DIGITAL SIGNATURE</h4>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
+                            <input 
+                              type="text" 
+                              placeholder="TYPE FULL LEGAL NAME TO SIGN" 
+                              value={formData.declarationSigned ? formData.athleteName : ""}
+                              onChange={(e) => setFormData({...formData, declarationSigned: e.target.value.length > 0})}
+                              style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "16px 20px", color: "white", outline: "none", fontSize: "13px" }} 
+                            />
+                            <input 
+                              type="date" 
+                              value={formData.declarationDate}
+                              onChange={(e) => setFormData({...formData, declarationDate: e.target.value})}
+                              style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "16px 20px", color: "white", outline: "none", fontSize: "13px", colorScheme: "dark" }} 
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: "center" }}>
+                          <button 
+                            onClick={nextStep}
+                            disabled={loading || !formData.safetyConfirmed || !formData.noIllegalActivity || !formData.authenticEvidence || !formData.followedRules || !formData.declarationSigned || !formData.declarationDate}
+                            style={{ 
+                              background: (loading || !formData.safetyConfirmed || !formData.noIllegalActivity || !formData.authenticEvidence || !formData.followedRules || !formData.declarationSigned || !formData.declarationDate) ? "rgba(255,255,255,0.1)" : "#FF6A00", 
+                              color: (loading || !formData.safetyConfirmed || !formData.noIllegalActivity || !formData.authenticEvidence || !formData.followedRules || !formData.declarationSigned || !formData.declarationDate) ? "rgba(255,255,255,0.4)" : "white", 
+                              border: "none", 
+                              borderRadius: "100px", 
+                              padding: "24px 64px", 
+                              fontSize: "18px", 
+                              fontWeight: "950", 
+                              textTransform: "uppercase", 
+                              cursor: (loading || !formData.safetyConfirmed || !formData.noIllegalActivity || !formData.authenticEvidence || !formData.followedRules || !formData.declarationSigned || !formData.declarationDate) ? "not-allowed" : "pointer", 
+                              display: "flex", 
+                              alignItems: "center", 
+                              justifyContent: "center", 
+                              gap: "16px", 
+                              margin: "0 auto 24px",
+                              boxShadow: (loading || !formData.safetyConfirmed || !formData.noIllegalActivity || !formData.authenticEvidence || !formData.followedRules || !formData.declarationSigned || !formData.declarationDate) ? "none" : "0 20px 40px rgba(255,106,0,0.3)",
+                              transition: "all 0.3s"
+                            }}
+                            onMouseEnter={e => { if(!e.currentTarget.disabled) e.currentTarget.style.transform = "scale(1.02)" }}
+                            onMouseLeave={e => { if(!e.currentTarget.disabled) e.currentTarget.style.transform = "scale(1)" }}
+                          >
+                            {loading ? "SUBMITTING..." : "SUBMIT TO GLOBAL LEDGER"} <ArrowRight size={20} />
+                          </button>
+
+                          {error && (
+                            <div style={{ color: "#FF4D4D", fontSize: "14px", fontWeight: "700", marginBottom: "20px" }}>
+                              ERROR: {error}
+                            </div>
+                          )}
+                          
+                          <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.2)", letterSpacing: "0.2em", textTransform: "uppercase" }}>
+                            AWAITING FINAL BIOMETRIC HASH...
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: "60px" }}>
+                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><ArrowLeft size={16} /> PREVIOUS STEP</button>
+                      </div>
+                      </div>
+                    </ScrollReveal>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        <style>{`
+          @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
+          input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.2) !important; }
+          input:focus, textarea:focus, select:focus { border-color: #FF6A00 !important; box-shadow: 0 0 0 1px #FF6A00 !important; outline: none; }
+          textarea { font-size: 13px !important; line-height: 1.6 !important; }
+          .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+          .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 10px; }
+          .custom-scrollbar::-webkit-scrollbar-thumb { background: #FF6A00; border-radius: 10px; }
+          select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23FF6A00' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 24px center; background-size: 16px; }
+        `}</style>
+      </div>
+    </PageTransition>
+  );
+};
+
+export default Verify;
