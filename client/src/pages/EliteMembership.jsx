@@ -30,6 +30,10 @@ const EliteMembership = () => {
   const [selectedTier, setSelectedTier] = useState("silver");
   const [selectedPack, setSelectedPack] = useState(1);
   const [windowWidth, setWindowWidth] = React.useState(window.innerWidth);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [checkoutItem, setCheckoutItem] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   React.useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -242,24 +246,33 @@ const EliteMembership = () => {
                       </ul>
                     </div>
 
-                    <button style={{ 
-                      width: "100%", 
-                      background: isSelected ? "#FF6A00" : "rgba(255,255,255,0.05)", 
-                      color: isSelected ? "white" : "rgba(255,255,255,0.6)",
-                      border: isSelected ? "none" : "1px solid rgba(255,255,255,0.1)",
-                      borderRadius: "100px",
-                      padding: "20px",
-                      fontSize: "14px",
-                      fontWeight: "900",
-                      textTransform: "uppercase",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "10px",
-                      boxShadow: isSelected ? "0 10px 20px rgba(255,106,0,0.2)" : "none",
-                      transition: "all 0.3s"
-                    }}>
+                    <button 
+                      onClick={() => {
+                        setCheckoutItem({
+                          name: `${tier.name.toUpperCase()} MEMBERSHIP`,
+                          price: tier.cost
+                        });
+                        setShowCheckout(true);
+                      }}
+                      style={{ 
+                        width: "100%", 
+                        background: isSelected ? "#FF6A00" : "rgba(255,255,255,0.05)", 
+                        color: isSelected ? "white" : "rgba(255,255,255,0.6)",
+                        border: isSelected ? "none" : "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: "100px",
+                        padding: "20px",
+                        fontSize: "14px",
+                        fontWeight: "900",
+                        textTransform: "uppercase",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "10px",
+                        boxShadow: isSelected ? "0 10px 20px rgba(255,106,0,0.2)" : "none",
+                        transition: "all 0.3s"
+                      }}
+                    >
                       {tier.name === "Free" ? "JOIN FOR FREE" : `GET ${tier.name.toUpperCase()}`} <ArrowRight size={18} />
                     </button>
                   </div>
@@ -340,6 +353,11 @@ const EliteMembership = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedPack(i);
+                          setCheckoutItem({
+                            name: pack.count,
+                            price: pack.price
+                          });
+                          setShowCheckout(true);
                         }}
                         style={{ 
                           width: "100%", 
@@ -438,6 +456,204 @@ const EliteMembership = () => {
             </div>
           </ScrollReveal>
         </section>
+
+        {/* SECURE CHECKOUT MODAL OVERLAY */}
+        {showCheckout && checkoutItem && (
+          <div style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.85)",
+            backdropFilter: "blur(12px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: "20px"
+          }}>
+            <div style={{
+              background: "#161616",
+              border: "1px solid rgba(255, 106, 0, 0.2)",
+              borderRadius: "32px",
+              width: "100%",
+              maxWidth: "500px",
+              padding: "40px",
+              position: "relative",
+              boxShadow: "0 30px 60px rgba(0, 0, 0, 0.8), 0 0 100px rgba(255, 106, 0, 0.05)",
+              color: "white"
+            }}>
+              {/* CLOSE BUTTON */}
+              <button 
+                type="button"
+                onClick={() => {
+                  setShowCheckout(false);
+                  setIsSuccess(false);
+                  setIsProcessing(false);
+                }}
+                style={{
+                  position: "absolute",
+                  top: "24px",
+                  right: "24px",
+                  background: "rgba(255,255,255,0.05)",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "36px",
+                  height: "36px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "white",
+                  cursor: "pointer",
+                  fontWeight: "bold",
+                  fontSize: "16px"
+                }}
+              >
+                ✕
+              </button>
+
+              {isSuccess ? (
+                /* SUCCESS SCREEN */
+                <div style={{ textAlign: "center", padding: "20px 0" }}>
+                  <div style={{
+                    width: "80px",
+                    height: "80px",
+                    background: "rgba(255, 106, 0, 0.1)",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 24px",
+                    border: "2px solid #FF6A00"
+                  }}>
+                    <CheckCircle2 size={48} color="#FF6A00" />
+                  </div>
+                  <h3 style={{ fontSize: "28px", fontWeight: "950", textTransform: "uppercase", marginBottom: "16px" }}>PAYMENT SUCCESSFUL</h3>
+                  <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "15px", lineHeight: "1.6", marginBottom: "32px" }}>
+                    Thank you! Your purchase of <strong style={{ color: "#FF6A00" }}>{checkoutItem.name}</strong> was processed securely. Your slots have been credited.
+                  </p>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setShowCheckout(false);
+                      setIsSuccess(false);
+                    }}
+                    style={{
+                      background: "#FF6A00",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "100px",
+                      padding: "16px 36px",
+                      fontSize: "14px",
+                      fontWeight: "900",
+                      textTransform: "uppercase",
+                      cursor: "pointer",
+                      boxShadow: "0 10px 20px rgba(255,106,0,0.3)"
+                    }}
+                  >
+                    CONTINUE
+                  </button>
+                </div>
+              ) : isProcessing ? (
+                /* PROCESSING LOADER */
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                  <div style={{
+                    width: "50px",
+                    height: "50px",
+                    border: "4px solid rgba(255,106,0,0.1)",
+                    borderTop: "4px solid #FF6A00",
+                    borderRadius: "50%",
+                    margin: "0 auto 24px",
+                    animation: "spin 1s linear infinite"
+                  }} />
+                  <h3 style={{ fontSize: "20px", fontWeight: "900", textTransform: "uppercase", marginBottom: "12px" }}>PROCESSING SECURE PAYMENT</h3>
+                  <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px" }}>Verifying card details with payment gateway...</p>
+                </div>
+              ) : (
+                /* CHECKOUT CARD FORM FLOW */
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    setIsProcessing(true);
+                    setTimeout(() => {
+                      setIsProcessing(false);
+                      setIsSuccess(true);
+                    }, 2000);
+                  }}
+                  style={{ display: "flex", flexDirection: "column", gap: "24px" }}
+                >
+                  <div>
+                    <span style={{ fontSize: "11px", fontWeight: "900", color: "#FF6A00", letterSpacing: "0.1em", textTransform: "uppercase" }}>SECURE CHECKOUT</span>
+                    <h3 style={{ fontSize: "24px", fontWeight: "950", textTransform: "uppercase", marginTop: "4px" }}>ORDER SUMMARY</h3>
+                  </div>
+
+                  {/* ITEM SUMMARY BOX */}
+                  <div style={{
+                    background: "rgba(255, 106, 0, 0.05)",
+                    border: "1px dashed rgba(255, 106, 0, 0.2)",
+                    borderRadius: "16px",
+                    padding: "20px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center"
+                  }}>
+                    <div style={{ textAlign: "left" }}>
+                      <div style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.4)" }}>ITEM</div>
+                      <div style={{ fontSize: "16px", fontWeight: "800", color: "white" }}>{checkoutItem.name}</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.4)" }}>TOTAL DUE</div>
+                      <div style={{ fontSize: "20px", fontWeight: "950", color: "#FF6A00" }}>{checkoutItem.price}</div>
+                    </div>
+                  </div>
+
+                  {/* CARD DETAILS FORM */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    <div style={{ textAlign: "left" }}>
+                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>CARDHOLDER NAME</label>
+                      <input type="text" placeholder="John Doe" required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                    </div>
+                    <div style={{ textAlign: "left" }}>
+                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>CARD NUMBER</label>
+                      <input type="text" placeholder="•••• •••• •••• ••••" required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", textAlign: "left" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>EXPIRY DATE</label>
+                        <input type="text" placeholder="MM/YY" required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>CVV</label>
+                        <input type="text" placeholder="•••" required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit"
+                    style={{
+                      background: "#FF6A00",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "100px",
+                      padding: "18px",
+                      fontSize: "14px",
+                      fontWeight: "900",
+                      textTransform: "uppercase",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "10px",
+                      boxShadow: "0 10px 20px rgba(255,106,0,0.3)",
+                      marginTop: "8px"
+                    }}
+                  >
+                    <span>SECURELY PAY {checkoutItem.price}</span> <Shield size={16} />
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
 
         <Footer />
       </div>
