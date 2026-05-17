@@ -1,0 +1,290 @@
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { ArrowLeft, ShoppingBag, Plus, Minus, Check, Star } from "lucide-react";
+import PageTransition from "../components/PageTransition";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+import ScrollReveal from "../components/ScrollReveal";
+
+const ProductDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  
+  const products = [
+    {
+      id: 5,
+      title: "LIVE EVENT SPECTATOR PASS",
+      price: "$15.00",
+      desc: "Digital entry pass to witness live records. Includes live chat, backstage footage access, and multi-cam viewing.",
+      img: "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=600&q=80",
+      badge: "LIVE TICKETS",
+      category: "TICKETS",
+      fullDesc: "Gain front-row access to the most high-stakes, adrenaline-fueled record attempts on the planet. The Live Event Spectator Pass grants you full high-definition video access, live chat participation with fans and competitors worldwide, exclusive pre-show and post-show interviews, and selectable multi-camera angles. Do not miss a single second of history in the making.",
+      sizes: ["Regular Pass", "VIP Backstage Pass (+ $10)"],
+      colors: []
+    },
+    {
+      id: 1,
+      title: "OFFICIAL RECORD CERTIFICATE",
+      price: "$45.00",
+      desc: "Personalized heavy stock parchment with embossed authentication seal and archival ink.",
+      img: "https://images.unsplash.com/photo-1589330694653-976414ef5ca8?auto=format&fit=crop&w=600&q=80",
+      badge: "AUTHENTICATED",
+      category: "CERTIFICATES",
+      fullDesc: "Commemorate your historic achievement with our premium, high-quality Official Record Certificate. Crafted using heavy-stock archival linen parchment, this document features a high-density embossed authentication seal, customized calligraphic lettering, and official signatures of rogue network adjudicators. Perfect for framing and high-end showcases.",
+      sizes: ["8.5\" x 11\"", "11\" x 14\" (+ $15)"],
+      colors: []
+    },
+    {
+      id: 2,
+      title: "BRUSHED STEEL PLAQUE",
+      price: "$120.00",
+      desc: "Laser etched industrial grade steel with custom event details and mounting hardware.",
+      img: "https://images.unsplash.com/photo-1582555172866-f73bb12a2ab3?auto=format&fit=crop&w=600&q=80",
+      badge: "ELITE LEVEL",
+      category: "HARDWARE",
+      fullDesc: "For the absolute highest tier of recognition, the Brushed Steel Plaque is built to last a lifetime. Laser etched on heavy-duty industrial-grade brushed stainless steel and mounted on a solid matte-black backing, this plaque displays your record category, authenticated parameters, and completion dates. Premium heavy-duty wall mounting brackets are included.",
+      sizes: ["Small (6\"x8\")", "Large (9\"x12\") (+ $40)"],
+      colors: []
+    },
+    {
+      id: 3,
+      title: "ARENA OVERSIZED HOODIE",
+      price: "$85.00",
+      desc: "Heavyweight 500gsm french terry cotton with high-density silicone logo print.",
+      img: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=600&q=80",
+      badge: "APPAREL",
+      category: "APPAREL",
+      fullDesc: "Exclusively designed for Rogue athletes and elite supporters. Crafted from ultra-dense 500gsm French Terry cotton, the Arena Oversized Hoodie offers unparalleled comfort, warmth, and structure. Featuring a drop-shoulder cut, lined double-hood, and a sleek matte high-density silicone chest print, it is the ultimate streetwear-inspired athletic statement.",
+      sizes: ["XS", "S", "M", "L", "XL", "XXL"],
+      colors: ["Matte Black", "Off-White", "Rogue Orange"]
+    },
+    {
+      id: 4,
+      title: "TITAN RECORD MEDAL",
+      price: "$150.00",
+      desc: "Solid brass core with silk gunplating. Custom engraved finish with woven rib.",
+      img: "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=600&q=80",
+      badge: "LEGENDARY",
+      category: "LIMITED DROP",
+      fullDesc: "Handcrafted in limited batches, the Titan Record Medal represents the pinnacle of rogue prestige. Each medal features a solid brass core with a premium sandblasted finish, heavy-plated satin gunmetal framing, and custom engraved reverse-side detailing. Suspended from a premium heavyweight woven neck ribbon with high-strength clips.",
+      sizes: ["Standard Edition"],
+      colors: []
+    },
+  ];
+
+  const product = products.find(p => p.id === parseInt(id)) || products[0];
+
+  const [quantity, setQuantity] = useState(1);
+  const [selectedSize, setSelectedSize] = useState(product.sizes[0] || "");
+  const [selectedColor, setSelectedColor] = useState(product.colors[0] || "");
+  const [added, setAdded] = useState(false);
+
+  const incrementQty = () => setQuantity(q => q + 1);
+  const decrementQty = () => setQuantity(q => q > 1 ? q - 1 : 1);
+
+  const handleAddToCart = () => {
+    setAdded(true);
+    setTimeout(() => {
+      setAdded(false);
+      navigate("/cart");
+    }, 1500);
+  };
+
+  return (
+    <PageTransition>
+      <div style={{ background: "#0A0A0A", color: "white", fontFamily: "'Inter', sans-serif", minHeight: "100vh", paddingTop: "80px", display: "flex", flexDirection: "column" }}>
+        
+        {/* NAVBAR */}
+        <Navbar />
+
+        {/* DETAIL CONTAINER */}
+        <div style={{ flex: 1, padding: "60px 5% 120px", maxWidth: "1400px", margin: "0 auto", width: "100%" }}>
+          
+          {/* BACK BREADCRUMBS */}
+          <div style={{ marginBottom: "40px" }}>
+            <Link to="/shop" style={{ display: "inline-flex", alignItems: "center", gap: "10px", color: "rgba(255,255,255,0.4)", textDecoration: "none", fontSize: "12px", fontWeight: "900", letterSpacing: "0.15em", textTransform: "uppercase", transition: "all 0.2s" }}
+              onMouseEnter={e => e.currentTarget.style.color = "#FF6A00"}
+              onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.4)"}
+            >
+              <ArrowLeft size={16} /> BACK TO SHOP
+            </Link>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: "64px", alignItems: "start" }}>
+            
+            {/* LEFT COLUMN: IMAGE DISPLAY */}
+            <div>
+              <div style={{ background: "#161616", borderRadius: "32px", border: "1px solid rgba(255,255,255,0.05)", overflow: "hidden", position: "relative", boxShadow: "0 40px 80px rgba(0,0,0,0.6)" }}>
+                <img src={product.img} alt={product.title} style={{ width: "100%", height: "550px", objectFit: "cover" }} />
+                <div style={{ position: "absolute", top: "24px", right: "24px", background: "#FF6A00", color: "white", padding: "6px 16px", borderRadius: "100px", fontSize: "10px", fontWeight: "900", letterSpacing: "0.05em" }}>
+                  {product.badge}
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN: INFORMATION & SELECTION */}
+            <div>
+              <ScrollReveal>
+                <div style={{ background: "rgba(255,106,0,0.1)", color: "#FF6A00", display: "inline-block", padding: "6px 14px", borderRadius: "100px", fontSize: "10px", fontWeight: "900", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "20px" }}>
+                  {product.category}
+                </div>
+                
+                <h1 style={{ fontSize: "clamp(32px, 4vw, 48px)", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", marginBottom: "16px", lineHeight: "1.1" }}>
+                  {product.title}
+                </h1>
+
+                <div style={{ fontSize: "28px", fontWeight: "950", color: "#FF6A00", marginBottom: "24px" }}>
+                  {product.price}
+                </div>
+
+                <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "15px", lineHeight: "1.7", marginBottom: "32px" }}>
+                  {product.fullDesc}
+                </p>
+
+                <hr style={{ border: "none", borderTop: "1px solid rgba(255,255,255,0.05)", marginBottom: "32px" }} />
+
+                {/* SIZES / OPTIONS */}
+                {product.sizes.length > 0 && (
+                  <div style={{ marginBottom: "28px" }}>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>SELECT OPTION / SIZE</label>
+                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                      {product.sizes.map(size => (
+                        <button
+                          key={size}
+                          onClick={() => setSelectedSize(size)}
+                          style={{
+                            padding: "12px 24px",
+                            borderRadius: "100px",
+                            background: selectedSize === size ? "#FF6A00" : "rgba(255, 255, 255, 0.03)",
+                            color: selectedSize === size ? "white" : "rgba(255, 255, 255, 0.6)",
+                            border: selectedSize === size ? "1px solid #FF6A00" : "1px solid rgba(255, 255, 255, 0.05)",
+                            fontSize: "12px",
+                            fontWeight: "800",
+                            cursor: "pointer",
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* COLORS */}
+                {product.colors.length > 0 && (
+                  <div style={{ marginBottom: "28px" }}>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>SELECT COLOR</label>
+                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                      {product.colors.map(color => (
+                        <button
+                          key={color}
+                          onClick={() => setSelectedColor(color)}
+                          style={{
+                            padding: "12px 24px",
+                            borderRadius: "100px",
+                            background: selectedColor === color ? "#FF6A00" : "rgba(255, 255, 255, 0.03)",
+                            color: selectedColor === color ? "white" : "rgba(255, 255, 255, 0.6)",
+                            border: selectedColor === color ? "1px solid #FF6A00" : "1px solid rgba(255, 255, 255, 0.05)",
+                            fontSize: "12px",
+                            fontWeight: "800",
+                            cursor: "pointer",
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          {color}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* QUANTITY SELECTOR */}
+                <div style={{ marginBottom: "40px" }}>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>QUANTITY</label>
+                  <div style={{ display: "inline-flex", alignItems: "center", background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "100px", padding: "6px" }}>
+                    <button
+                      onClick={decrementQty}
+                      style={{ background: "transparent", border: "none", color: "white", width: "36px", height: "36px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "0.2s" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <input 
+                      type="text" 
+                      value={quantity}
+                      readOnly
+                      style={{ background: "transparent", border: "none", color: "white", width: "48px", textAlign: "center", fontSize: "14px", fontWeight: "900", outline: "none" }}
+                    />
+                    <button
+                      onClick={incrementQty}
+                      style={{ background: "transparent", border: "none", color: "white", width: "36px", height: "36px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "0.2s" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* ADD TO CART ACTION BUTTON */}
+                <button
+                  onClick={handleAddToCart}
+                  style={{
+                    width: "100%",
+                    background: added ? "#22c55e" : "#FF6A00",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "100px",
+                    padding: "20px",
+                    fontSize: "14px",
+                    fontWeight: "900",
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "10px",
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                    boxShadow: added ? "0 10px 30px rgba(34,197,94,0.3)" : "0 10px 30px rgba(255,106,0,0.3)"
+                  }}
+                  onMouseEnter={e => {
+                    if (!added) {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 15px 35px rgba(255,106,0,0.4)";
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = added ? "0 10px 30px rgba(34,197,94,0.3)" : "0 10px 30px rgba(255,106,0,0.3)";
+                  }}
+                >
+                  {added ? (
+                    <>
+                      ADDED SUCCESSFULLY <Check size={18} />
+                    </>
+                  ) : (
+                    <>
+                      ADD TO CART <ShoppingBag size={18} />
+                    </>
+                  )}
+                </button>
+
+              </ScrollReveal>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* FOOTER */}
+        <Footer />
+
+      </div>
+    </PageTransition>
+  );
+};
+
+export default ProductDetail;

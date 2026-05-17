@@ -26,16 +26,26 @@ import {
   Crosshair,
   Lock,
   Cpu,
-  Maximize2
+  Maximize2,
+  Link2,
+  ChevronDown
 } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { apiCall } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
+import { useEffect } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem
+} from "../components/ui/dropdown-menu";
 
 const ChallengeVerify = () => {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -56,7 +66,8 @@ const ChallengeVerify = () => {
       { name: "", role: "", showOther: false, otherValue: "" }
     ],
     value: "502.5",
-    unit: "KG"
+    unit: "KG",
+    youtubeLink: ""
   });
 
   const [uploadedFiles, setUploadedFiles] = useState({
@@ -66,6 +77,16 @@ const ChallengeVerify = () => {
 
   const videoInputRef = useRef(null);
   const imageInputRef = useRef(null);
+
+  useEffect(() => {
+    const recordParam = searchParams.get("record");
+    if (recordParam) {
+      setFormData(prev => ({
+        ...prev,
+        event: recordParam
+      }));
+    }
+  }, [searchParams]);
 
   const handleVideoUpload = (e) => {
     const file = e.target.files[0];
@@ -102,7 +123,7 @@ const ChallengeVerify = () => {
         recordType: 'challenge',
         value: formData.value,
         unit: formData.unit,
-        evidenceUrl: "pending_upload", // Placeholder for storage implementation
+        evidenceUrl: formData.youtubeLink || "pending_upload",
         thumbnailUrl: "pending_upload"
       };
 
@@ -249,15 +270,55 @@ const ChallengeVerify = () => {
 
                         <div>
                           <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>COUNTRY OF ORIGIN</label>
-                          <select 
-                            value={formData.country}
-                            onChange={(e) => setFormData({...formData, country: e.target.value})}
-                            style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none", appearance: "none" }}
-                          >
-                            <option>UNITED STATES</option>
-                            <option>UNITED KINGDOM</option>
-                            <option>GERMANY</option>
-                          </select>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button style={{
+                                width: "100%",
+                                background: "rgba(255,255,255,0.03)",
+                                border: "1px solid rgba(255,255,255,0.08)",
+                                borderRadius: "16px",
+                                padding: "18px 24px",
+                                color: "white",
+                                fontSize: "14px",
+                                outline: "none",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                cursor: "pointer",
+                                textAlign: "left"
+                              }}>
+                                <span>{formData.country || "SELECT COUNTRY"}</span>
+                                <ChevronDown size={18} style={{ opacity: 0.6 }} />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent style={{
+                              width: "100%",
+                              minWidth: "250px",
+                              background: "#161616",
+                              border: "1px solid rgba(255,255,255,0.1)",
+                              borderRadius: "16px",
+                              padding: "8px",
+                              boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
+                            }}>
+                              {["UNITED STATES", "UNITED KINGDOM", "GERMANY"].map((country) => (
+                                <DropdownMenuItem
+                                  key={country}
+                                  onClick={() => setFormData({...formData, country})}
+                                  style={{
+                                    padding: "14px 20px",
+                                    color: formData.country === country ? "#FF6A00" : "white",
+                                    fontSize: "14px",
+                                    fontWeight: formData.country === country ? "800" : "500",
+                                    borderRadius: "10px",
+                                    cursor: "pointer",
+                                    transition: "all 0.2s"
+                                  }}
+                                >
+                                  {country}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
 
                         <div style={{ background: "rgba(255, 106, 0, 0.03)", border: "1px solid rgba(255, 106, 0, 0.2)", borderRadius: "24px", padding: "24px", marginTop: "20px" }}>
@@ -268,7 +329,7 @@ const ChallengeVerify = () => {
                           <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.6)", lineHeight: "1.6" }}>
                             Identity must be confirmed via our <span style={{ color: "white", fontWeight: "700" }}>Biometric Audit Engine</span>. This process ensures the integrity of the World Record leaderboard by cryptographically linking your physical performance to your verified athlete profile.
                           </p>
-                          <Link to="/rules" style={{ textDecoration: "none" }}>
+                          <Link to="/verification-protocol-info" style={{ textDecoration: "none" }}>
                             <div style={{ marginTop: "16px", display: "flex", alignItems: "center", gap: "8px", color: "#FF6A00", fontSize: "11px", fontWeight: "800", cursor: "pointer" }}>
                               <div style={{ width: "6px", height: "6px", background: "#FF6A00", borderRadius: "50%" }}></div> LEARN MORE
                             </div>
@@ -491,6 +552,23 @@ const ChallengeVerify = () => {
 
                         {/* SIDEBAR CARDS */}
                         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                          {/* YOUTUBE/VIMEO LINK */}
+                          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", padding: "32px" }}>
+                            <h3 style={{ fontSize: "16px", fontWeight: "900", textTransform: "uppercase", marginBottom: "16px", display: "flex", alignItems: "center", gap: "10px" }}>
+                              <Link2 size={18} color="#FF6A00" /> VIDEO LINK URL
+                            </h3>
+                            <input 
+                              type="text" 
+                              placeholder="HTTPS://YOUTUBE.COM/..." 
+                              value={formData.youtubeLink}
+                              onChange={(e) => setFormData({...formData, youtubeLink: e.target.value})}
+                              style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "16px 20px", color: "white", outline: "none", fontSize: "13px" }} 
+                            />
+                            <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", marginTop: "12px" }}>
+                              If your raw footage is over 2GB, please provide an unlisted YouTube or Vimeo link.
+                            </p>
+                          </div>
+
                           {/* PHOTO EVIDENCE */}
                           <div 
                             onClick={() => imageInputRef.current?.click()}

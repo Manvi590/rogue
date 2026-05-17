@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { 
   ArrowRight, 
   FileText, 
@@ -18,7 +19,9 @@ import {
   Calendar,
   Flag,
   FileCheck,
-  ClipboardList
+  ClipboardList,
+  Trash2,
+  Link2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import PageTransition from "../components/PageTransition";
@@ -87,6 +90,50 @@ const Appeals = () => {
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  const fileInputRef = React.useRef(null);
+  const [evidenceFiles, setEvidenceFiles] = useState([]);
+  const [youtubeLink, setYoutubeLink] = useState("");
+  const [dragActive, setDragActive] = useState(false);
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const files = Array.from(e.dataTransfer.files);
+      const validFiles = files.filter(file => {
+        const ext = file.name.split('.').pop().toLowerCase();
+        return ['mp4', 'mov', 'jpg', 'jpeg', 'png', 'pdf'].includes(ext);
+      });
+      setEvidenceFiles(prev => [...prev, ...validFiles]);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const files = Array.from(e.target.files);
+      const validFiles = files.filter(file => {
+        const ext = file.name.split('.').pop().toLowerCase();
+        return ['mp4', 'mov', 'jpg', 'jpeg', 'png', 'pdf'].includes(ext);
+      });
+      setEvidenceFiles(prev => [...prev, ...validFiles]);
+    }
+  };
+
+  const removeFile = (index) => {
+    setEvidenceFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -241,9 +288,11 @@ const Appeals = () => {
                   </div>
                   <h3 style={{ fontSize: "32px", fontWeight: "950", textTransform: "uppercase", marginBottom: "16px" }}>SUBMITTED SUCCESSFULLY</h3>
                   <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "18px", maxWidth: "600px", margin: "0 auto 40px", lineHeight: "1.6" }}>
-                    Your appeal has been received and indexed. A confirmation email with your tracking number has been sent to your registered address.
+                    Your appeal has been received and indexed. A confirmation email with your tracking number has been sent to your registered email address.
                   </p>
-                  <button onClick={() => setSuccess(false)} style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "18px 48px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", transition: "0.3s" }}>RETURN TO FORM</button>
+                  <Link to="/" style={{ textDecoration: "none" }}>
+                    <button style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "18px 48px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", transition: "0.3s" }}>RETURN TO HOMEPAGE</button>
+                  </Link>
                 </motion.div>
               ) : (
                 <div style={{ background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "40px", overflow: "hidden", boxShadow: "0 50px 100px rgba(0,0,0,0.5)" }}>
@@ -371,10 +420,91 @@ const Appeals = () => {
                           </div>
                           
                           <label style={labelStyle}>Upload Supporting Documents (MP4, MOV, JPG, PNG, PDF)</label>
-                          <div style={{ background: "rgba(255,106,0,0.05)", border: "1px dashed #FF6A00", borderRadius: "20px", padding: "60px", textAlign: "center", cursor: "pointer" }}>
+                          <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            multiple 
+                            accept=".mp4,.mov,.jpg,.jpeg,.png,.pdf" 
+                            style={{ display: "none" }} 
+                            onChange={handleFileChange} 
+                          />
+                          <div 
+                            onDragEnter={handleDrag}
+                            onDragOver={handleDrag}
+                            onDragLeave={handleDrag}
+                            onDrop={handleDrop}
+                            onClick={() => fileInputRef.current.click()}
+                            style={{ 
+                              background: dragActive ? "rgba(255, 106, 0, 0.12)" : "rgba(255,106,0,0.05)", 
+                              border: dragActive ? "2px dashed #FF6A00" : "1px dashed #FF6A00", 
+                              borderRadius: "20px", 
+                              padding: "50px 30px", 
+                              textAlign: "center", 
+                              cursor: "pointer",
+                              transition: "all 0.3s ease",
+                              boxShadow: dragActive ? "0 0 20px rgba(255, 106, 0, 0.2)" : "none",
+                              marginBottom: "24px"
+                            }}
+                          >
                             <UploadCloud size={48} color="#FF6A00" style={{ margin: "0 auto 16px" }} />
-                            <p style={{ fontWeight: "800", color: "#FF6A00" }}>DRAG & DROP FILES OR BROWSE</p>
-                            <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", marginTop: "8px" }}>Max File Size: 500MB</p>
+                            <p style={{ fontWeight: "800", color: "#FF6A00", textTransform: "uppercase" }}>
+                              {dragActive ? "DROP YOUR FILES HERE" : "DRAG & DROP FILES OR BROWSE"}
+                            </p>
+                            <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", marginTop: "8px" }}>Supports MP4, MOV, JPG, PNG, PDF up to 500MB</p>
+                          </div>
+
+                          {/* Visual Confirmation list */}
+                          {evidenceFiles.length > 0 && (
+                            <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "20px", padding: "24px", marginBottom: "32px" }}>
+                              <div style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "16px", letterSpacing: "0.1em" }}>
+                                ATTACHED FILES ({evidenceFiles.length})
+                              </div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                                {evidenceFiles.map((file, idx) => (
+                                  <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.03)", padding: "14px 20px", borderRadius: "12px" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                                      <div style={{ background: "rgba(255,106,0,0.1)", color: "#FF6A00", padding: "8px", borderRadius: "8px" }}>
+                                        <FileText size={18} />
+                                      </div>
+                                      <div style={{ textAlign: "left" }}>
+                                        <div style={{ fontSize: "14px", fontWeight: "700", color: "white", maxWidth: "250px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                          {file.name}
+                                        </div>
+                                        <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "8px", marginTop: "2px" }}>
+                                          <span>{(file.size / (1024 * 1024)).toFixed(2)} MB</span>
+                                          <span style={{ color: "#22c55e", fontWeight: "800" }}>✓ READY TO UPLOAD</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <button 
+                                      type="button" 
+                                      onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
+                                      style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", border: "none", borderRadius: "50%", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "0.2s" }}
+                                      onMouseEnter={(e) => e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)"}
+                                      onMouseLeave={(e) => e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)"}
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* YouTube Link optional field */}
+                          <div style={{ marginTop: "32px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                              <Link2 size={16} color="#FF6A00" />
+                              <label style={{ ...labelStyle, marginBottom: 0 }}>YouTube Video Link (Optional)</label>
+                            </div>
+                            <input 
+                              type="url" 
+                              name="youtubeLink" 
+                              placeholder="https://www.youtube.com/watch?v=..." 
+                              value={youtubeLink}
+                              onChange={(e) => setYoutubeLink(e.target.value)}
+                              style={inputStyle} 
+                            />
                           </div>
                         </motion.div>
                       )}

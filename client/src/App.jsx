@@ -8,6 +8,7 @@ import Leaderboard from './pages/Leaderboard'
 import About from './pages/About'
 import Contact from './pages/Contact'
 import Shop from './pages/Shop'
+import ProductDetail from './pages/ProductDetail'
 import Explore from './pages/Explore'
 import Challenges from './pages/Challenges'
 import Verify from './pages/Verify'
@@ -26,6 +27,10 @@ import Categories from './pages/Categories'
 import Profile from './pages/Profile'
 import Rules from './pages/Rules'
 import Appeals from './pages/Appeals'
+import SubmitEvidenceLearnMore from './pages/SubmitEvidenceLearnMore'
+import GlobalRecognitionLearnMore from './pages/GlobalRecognitionLearnMore'
+import ExpertAdjudicationLearnMore from './pages/ExpertAdjudicationLearnMore'
+import VerificationProtocolLearnMore from './pages/VerificationProtocolLearnMore'
 import Terms from './pages/Terms'
 import Cookies from './pages/Cookies'
 import GlobalLeaderboard from './pages/GlobalLeaderboard'
@@ -66,12 +71,17 @@ function App() {
             <Route path="/record/:id" element={<RecordDetail />} />
             <Route path="/stream/:id" element={<StreamDetail />} />
             <Route path="/schedule" element={<Schedule />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/elite" element={<EliteMembership />} />
             <Route path="/streams" element={<Streams />} />
             <Route path="/categories" element={<Categories />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/:id" element={<Profile />} />
+            <Route path="/submit-evidence-info" element={<SubmitEvidenceLearnMore />} />
+            <Route path="/global-recognition-info" element={<GlobalRecognitionLearnMore />} />
+            <Route path="/adjudication-info" element={<ExpertAdjudicationLearnMore />} />
+            <Route path="/verification-protocol-info" element={<VerificationProtocolLearnMore />} />
             <Route path="/rules" element={<Rules />} />
             <Route path="/appeals" element={<Appeals />} />
             <Route path="/terms" element={<Terms />} />

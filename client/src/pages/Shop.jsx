@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Star } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
@@ -8,11 +8,30 @@ import ScrollReveal from "../components/ScrollReveal";
 
 const Shop = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("ALL ITEMS");
 
-  const categories = ["ALL ITEMS", "CERTIFICATES", "HARDWARE", "APPAREL", "LIMITED DROP"];
+  useEffect(() => {
+    const cat = searchParams.get("category");
+    if (cat) {
+      setActiveTab(cat.toUpperCase());
+    } else {
+      setActiveTab("ALL ITEMS");
+    }
+  }, [searchParams]);
+
+  const categories = ["ALL ITEMS", "TICKETS", "CERTIFICATES", "HARDWARE", "APPAREL", "LIMITED DROP"];
 
   const products = [
+    {
+      id: 5,
+      title: "LIVE EVENT SPECTATOR PASS",
+      price: "$15.00",
+      desc: "Digital entry pass to witness live records. Includes live chat, backstage footage access, and multi-cam viewing.",
+      img: "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=600&q=80",
+      badge: "LIVE TICKETS",
+      category: "TICKETS"
+    },
     {
       id: 1,
       title: "OFFICIAL RECORD CERTIFICATE",
@@ -104,7 +123,15 @@ const Shop = () => {
             {categories.map(cat => (
               <button
                 key={cat}
-                onClick={() => setActiveTab(cat)}
+                onClick={() => {
+                  setActiveTab(cat);
+                  if (cat === "ALL ITEMS") {
+                    searchParams.delete("category");
+                  } else {
+                    searchParams.set("category", cat.toLowerCase());
+                  }
+                  setSearchParams(searchParams);
+                }}
                 style={{
                   padding: "10px 24px",
                   borderRadius: "100px",
@@ -130,7 +157,30 @@ const Shop = () => {
             {products
               .filter(p => activeTab === "ALL ITEMS" || p.category === activeTab)
               .map((product) => (
-                <div key={product.id} style={{ background: "#161616", borderRadius: "32px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)", display: "flex", flexDirection: "column" }}>
+                <div 
+                  key={product.id} 
+                  onClick={() => navigate(`/product/${product.id}`)}
+                  style={{ 
+                    background: "#161616", 
+                    borderRadius: "32px", 
+                    overflow: "hidden", 
+                    border: "1px solid rgba(255,255,255,0.05)", 
+                    display: "flex", 
+                    flexDirection: "column",
+                    cursor: "pointer",
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = "#FF6A00";
+                    e.currentTarget.style.boxShadow = "0 20px 40px rgba(255, 106, 0, 0.15)";
+                    e.currentTarget.style.transform = "translateY(-8px)";
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
+                >
                   <div style={{ position: "relative", height: "220px" }}>
                     <img src={product.img} alt={product.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     <div style={{ position: "absolute", top: "16px", right: "16px", background: "#FF6A00", color: "white", padding: "4px 12px", borderRadius: "8px", fontSize: "9px", fontWeight: "900" }}>
@@ -144,7 +194,10 @@ const Shop = () => {
                     </div>
                     <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)", lineHeight: "1.6", marginBottom: "24px" }}>{product.desc}</p>
                     <button
-                      onClick={() => navigate('/cart')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/product/${product.id}`);
+                      }}
                       {...buttonHover}
                       style={{
                         marginTop: "auto",
@@ -164,7 +217,7 @@ const Shop = () => {
                         transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
                       }}
                     >
-                      ADD TO CART <ArrowRight size={14} />
+                      VIEW DETAILS <ArrowRight size={14} />
                     </button>
                   </div>
                 </div>

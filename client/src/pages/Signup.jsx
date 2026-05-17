@@ -3,6 +3,13 @@ import { ArrowRight, Zap, Globe, Calendar, MapPin, Loader2 } from "lucide-react"
 import Navbar from "../components/Navbar";
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem
+} from "../components/ui/dropdown-menu";
 
 const Signup = () => {
   const [name, setName] = useState("");
@@ -10,6 +17,14 @@ const Signup = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [weightUnit, setWeightUnit] = useState("kg"); // "kg" or "lbs"
+  const [weightVal, setWeightVal] = useState("");
+  const [heightUnit, setHeightUnit] = useState("cm"); // "cm" or "ft_in"
+  const [heightVal, setHeightVal] = useState("");
+  const [heightFt, setHeightFt] = useState("");
+  const [heightIn, setHeightIn] = useState("");
+  const [gender, setGender] = useState("");
+  const [country, setCountry] = useState("");
   const { signup } = useAuth();
   const navigate = useNavigate();
 
@@ -175,13 +190,66 @@ const Signup = () => {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
                   <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>GENDER</label>
-                  <select style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", appearance: "none", fontSize: "13px" }}>
-                    <option value="" style={{ background: "#111" }}>Select Gender</option>
-                    <option value="male" style={{ background: "#111" }}>Male</option>
-                    <option value="female" style={{ background: "#111" }}>Female</option>
-                    <option value="other" style={{ background: "#111" }}>Other</option>
-                    <option value="prefer_not_to_say" style={{ background: "#111" }}>Prefer not to say</option>
-                  </select>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button type="button" style={{
+                        width: "100%",
+                        background: "rgba(0,0,0,0.3)",
+                        border: "1px solid rgba(255, 255, 255, 0.05)",
+                        borderRadius: "12px",
+                        padding: "12px 16px",
+                        color: "white",
+                        outline: "none",
+                        fontSize: "13px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        cursor: "pointer",
+                        textAlign: "left"
+                      }}>
+                        <span>{
+                          gender === "male" ? "Male" :
+                          gender === "female" ? "Female" :
+                          gender === "other" ? "Other" :
+                          gender === "prefer_not_to_say" ? "Prefer not to say" :
+                          "Select Gender"
+                        }</span>
+                        <ChevronDown size={14} style={{ opacity: 0.6 }} />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent style={{
+                      width: "100%",
+                      minWidth: "180px",
+                      background: "#161616",
+                      border: "1px solid rgba(255, 255, 255, 0.1)",
+                      borderRadius: "12px",
+                      padding: "6px",
+                      boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
+                    }}>
+                      {[
+                        { val: "male", label: "Male" },
+                        { val: "female", label: "Female" },
+                        { val: "other", label: "Other" },
+                        { val: "prefer_not_to_say", label: "Prefer not to say" }
+                      ].map((item) => (
+                        <DropdownMenuItem
+                          key={item.val}
+                          onClick={() => setGender(item.val)}
+                          style={{
+                            padding: "10px 14px",
+                            color: gender === item.val ? "#FF6A00" : "white",
+                            fontSize: "13px",
+                            fontWeight: gender === item.val ? "800" : "500",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          {item.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                 <div>
                   <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>DATE OF BIRTH</label>
@@ -192,12 +260,177 @@ const Signup = () => {
               {/* Row 5: Weight & Height */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>WEIGHT (KG)</label>
-                  <input type="text" placeholder="75" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} />
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                    <label style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", textTransform: "uppercase" }}>
+                      WEIGHT ({weightUnit.toUpperCase()})
+                    </label>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button type="button" style={{ 
+                          background: "transparent", 
+                          border: "none", 
+                          color: "#FF6A00", 
+                          fontSize: "10px", 
+                          fontWeight: "900", 
+                          outline: "none", 
+                          cursor: "pointer",
+                          textTransform: "uppercase",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px"
+                        }}>
+                          <span>{weightUnit === "kg" ? "Kilograms (kg)" : "Pounds (lbs)"}</span>
+                          <ChevronDown size={10} />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent style={{
+                        background: "#161616",
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                        borderRadius: "8px",
+                        padding: "4px",
+                        boxShadow: "0 10px 20px rgba(0,0,0,0.5)"
+                      }}>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setWeightUnit("kg");
+                            setWeightVal("");
+                          }}
+                          style={{
+                            padding: "8px 12px",
+                            color: weightUnit === "kg" ? "#FF6A00" : "white",
+                            fontSize: "11px",
+                            fontWeight: weightUnit === "kg" ? "800" : "500",
+                            borderRadius: "6px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          Kilograms (kg)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setWeightUnit("lbs");
+                            setWeightVal("");
+                          }}
+                          style={{
+                            padding: "8px 12px",
+                            color: weightUnit === "lbs" ? "#FF6A00" : "white",
+                            fontSize: "11px",
+                            fontWeight: weightUnit === "lbs" ? "800" : "500",
+                            borderRadius: "6px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          Pounds (lbs)
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <input 
+                    type="number" 
+                    placeholder={weightUnit === "kg" ? "75" : "165"} 
+                    value={weightVal}
+                    onChange={(e) => setWeightVal(e.target.value)}
+                    style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                  />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>HEIGHT (CM)</label>
-                  <input type="text" placeholder="180" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} />
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                    <label style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", textTransform: "uppercase" }}>
+                      HEIGHT ({heightUnit === "cm" ? "CM" : "FT/IN"})
+                    </label>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button type="button" style={{ 
+                          background: "transparent", 
+                          border: "none", 
+                          color: "#FF6A00", 
+                          fontSize: "10px", 
+                          fontWeight: "900", 
+                          outline: "none", 
+                          cursor: "pointer",
+                          textTransform: "uppercase",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px"
+                        }}>
+                          <span>{heightUnit === "cm" ? "Centimeters (cm)" : "Feet & Inches (ft/in)"}</span>
+                          <ChevronDown size={10} />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent style={{
+                        background: "#161616",
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                        borderRadius: "8px",
+                        padding: "4px",
+                        boxShadow: "0 10px 20px rgba(0,0,0,0.5)"
+                      }}>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setHeightUnit("cm");
+                            setHeightVal("");
+                          }}
+                          style={{
+                            padding: "8px 12px",
+                            color: heightUnit === "cm" ? "#FF6A00" : "white",
+                            fontSize: "11px",
+                            fontWeight: heightUnit === "cm" ? "800" : "500",
+                            borderRadius: "6px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          Centimeters (cm)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setHeightUnit("ft_in");
+                            setHeightVal("");
+                            setHeightFt("");
+                            setHeightIn("");
+                          }}
+                          style={{
+                            padding: "8px 12px",
+                            color: heightUnit === "ft_in" ? "#FF6A00" : "white",
+                            fontSize: "11px",
+                            fontWeight: heightUnit === "ft_in" ? "800" : "500",
+                            borderRadius: "6px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          Feet & Inches (ft'in\")
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  {heightUnit === "cm" ? (
+                    <input 
+                      type="number" 
+                      placeholder="180" 
+                      value={heightVal}
+                      onChange={(e) => setHeightVal(e.target.value)}
+                      style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                    />
+                  ) : (
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <input 
+                        type="number" 
+                        placeholder="Ft" 
+                        min="1"
+                        max="8"
+                        value={heightFt}
+                        onChange={(e) => setHeightFt(e.target.value)}
+                        style={{ width: "50%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                      />
+                      <input 
+                        type="number" 
+                        placeholder="In" 
+                        min="0"
+                        max="11"
+                        value={heightIn}
+                        onChange={(e) => setHeightIn(e.target.value)}
+                        style={{ width: "50%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -205,37 +438,82 @@ const Signup = () => {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
                   <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>COUNTRY</label>
-                  <select style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", appearance: "none", fontSize: "13px" }}>
-                    <option value="" style={{ background: "#111" }}>Select Country</option>
-                    {[
-                      "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
-                      "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi",
-                      "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic",
-                      "Denmark", "Djibouti", "Dominica", "Dominican Republic",
-                      "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia",
-                      "Fiji", "Finland", "France",
-                      "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana",
-                      "Haiti", "Honduras", "Hungary",
-                      "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy",
-                      "Jamaica", "Japan", "Jordan",
-                      "Kazakhstan", "Kenya", "Kiribati", "Korea, North", "Korea, South", "Kosovo", "Kuwait", "Kyrgyzstan",
-                      "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg",
-                      "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar",
-                      "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Macedonia", "Norway",
-                      "Oman",
-                      "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal",
-                      "Qatar",
-                      "Romania", "Russia", "Rwanda",
-                      "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria",
-                      "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu",
-                      "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan",
-                      "Vanuatu", "Vatican City", "Venezuela", "Vietnam",
-                      "Yemen",
-                      "Zambia", "Zimbabwe"
-                    ].map(country => (
-                      <option key={country} value={country} style={{ background: "#111", color: "white" }}>{country}</option>
-                    ))}
-                  </select>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button type="button" style={{
+                        width: "100%",
+                        background: "rgba(0,0,0,0.3)",
+                        border: "1px solid rgba(255, 255, 255, 0.05)",
+                        borderRadius: "12px",
+                        padding: "12px 16px",
+                        color: "white",
+                        outline: "none",
+                        fontSize: "13px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        cursor: "pointer",
+                        textAlign: "left"
+                      }}>
+                        <span>{country || "Select Country"}</span>
+                        <ChevronDown size={14} style={{ opacity: 0.6 }} />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent style={{
+                      width: "100%",
+                      minWidth: "220px",
+                      maxHeight: "300px",
+                      overflowY: "auto",
+                      background: "#161616",
+                      border: "1px solid rgba(255, 255, 255, 0.1)",
+                      borderRadius: "12px",
+                      padding: "6px",
+                      boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
+                    }}>
+                      {[
+                        "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
+                        "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi",
+                        "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic",
+                        "Denmark", "Djibouti", "Dominica", "Dominican Republic",
+                        "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia",
+                        "Fiji", "Finland", "France",
+                        "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana",
+                        "Haiti", "Honduras", "Hungary",
+                        "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy",
+                        "Jamaica", "Japan", "Jordan",
+                        "Kazakhstan", "Kenya", "Kiribati", "Korea, North", "Korea, South", "Kosovo", "Kuwait", "Kyrgyzstan",
+                        "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg",
+                        "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar",
+                        "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Macedonia", "Norway",
+                        "Oman",
+                        "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal",
+                        "Qatar",
+                        "Romania", "Russia", "Rwanda",
+                        "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria",
+                        "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu",
+                        "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan",
+                        "Vanuatu", "Vatican City", "Venezuela", "Vietnam",
+                        "Yemen",
+                        "Zambia", "Zimbabwe"
+                      ].map(c => (
+                        <DropdownMenuItem
+                          key={c}
+                          onClick={() => setCountry(c)}
+                          style={{
+                            padding: "10px 14px",
+                            color: country === c ? "#FF6A00" : "white",
+                            fontSize: "13px",
+                            fontWeight: country === c ? "800" : "500",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          {c}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                 <div>
                   <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>CITY / STATE</label>

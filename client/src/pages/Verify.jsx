@@ -27,7 +27,8 @@ import {
   Trophy,
   Award,
   Edit3,
-  Link2
+  Link2,
+  ChevronDown
 } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
@@ -35,6 +36,12 @@ import { Link } from "react-router-dom";
 import ScrollReveal from "../components/ScrollReveal";
 import { apiCall } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem
+} from "../components/ui/dropdown-menu";
 
 const categoriesData = {
   Athletics: {
@@ -153,10 +160,12 @@ const Verify = () => {
     
     // Section 2
     recordTitle: "",
-    category: "STRENGTH",
-    subCategoryGroup: "",
-    subCategory: "",
+    category: "Strength",
+    subCategoryGroup: "Upper Body Strength",
+    subCategory: "Bench Press",
     attemptType: "NEW_RECORD", // NEW_RECORD, BREAK_RECORD, NEW_PROPOSAL
+    currentRecordHolder: "",
+    currentRecordValue: "",
     
     // Section 3
     date: "",
@@ -392,16 +401,68 @@ const Verify = () => {
                         </div>
                         <div>
                           <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>AGE DIVISION</label>
-                          <select 
-                            value={formData.ageDivision}
-                            onChange={(e) => setFormData({...formData, ageDivision: e.target.value})}
-                            style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none", appearance: "none" }}
-                          >
-                            <option value="UNDER_13">UNDER 13</option>
-                            <option value="TEEN">TEEN (13-17)</option>
-                            <option value="ADULT">ADULT (18-49)</option>
-                            <option value="MASTERS">MASTERS (50+)</option>
-                          </select>
+                          <div style={{ position: "relative" }}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button style={{
+                                  width: "100%",
+                                  background: "rgba(255,255,255,0.03)",
+                                  border: "1px solid rgba(255,255,255,0.08)",
+                                  borderRadius: "16px",
+                                  padding: "18px 24px",
+                                  color: "white",
+                                  fontSize: "14px",
+                                  outline: "none",
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  cursor: "pointer",
+                                  textAlign: "left"
+                                }}>
+                                  <span>{
+                                    formData.ageDivision === "UNDER_13" ? "UNDER 13" :
+                                    formData.ageDivision === "TEEN" ? "TEEN (13-17)" :
+                                    formData.ageDivision === "ADULT" ? "ADULT (18-49)" :
+                                    formData.ageDivision === "MASTERS" ? "MASTERS (50+)" :
+                                    formData.ageDivision || "SELECT AGE DIVISION"
+                                  }</span>
+                                  <ChevronDown size={16} style={{ opacity: 0.6 }} />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent style={{
+                                width: "100%",
+                                minWidth: "250px",
+                                background: "#161616",
+                                border: "1px solid rgba(255,255,255,0.1)",
+                                borderRadius: "16px",
+                                padding: "8px",
+                                boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
+                              }}>
+                                {[
+                                  { val: "UNDER_13", label: "UNDER 13" },
+                                  { val: "TEEN", label: "TEEN (13-17)" },
+                                  { val: "ADULT", label: "ADULT (18-49)" },
+                                  { val: "MASTERS", label: "MASTERS (50+)" }
+                                ].map((item) => (
+                                  <DropdownMenuItem
+                                    key={item.val}
+                                    onClick={() => setFormData({...formData, ageDivision: item.val})}
+                                    style={{
+                                      padding: "14px 20px",
+                                      color: formData.ageDivision === item.val ? "#FF6A00" : "white",
+                                      fontSize: "14px",
+                                      fontWeight: formData.ageDivision === item.val ? "800" : "500",
+                                      borderRadius: "10px",
+                                      cursor: "pointer",
+                                      transition: "all 0.2s"
+                                    }}
+                                  >
+                                    {item.label}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
                       </div>
 
@@ -431,18 +492,57 @@ const Verify = () => {
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
                         <div>
                           <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>COUNTRY OF ORIGIN</label>
-                          <select 
-                            value={formData.country}
-                            onChange={(e) => setFormData({...formData, country: e.target.value})}
-                            style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none", appearance: "none" }}
-                          >
-                            <option>UNITED STATES</option>
-                            <option>UNITED KINGDOM</option>
-                            <option>GERMANY</option>
-                            <option>CANADA</option>
-                            <option>AUSTRALIA</option>
-                            <option>OTHER</option>
-                          </select>
+                          <div style={{ position: "relative" }}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button style={{
+                                  width: "100%",
+                                  background: "rgba(255,255,255,0.03)",
+                                  border: "1px solid rgba(255,255,255,0.08)",
+                                  borderRadius: "16px",
+                                  padding: "18px 24px",
+                                  color: "white",
+                                  fontSize: "14px",
+                                  outline: "none",
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  cursor: "pointer",
+                                  textAlign: "left"
+                                }}>
+                                  <span>{formData.country || "SELECT COUNTRY"}</span>
+                                  <ChevronDown size={16} style={{ opacity: 0.6 }} />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent style={{
+                                width: "100%",
+                                minWidth: "250px",
+                                background: "#161616",
+                                border: "1px solid rgba(255,255,255,0.1)",
+                                borderRadius: "16px",
+                                padding: "8px",
+                                boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
+                              }}>
+                                {["UNITED STATES", "UNITED KINGDOM", "GERMANY", "CANADA", "AUSTRALIA", "OTHER"].map((country) => (
+                                  <DropdownMenuItem
+                                    key={country}
+                                    onClick={() => setFormData({...formData, country})}
+                                    style={{
+                                      padding: "14px 20px",
+                                      color: formData.country === country ? "#FF6A00" : "white",
+                                      fontSize: "14px",
+                                      fontWeight: formData.country === country ? "800" : "500",
+                                      borderRadius: "10px",
+                                      cursor: "pointer",
+                                      transition: "all 0.2s"
+                                    }}
+                                  >
+                                    {country}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
                         <div>
                           <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>SOCIAL MEDIA (OPTIONAL)</label>
@@ -464,7 +564,7 @@ const Verify = () => {
                           <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.6)", lineHeight: "1.6" }}>
                             Identity must be confirmed via our <span style={{ color: "white", fontWeight: "700" }}>Biometric Audit Engine</span>. This process ensures the integrity of the World Record leaderboard by cryptographically linking your physical performance to your verified athlete profile.
                           </p>
-                          <Link to="/rules" style={{ textDecoration: "none" }}>
+                          <Link to="/verification-protocol-info" style={{ textDecoration: "none" }}>
                             <div style={{ marginTop: "16px", display: "flex", alignItems: "center", gap: "8px", color: "#FF6A00", fontSize: "11px", fontWeight: "800", cursor: "pointer" }}>
                               <div style={{ width: "6px", height: "6px", background: "#FF6A00", borderRadius: "50%" }}></div> LEARN MORE
                             </div>
@@ -528,57 +628,181 @@ const Verify = () => {
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
                             <div>
                               <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>MAIN CATEGORY</label>
-                              <select 
-                                value={formData.category}
-                                onChange={(e) => {
-                                  const cat = e.target.value;
-                                  const groups = Object.keys(categoriesData[cat]);
-                                  setFormData({
-                                    ...formData, 
-                                    category: cat,
-                                    subCategoryGroup: groups[0],
-                                    subCategory: categoriesData[cat][groups[0]][0]
-                                  });
-                                }}
-                                style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none", appearance: "none" }}
-                              >
-                                {Object.keys(categoriesData).map(cat => (
-                                  <option key={cat} value={cat}>{cat}</option>
-                                ))}
-                              </select>
+                              <div style={{ position: "relative" }}>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button style={{
+                                      width: "100%",
+                                      background: "rgba(255,255,255,0.03)",
+                                      border: "1px solid rgba(255,255,255,0.08)",
+                                      borderRadius: "16px",
+                                      padding: "18px 24px",
+                                      color: "white",
+                                      fontSize: "14px",
+                                      outline: "none",
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                      cursor: "pointer",
+                                      textAlign: "left"
+                                    }}>
+                                      <span>{formData.category || "SELECT CATEGORY"}</span>
+                                      <ChevronDown size={16} style={{ opacity: 0.6 }} />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent style={{
+                                    width: "100%",
+                                    minWidth: "250px",
+                                    background: "#161616",
+                                    border: "1px solid rgba(255,255,255,0.1)",
+                                    borderRadius: "16px",
+                                    padding: "8px",
+                                    boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
+                                  }}>
+                                    {Object.keys(categoriesData).map((cat) => (
+                                      <DropdownMenuItem
+                                        key={cat}
+                                        onClick={() => {
+                                          const groups = Object.keys(categoriesData[cat]);
+                                          setFormData({
+                                            ...formData, 
+                                            category: cat,
+                                            subCategoryGroup: groups[0],
+                                            subCategory: categoriesData[cat][groups[0]][0]
+                                          });
+                                        }}
+                                        style={{
+                                          padding: "14px 20px",
+                                          color: formData.category === cat ? "#FF6A00" : "white",
+                                          fontSize: "14px",
+                                          fontWeight: formData.category === cat ? "800" : "500",
+                                          borderRadius: "10px",
+                                          cursor: "pointer",
+                                          transition: "all 0.2s"
+                                        }}
+                                      >
+                                        {cat}
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
                             </div>
                             <div>
                               <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>SUBCATEGORY GROUP</label>
-                              <select 
-                                value={formData.subCategoryGroup}
-                                onChange={(e) => {
-                                  const group = e.target.value;
-                                  setFormData({
-                                    ...formData, 
-                                    subCategoryGroup: group,
-                                    subCategory: categoriesData[formData.category][group][0]
-                                  });
-                                }}
-                                style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none", appearance: "none" }}
-                              >
-                                {Object.keys(categoriesData[formData.category] || {}).map(group => (
-                                  <option key={group} value={group}>{group}</option>
-                                ))}
-                              </select>
+                              <div style={{ position: "relative" }}>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button style={{
+                                      width: "100%",
+                                      background: "rgba(255,255,255,0.03)",
+                                      border: "1px solid rgba(255,255,255,0.08)",
+                                      borderRadius: "16px",
+                                      padding: "18px 24px",
+                                      color: "white",
+                                      fontSize: "14px",
+                                      outline: "none",
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                      cursor: "pointer",
+                                      textAlign: "left"
+                                    }}>
+                                      <span>{formData.subCategoryGroup || "SELECT GROUP"}</span>
+                                      <ChevronDown size={16} style={{ opacity: 0.6 }} />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent style={{
+                                    width: "100%",
+                                    minWidth: "250px",
+                                    background: "#161616",
+                                    border: "1px solid rgba(255,255,255,0.1)",
+                                    borderRadius: "16px",
+                                    padding: "8px",
+                                    boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
+                                  }}>
+                                    {Object.keys(categoriesData[formData.category] || {}).map((group) => (
+                                      <DropdownMenuItem
+                                        key={group}
+                                        onClick={() => {
+                                          setFormData({
+                                            ...formData, 
+                                            subCategoryGroup: group,
+                                            subCategory: categoriesData[formData.category][group][0]
+                                          });
+                                        }}
+                                        style={{
+                                          padding: "14px 20px",
+                                          color: formData.subCategoryGroup === group ? "#FF6A00" : "white",
+                                          fontSize: "14px",
+                                          fontWeight: formData.subCategoryGroup === group ? "800" : "500",
+                                          borderRadius: "10px",
+                                          cursor: "pointer",
+                                          transition: "all 0.2s"
+                                        }}
+                                      >
+                                        {group}
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
                             </div>
                           </div>
 
                           <div>
                             <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>SPECIFIC EVENT / SUBCATEGORY</label>
-                            <select 
-                              value={formData.subCategory}
-                              onChange={(e) => setFormData({...formData, subCategory: e.target.value})}
-                              style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none", appearance: "none" }}
-                            >
-                              {(categoriesData[formData.category]?.[formData.subCategoryGroup] || []).map(item => (
-                                <option key={item} value={item}>{item}</option>
-                              ))}
-                            </select>
+                            <div style={{ position: "relative" }}>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button style={{
+                                    width: "100%",
+                                    background: "rgba(255,255,255,0.03)",
+                                    border: "1px solid rgba(255,255,255,0.08)",
+                                    borderRadius: "16px",
+                                    padding: "18px 24px",
+                                    color: "white",
+                                    fontSize: "14px",
+                                    outline: "none",
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    cursor: "pointer",
+                                    textAlign: "left"
+                                  }}>
+                                    <span>{formData.subCategory || "SELECT EVENT"}</span>
+                                    <ChevronDown size={16} style={{ opacity: 0.6 }} />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent style={{
+                                  width: "100%",
+                                  minWidth: "250px",
+                                  background: "#161616",
+                                  border: "1px solid rgba(255,255,255,0.1)",
+                                  borderRadius: "16px",
+                                  padding: "8px",
+                                  boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
+                                }}>
+                                  {(categoriesData[formData.category]?.[formData.subCategoryGroup] || []).map((item) => (
+                                    <DropdownMenuItem
+                                      key={item}
+                                      onClick={() => setFormData({...formData, subCategory: item})}
+                                      style={{
+                                        padding: "14px 20px",
+                                        color: formData.subCategory === item ? "#FF6A00" : "white",
+                                        fontSize: "14px",
+                                        fontWeight: formData.subCategory === item ? "800" : "500",
+                                        borderRadius: "10px",
+                                        cursor: "pointer",
+                                        transition: "all 0.2s"
+                                      }}
+                                    >
+                                      {item}
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </div>
 
                           {/* ATTEMPT TYPE */}
@@ -611,6 +835,59 @@ const Verify = () => {
                             </div>
                           </div>
 
+                          {/* CONDITIONAL BREAK RECORD HOLDER DETAILS */}
+                          <AnimatePresence>
+                            {formData.attemptType === "BREAK_RECORD" && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                animate={{ opacity: 1, height: "auto", marginTop: 20 }}
+                                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                transition={{ duration: 0.3 }}
+                                style={{ overflow: "hidden" }}
+                              >
+                                <div style={{ 
+                                  background: "rgba(255, 106, 0, 0.02)", 
+                                  border: "1px dashed rgba(255, 106, 0, 0.3)", 
+                                  borderRadius: "20px", 
+                                  padding: "24px",
+                                  display: "grid",
+                                  gridTemplateColumns: "1fr 1fr",
+                                  gap: "20px"
+                                }}>
+                                  <div style={{ gridColumn: "span 2" }}>
+                                    <h4 style={{ color: "#FF6A00", fontSize: "11px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.1em", margin: 0 }}>
+                                      CURRENT RECORD HOLDER DETAILS
+                                    </h4>
+                                  </div>
+                                  <div>
+                                    <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                                      CURRENT HOLDER'S NAME
+                                    </label>
+                                    <input 
+                                      type="text" 
+                                      placeholder="E.G. JOHN DOE" 
+                                      value={formData.currentRecordHolder}
+                                      onChange={(e) => setFormData({...formData, currentRecordHolder: e.target.value})}
+                                      style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", fontSize: "14px", outline: "none" }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                                      CURRENT RECORD SCORE / VALUE
+                                    </label>
+                                    <input 
+                                      type="text" 
+                                      placeholder={`E.G. 500 (IN ${formData.unit})`} 
+                                      value={formData.currentRecordValue}
+                                      onChange={(e) => setFormData({...formData, currentRecordValue: e.target.value})}
+                                      style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", fontSize: "14px", outline: "none" }}
+                                    />
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+
                           {/* PERFORMANCE DATA */}
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
                             <div>
@@ -625,18 +902,72 @@ const Verify = () => {
                             </div>
                             <div>
                               <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>UNIT OF MEASUREMENT</label>
-                              <select 
-                                value={formData.unit}
-                                onChange={(e) => setFormData({...formData, unit: e.target.value})}
-                                style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none", appearance: "none" }}
-                              >
-                                <option value="TIME">TIME (H:M:S)</option>
-                                <option value="DISTANCE">DISTANCE (M/KM)</option>
-                                <option value="WEIGHT">WEIGHT (KG/LBS)</option>
-                                <option value="REPETITIONS">REPETITIONS</option>
-                                <option value="POINTS">POINTS / SCORE</option>
-                                <option value="OTHER">OTHER</option>
-                              </select>
+                              <div style={{ position: "relative" }}>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button style={{
+                                      width: "100%",
+                                      background: "rgba(255,255,255,0.03)",
+                                      border: "1px solid rgba(255,255,255,0.08)",
+                                      borderRadius: "16px",
+                                      padding: "18px 24px",
+                                      color: "white",
+                                      fontSize: "14px",
+                                      outline: "none",
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                      cursor: "pointer",
+                                      textAlign: "left"
+                                    }}>
+                                      <span>{
+                                        formData.unit === "TIME" ? "TIME (H:M:S)" :
+                                        formData.unit === "DISTANCE" ? "DISTANCE (M/KM)" :
+                                        formData.unit === "WEIGHT" ? "WEIGHT (KG/LBS)" :
+                                        formData.unit === "REPETITIONS" ? "REPETITIONS" :
+                                        formData.unit === "POINTS" ? "POINTS / SCORE" :
+                                        formData.unit === "OTHER" ? "OTHER" :
+                                        formData.unit || "SELECT UNIT"
+                                      }</span>
+                                      <ChevronDown size={16} style={{ opacity: 0.6 }} />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent style={{
+                                    width: "100%",
+                                    minWidth: "250px",
+                                    background: "#161616",
+                                    border: "1px solid rgba(255,255,255,0.1)",
+                                    borderRadius: "16px",
+                                    padding: "8px",
+                                    boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
+                                  }}>
+                                    {[
+                                      { val: "TIME", label: "TIME (H:M:S)" },
+                                      { val: "DISTANCE", label: "DISTANCE (M/KM)" },
+                                      { val: "WEIGHT", label: "WEIGHT (KG/LBS)" },
+                                      { val: "REPETITIONS", label: "REPETITIONS" },
+                                      { val: "POINTS", label: "POINTS / SCORE" },
+                                      { val: "OTHER", label: "OTHER" }
+                                    ].map((item) => (
+                                      <DropdownMenuItem
+                                        key={item.val}
+                                        onClick={() => setFormData({...formData, unit: item.val})}
+                                        style={{
+                                          padding: "14px 20px",
+                                          color: formData.unit === item.val ? "#FF6A00" : "white",
+                                          fontSize: "14px",
+                                          fontWeight: formData.unit === item.val ? "800" : "500",
+                                          borderRadius: "10px",
+                                          cursor: "pointer",
+                                          transition: "all 0.2s"
+                                        }}
+                                      >
+                                        {item.label}
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
                             </div>
                           </div>
                         </div>

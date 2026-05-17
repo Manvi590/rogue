@@ -1,10 +1,16 @@
 import React, { useState } from "react";
-import { ArrowRight, Shield, User, MessageSquare, Loader2 } from "lucide-react";
+import { ArrowRight, Shield, User, MessageSquare, Loader2, ChevronDown } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ScrollReveal from "../components/ScrollReveal";
 import { apiCall } from "../utils/api";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem
+} from "../components/ui/dropdown-menu";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -153,16 +159,64 @@ const Contact = () => {
                     </div>
                     <div>
                       <label style={{ display: "block", fontSize: "11px", fontWeight: "900", textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: "12px" }}>SUBJECT</label>
-                      <select name="subject" value={formData.subject} onChange={handleChange} style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "16px 20px", color: "white", outline: "none", appearance: "none" }}>
-                        <option value="General Question">General Question</option>
-                        <option value="Record Submission">Record Submission</option>
-                        <option value="Membership Support">Membership Support</option>
-                        <option value="Technical Support">Technical Support</option>
-                        <option value="Media Inquiry">Media Inquiry</option>
-                        <option value="Partnership Opportunity">Partnership Opportunity</option>
-                        <option value="Live Event Information">Live Event Information</option>
-                        <option value="Other">Other</option>
-                      </select>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button type="button" style={{
+                            width: "100%",
+                            background: "#0A0A0A",
+                            border: "1px solid rgba(255,255,255,0.05)",
+                            borderRadius: "12px",
+                            padding: "16px 20px",
+                            color: "white",
+                            outline: "none",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            cursor: "pointer",
+                            textAlign: "left",
+                            fontSize: "14px"
+                          }}>
+                            <span>{formData.subject || "SELECT SUBJECT"}</span>
+                            <ChevronDown size={18} style={{ opacity: 0.6 }} />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent style={{
+                          width: "100%",
+                          minWidth: "250px",
+                          background: "#161616",
+                          border: "1px solid rgba(255,255,255,0.1)",
+                          borderRadius: "12px",
+                          padding: "8px",
+                          boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
+                        }}>
+                          {[
+                            "General Question",
+                            "Record Submission",
+                            "Membership Support",
+                            "Technical Support",
+                            "Media Inquiry",
+                            "Partnership Opportunity",
+                            "Live Event Information",
+                            "Other"
+                          ].map((subj) => (
+                            <DropdownMenuItem
+                              key={subj}
+                              onClick={() => setFormData({...formData, subject: subj})}
+                              style={{
+                                padding: "12px 16px",
+                                color: formData.subject === subj ? "#FF6A00" : "white",
+                                fontSize: "14px",
+                                fontWeight: formData.subject === subj ? "800" : "500",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                transition: "all 0.2s"
+                              }}
+                            >
+                              {subj}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                   

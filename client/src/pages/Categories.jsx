@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { 
   Activity, 
   Dumbbell, 
@@ -30,7 +30,14 @@ import Footer from "../components/Footer";
 import ScrollReveal from "../components/ScrollReveal";
 
 const Categories = () => {
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState(0);
+
+  useEffect(() => {
+    if (location.state && typeof location.state.activeTab === "number") {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
 
   const allCategories = [
     { 
@@ -324,9 +331,7 @@ const Categories = () => {
                     <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "32px" }}>
                       <Sparkles size={20} color="#FF6A00" />
                       <h3 style={{ fontSize: "18px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.1em" }}>Explore Subcategories</h3>
-                    </div>
-
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px" }}>
+                    </div>                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px" }}>
                       {currentCat.subcategories.map((sub, sIdx) => (
                         <div key={sIdx} style={{ 
                           background: "rgba(255,255,255,0.03)", 
@@ -337,23 +342,62 @@ const Categories = () => {
                           cursor: "default"
                         }}>
                           <h4 style={{ fontSize: "16px", fontWeight: "900", color: "white", textTransform: "uppercase", marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px" }}>
-                            <ChevronRight size={18} color="#FF6A00" /> {sub.name}
+                            <Link 
+                              to={`/explore?category=${encodeURIComponent(currentCat.name)}&q=${encodeURIComponent(sub.name)}`}
+                              style={{ 
+                                textDecoration: "none", 
+                                color: "white", 
+                                display: "flex", 
+                                alignItems: "center", 
+                                gap: "10px", 
+                                cursor: "pointer",
+                                transition: "color 0.2s"
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.color = "#FF6A00"}
+                              onMouseLeave={(e) => e.currentTarget.style.color = "white"}
+                            >
+                              <ChevronRight size={18} color="#FF6A00" /> {sub.name}
+                            </Link>
                           </h4>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                            {sub.items.map((item, iIdx) => (
-                              <span key={iIdx} style={{ 
-                                fontSize: "12px", 
-                                color: "rgba(255,255,255,0.5)", 
-                                background: "rgba(255,255,255,0.05)", 
-                                padding: "8px 16px", 
-                                borderRadius: "10px",
-                                fontWeight: "700",
-                                border: "1px solid transparent",
-                                transition: "0.3s"
-                              }}>
-                                {item}
-                              </span>
-                            ))}
+                            {sub.items.map((item, iIdx) => {
+                              const slug = item.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+                              return (
+                                <Link 
+                                  to={`/record/${slug}`} 
+                                  key={iIdx} 
+                                  style={{ textDecoration: "none" }}
+                                >
+                                  <span style={{ 
+                                    fontSize: "12px", 
+                                    color: "#FF6A00", 
+                                    background: "rgba(255, 106, 0, 0.05)", 
+                                    padding: "8px 16px", 
+                                    borderRadius: "10px",
+                                    fontWeight: "700",
+                                    border: "1px solid rgba(255, 106, 0, 0.2)",
+                                    transition: "all 0.3s ease",
+                                    cursor: "pointer",
+                                    display: "inline-block"
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = "#FF6A00";
+                                    e.currentTarget.style.color = "white";
+                                    e.currentTarget.style.transform = "translateY(-2px)";
+                                    e.currentTarget.style.boxShadow = "0 6px 15px rgba(255,106,0,0.3)";
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = "rgba(255, 106, 0, 0.05)";
+                                    e.currentTarget.style.color = "#FF6A00";
+                                    e.currentTarget.style.transform = "translateY(0)";
+                                    e.currentTarget.style.boxShadow = "none";
+                                  }}
+                                  >
+                                    {item}
+                                  </span>
+                                </Link>
+                              );
+                            })}
                           </div>
                         </div>
                       ))}

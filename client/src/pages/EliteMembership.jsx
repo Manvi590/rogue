@@ -27,6 +27,7 @@ import { motion } from "framer-motion";
 
 const EliteMembership = () => {
   const [activeTab, setActiveTab] = useState("MONTHLY");
+  const [selectedTier, setSelectedTier] = useState("silver");
   const [windowWidth, setWindowWidth] = React.useState(window.innerWidth);
 
   React.useEffect(() => {
@@ -170,76 +171,100 @@ const EliteMembership = () => {
             gridTemplateColumns: windowWidth > 1024 ? "repeat(2, 1fr)" : "1fr", 
             gap: "32px" 
           }}>
-            {tiers.map((tier) => (
-              <ScrollReveal key={tier.id}>
-                <div style={{ 
-                  background: tier.popular ? "linear-gradient(135deg, #1A1410 0%, #0A0A0A 100%)" : "rgba(255,255,255,0.02)", 
-                  border: tier.popular ? "2px solid #FF6A00" : "1px solid rgba(255,255,255,0.05)", 
-                  borderRadius: "48px", 
-                  padding: "60px",
-                  height: "100%",
-                  position: "relative",
-                  display: "flex",
-                  flexDirection: "column",
-                  transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
-                }}>
-                  {tier.popular && (
-                    <div style={{ position: "absolute", top: "24px", right: "48px", background: "#FF6A00", color: "white", padding: "6px 16px", borderRadius: "100px", fontSize: "10px", fontWeight: "900", textTransform: "uppercase" }}>
-                      MOST POPULAR
+            {tiers.map((tier) => {
+              const isSelected = selectedTier === tier.id;
+              return (
+                <ScrollReveal key={tier.id}>
+                  <div 
+                    onClick={() => setSelectedTier(tier.id)}
+                    style={{ 
+                      background: isSelected ? "linear-gradient(135deg, rgba(255,106,0,0.06) 0%, rgba(10,10,10,0.95) 100%)" : "rgba(255,255,255,0.02)", 
+                      border: isSelected ? "2px solid #FF6A00" : "1px solid rgba(255,255,255,0.05)", 
+                      borderRadius: "48px", 
+                      padding: "60px",
+                      height: "100%",
+                      position: "relative",
+                      display: "flex",
+                      flexDirection: "column",
+                      cursor: "pointer",
+                      transform: isSelected ? "translateY(-6px)" : "translateY(0)",
+                      boxShadow: isSelected ? "0 20px 40px rgba(255,106,0,0.15)" : "none",
+                      transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+                    }}
+                    onMouseEnter={e => {
+                      if (!isSelected) {
+                        e.currentTarget.style.border = "1px solid rgba(255, 106, 0, 0.35)";
+                        e.currentTarget.style.transform = "translateY(-6px)";
+                        e.currentTarget.style.boxShadow = "0 15px 30px rgba(255, 106, 0, 0.05)";
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (!isSelected) {
+                        e.currentTarget.style.border = "1px solid rgba(255,255,255,0.05)";
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = "none";
+                      }
+                    }}
+                  >
+                    {tier.popular && (
+                      <div style={{ position: "absolute", top: "24px", right: "48px", background: "#FF6A00", color: "white", padding: "6px 16px", borderRadius: "100px", fontSize: "10px", fontWeight: "900", textTransform: "uppercase" }}>
+                        MOST POPULAR
+                      </div>
+                    )}
+                    
+                    <div style={{ color: isSelected ? "#FF6A00" : tier.color, marginBottom: "24px", transition: "color 0.3s" }}>{tier.icon}</div>
+                    <h3 style={{ fontSize: "24px", fontWeight: "900", textTransform: "uppercase", marginBottom: "8px" }}>{tier.name}</h3>
+                    <div style={{ fontSize: "40px", fontWeight: "950", marginBottom: "8px", color: isSelected ? "#FF6A00" : tier.name === "Free" ? "white" : tier.color, transition: "color 0.3s" }}>
+                      {tier.cost}{tier.name !== "Free" && <span style={{ fontSize: "16px", color: "rgba(255,255,255,0.4)", fontWeight: "600" }}>/month</span>}
                     </div>
-                  )}
-                  
-                  <div style={{ color: tier.color, marginBottom: "24px" }}>{tier.icon}</div>
-                  <h3 style={{ fontSize: "24px", fontWeight: "900", textTransform: "uppercase", marginBottom: "8px" }}>{tier.name}</h3>
-                  <div style={{ fontSize: "40px", fontWeight: "950", marginBottom: "8px", color: tier.name === "Free" ? "white" : tier.color }}>
-                    {tier.cost}{tier.name !== "Free" && <span style={{ fontSize: "16px", color: "rgba(255,255,255,0.4)", fontWeight: "600" }}>/month</span>}
-                  </div>
-                  <div style={{ display: "inline-flex", background: "rgba(255,255,255,0.05)", padding: "6px 16px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", color: "#FF6A00", marginBottom: "32px", width: "fit-content" }}>
-                    {tier.limit}
-                  </div>
+                    <div style={{ display: "inline-flex", background: "rgba(255,255,255,0.05)", padding: "6px 16px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", color: "#FF6A00", marginBottom: "32px", width: "fit-content" }}>
+                      {tier.limit}
+                    </div>
 
-                  <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.5)", lineHeight: "1.6", marginBottom: "40px", height: "45px" }}>
-                    {tier.perfectFor}
-                  </p>
+                    <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.5)", lineHeight: "1.6", marginBottom: "40px", height: "45px" }}>
+                      {tier.perfectFor}
+                    </p>
 
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "20px" }}>WHAT'S INCLUDED</div>
-                    <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: "14px", marginBottom: "40px" }}>
-                      {tier.includes.map((item, i) => (
-                        <li key={i} style={{ display: "flex", gap: "12px", fontSize: "14px", color: "rgba(255,255,255,0.7)" }}>
-                          <Check size={16} color={tier.color} style={{ flexShrink: 0, marginTop: "2px" }} /> {item}
-                        </li>
-                      ))}
-                      {tier.notIncluded && tier.notIncluded.map((item, i) => (
-                        <li key={i} style={{ display: "flex", gap: "12px", fontSize: "14px", color: "rgba(255,255,255,0.2)" }}>
-                          <XCircle size={16} color="rgba(255,255,255,0.1)" style={{ flexShrink: 0, marginTop: "2px" }} /> {item}
-                        </li>
-                      ))}
-                    </ul>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "20px" }}>WHAT'S INCLUDED</div>
+                      <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: "14px", marginBottom: "40px" }}>
+                        {tier.includes.map((item, i) => (
+                          <li key={i} style={{ display: "flex", gap: "12px", fontSize: "14px", color: "rgba(255,255,255,0.7)" }}>
+                            <Check size={16} color={isSelected ? "#FF6A00" : tier.color} style={{ flexShrink: 0, marginTop: "2px" }} /> {item}
+                          </li>
+                        ))}
+                        {tier.notIncluded && tier.notIncluded.map((item, i) => (
+                          <li key={i} style={{ display: "flex", gap: "12px", fontSize: "14px", color: "rgba(255,255,255,0.2)" }}>
+                            <XCircle size={16} color="rgba(255,255,255,0.1)" style={{ flexShrink: 0, marginTop: "2px" }} /> {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <button style={{ 
+                      width: "100%", 
+                      background: isSelected ? "#FF6A00" : "rgba(255,255,255,0.05)", 
+                      color: isSelected ? "white" : "rgba(255,255,255,0.6)",
+                      border: isSelected ? "none" : "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: "100px",
+                      padding: "20px",
+                      fontSize: "14px",
+                      fontWeight: "900",
+                      textTransform: "uppercase",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "10px",
+                      boxShadow: isSelected ? "0 10px 20px rgba(255,106,0,0.2)" : "none",
+                      transition: "all 0.3s"
+                    }}>
+                      {tier.name === "Free" ? "JOIN FOR FREE" : `GET ${tier.name.toUpperCase()}`} <ArrowRight size={18} />
+                    </button>
                   </div>
-
-                  <button style={{ 
-                    width: "100%", 
-                    background: tier.name === "Free" ? "rgba(255,255,255,0.05)" : tier.color, 
-                    color: tier.name === "Gold" || tier.name === "Silver" || tier.name === "Bronze" ? "black" : "white",
-                    border: "none",
-                    borderRadius: "100px",
-                    padding: "20px",
-                    fontSize: "14px",
-                    fontWeight: "900",
-                    textTransform: "uppercase",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "10px",
-                    transition: "all 0.3s"
-                  }}>
-                    {tier.name === "Free" ? "JOIN FOR FREE" : `GET ${tier.name.toUpperCase()}`} <ArrowRight size={18} />
-                  </button>
-                </div>
-              </ScrollReveal>
-            ))}
+                </ScrollReveal>
+              );
+            })}
           </div>
         </section>
 
@@ -337,7 +362,7 @@ const EliteMembership = () => {
                   <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "18px", marginBottom: "40px" }}>
                     Members can upgrade or cancel their memberships at any time through their account dashboard.
                   </p>
-                  <Link to="/auth" style={{ textDecoration: "none" }}>
+                  <Link to="/signup" style={{ textDecoration: "none" }}>
                     <button style={{ background: "#FF6A00", color: "white", padding: "20px 48px", borderRadius: "100px", border: "none", fontSize: "15px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "12px" }}>
                       UPGRADE NOW <ArrowRight size={20} />
                     </button>

@@ -156,7 +156,7 @@ const Login = () => {
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 10px" }}>
-                <Link to="/forgot" style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textDecoration: "none", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <Link to="/contact" style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textDecoration: "none", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   FORGOT PASSWORD?
                 </Link>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

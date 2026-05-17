@@ -13,27 +13,48 @@ import Footer from "../components/Footer";
    REUSABLE SUB-COMPONENTS
 ───────────────────────────────────────────────────────── */
 
-const NewestCard = ({ img, cat, title, avatar, name, value }) => (
-  <div className="holder-card" style={{ width: '100%', height: '360px' }}>
-    <img src={img} alt={title} className="holder-card-img" />
-    <div className="holder-card-gradient" />
-    <div className="holder-side-strip" />
-    <div className="holder-card-top">
-      <span className="holder-badge-pill">{cat}</span>
-      <span className="holder-rank-num">NEW</span>
-    </div>
-    <div className="holder-card-bottom">
-      <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'white', marginBottom: '12px', lineHeight: '1.2', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{title}</h3>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <img src={avatar} alt={name} style={{ width: '28px', height: '28px', borderRadius: '50%', border: '1.5px solid #FF6A00' }} />
-          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>{name}</span>
+const NewestCard = ({ img, cat, title, avatar, name, value, slug }) => {
+  const cardSlug = slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return (
+    <Link to={`/record/${cardSlug}`} style={{ textDecoration: 'none', display: 'block', width: '100%' }}>
+      <div 
+        className="holder-card" 
+        style={{ 
+          width: '100%', 
+          height: '360px', 
+          cursor: 'pointer',
+          transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-8px)';
+          e.currentTarget.style.boxShadow = '0 20px 40px rgba(255,106,0,0.18)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'none';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+      >
+        <img src={img} alt={title} className="holder-card-img" />
+        <div className="holder-card-gradient" />
+        <div className="holder-side-strip" />
+        <div className="holder-card-top">
+          <span className="holder-badge-pill">{cat}</span>
+          <span className="holder-rank-num">NEW</span>
         </div>
-        <div style={{ color: '#FF6A00', fontWeight: '900', fontSize: '15px' }}>{value}</div>
+        <div className="holder-card-bottom">
+          <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'white', marginBottom: '12px', lineHeight: '1.2', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{title}</h3>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <img src={avatar} alt={name} style={{ width: '28px', height: '28px', borderRadius: '50%', border: '1.5px solid #FF6A00' }} />
+              <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>{name}</span>
+            </div>
+            <div style={{ color: '#FF6A00', fontWeight: '900', fontSize: '15px' }}>{value}</div>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-);
+    </Link>
+  );
+};
 
 const RecCard = ({ img, cat, title, by }) => (
   <div className="rec-card">
@@ -175,6 +196,7 @@ const Home = () => {
             style={{ display: "flex", flexDirection: "column", position: "relative" }}
           >
             <div
+              onClick={() => navigate("/categories")}
               style={{
                 background: "white",
                 color: "#111",
@@ -185,7 +207,8 @@ const Home = () => {
                 justifyContent: "space-between",
                 alignItems: "center",
                 boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
-                border: "1px solid #f0f0f0"
+                border: "1px solid #f0f0f0",
+                cursor: "pointer"
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -220,7 +243,7 @@ const Home = () => {
                     { name: "Mind & Memory", icon: <Brain style={{ width: 18, height: 18, color: "#FF6A00" }} /> },
                     { name: "Action Sports", icon: <Bike style={{ width: 18, height: 18, color: "#FF6A00" }} /> }
                   ].map((cat, i, arr) => (
-                    <div key={cat.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 8px", cursor: "pointer", borderBottom: i === arr.length - 1 ? "none" : "1px solid #f0f0f0", fontSize: "14px", color: "#111", fontWeight: "600", transition: "background 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.background = "#fff8f5"} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+                    <div key={cat.name} onClick={() => navigate("/categories", { state: { activeTab: i } })} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 8px", cursor: "pointer", borderBottom: i === arr.length - 1 ? "none" : "1px solid #f0f0f0", fontSize: "14px", color: "#111", fontWeight: "600", transition: "background 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.background = "#fff8f5"} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
                       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                         {cat.icon}
                         <span>{cat.name}</span>
@@ -473,13 +496,13 @@ const Home = () => {
           <InfiniteSlider speed={40} gap={24} cardWidth="300px">
             {[
               { img: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80", cat: "ATHLETICS", title: "Most Basketball Three-Pointers in 1 Minute", avatar: "https://randomuser.me/api/portraits/men/32.jpg", name: "James Carter", value: "42 Shots" },
-              { img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80", cat: "FITNESS", title: "Fastest 100m Sand Sprint", avatar: "https://randomuser.me/api/portraits/women/44.jpg", name: "Elena Petrov", value: "11.2 Sec" },
+              { img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80", cat: "FITNESS", title: "Fastest 100m Sand Sprint", avatar: "https://randomuser.me/api/portraits/women/44.jpg", name: "Elena Petrov", value: "11.2 Sec", slug: "sprinting" },
               { img: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=600&q=80", cat: "STRENGTH", title: "Most Consecutive Pull-Ups", avatar: "https://randomuser.me/api/portraits/men/85.jpg", name: "Marcus S.", value: "89 Reps" },
-              { img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=600&q=80", cat: "ENDURANCE", title: "Longest Plank Hold (Under 18)", avatar: "https://randomuser.me/api/portraits/men/12.jpg", name: "Leo Rossi", value: "1h 12m" },
+              { img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=600&q=80", cat: "ENDURANCE", title: "Longest Plank Hold (Under 18)", avatar: "https://randomuser.me/api/portraits/men/12.jpg", name: "Leo Rossi", value: "1h 12m", slug: "plank-holds" },
               { img: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=600&q=80", cat: "GAMING", title: "Highest Score in Retro Tetris", avatar: "https://randomuser.me/api/portraits/women/15.jpg", name: "Sarah Kim", value: "999,999" },
               { img: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=600&q=80", cat: "ACTION", title: "Fastest 360 Flip on Skateboard", avatar: "https://randomuser.me/api/portraits/men/45.jpg", name: "Ryan G.", value: "0.8 Sec" },
               { img: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80", cat: "REACTION", title: "Fastest Light Button Hits", avatar: "https://randomuser.me/api/portraits/women/22.jpg", name: "Mina Chen", value: "24 Hits/s" },
-              { img: "https://images.unsplash.com/photo-1591123720164-de1348028a82?auto=format&fit=crop&w=600&q=80", cat: "MIND", title: "Blindfolded Rubik's Solve", avatar: "https://randomuser.me/api/portraits/men/76.jpg", name: "David Lu", value: "14.5 Sec" },
+              { img: "https://images.unsplash.com/photo-1591123720164-de1348028a82?auto=format&fit=crop&w=600&q=80", cat: "MIND", title: "Blindfolded Rubik's Solve", avatar: "https://randomuser.me/api/portraits/men/76.jpg", name: "David Lu", value: "14.5 Sec", slug: "rubik-s-cube" },
               { img: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=600&q=80", cat: "SPEED", title: "Fastest 50m Crawl", avatar: "https://randomuser.me/api/portraits/women/67.jpg", name: "Alice B.", value: "9.8 Sec" }
             ].map((rec, idx) => (
               <NewestCard key={idx} {...rec} />
@@ -539,7 +562,7 @@ const Home = () => {
                 className="cat-cell" 
                 role="button" 
                 tabIndex={0}
-                onClick={() => navigate("/categories")}
+                onClick={() => navigate(`/explore?category=${cat.n}`)}
                 style={{ cursor: "pointer" }}
               >
                 <div className="cat-cell-top">

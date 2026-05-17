@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowRight, Search } from "lucide-react";
+import { ArrowRight, Search, ChevronDown } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -8,15 +8,40 @@ import ScrollReveal from "../components/ScrollReveal";
 
 const Explore = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [activeCategory, setActiveCategory] = useState(searchParams.get("category") || "All");
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+  const [showDropdown, setShowDropdown] = useState(false);
 
   useEffect(() => {
+    const cat = searchParams.get("category");
+    if (cat) {
+      setActiveCategory(cat);
+    } else {
+      setActiveCategory("All");
+    }
     const q = searchParams.get("q");
     if (q !== null) setSearchQuery(q);
   }, [searchParams]);
 
-  const categories = ["All", "Athletics", "Strength", "Endurance", "Gaming", "Skills"];
+  const visibleCategories = [
+    "All", 
+    "Athletics", 
+    "Strength", 
+    "Endurance", 
+    "Balance", 
+    "Skills"
+  ];
+
+  const hiddenCategories = [
+    "Gaming", 
+    "Water Sports", 
+    "Reaction", 
+    "Mind & Memory", 
+    "Action Sports", 
+    "Entertainment", 
+    "Creative", 
+    "Youth"
+  ];
 
   const records = [
     { 
@@ -121,11 +146,19 @@ const Explore = () => {
                 style={{ width: "100%", background: "#161616", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "100px", padding: "16px 20px 16px 50px", color: "white", fontSize: "14px", outline: "none" }}
               />
             </div>
-            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-              {categories.map(c => (
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+              {visibleCategories.map(c => (
                 <button 
                   key={c}
-                  onClick={() => setActiveCategory(c)}
+                  onClick={() => {
+                    setActiveCategory(c);
+                    if (c === "All") {
+                      searchParams.delete("category");
+                    } else {
+                      searchParams.set("category", c);
+                    }
+                    setSearchParams(searchParams);
+                  }}
                   style={{ 
                     padding: "10px 20px", 
                     borderRadius: "100px", 
@@ -141,6 +174,97 @@ const Explore = () => {
                   {c}
                 </button>
               ))}
+
+              {/* MORE CATEGORIES DROPDOWN */}
+              <div 
+                style={{ position: "relative" }}
+                onMouseEnter={() => setShowDropdown(true)}
+                onMouseLeave={() => setShowDropdown(false)}
+              >
+                <button 
+                  style={{ 
+                    padding: "10px 20px", 
+                    borderRadius: "100px", 
+                    background: hiddenCategories.includes(activeCategory) ? "#FF6A00" : "rgba(255,255,255,0.05)", 
+                    color: hiddenCategories.includes(activeCategory) ? "white" : "rgba(255,255,255,0.5)", 
+                    border: "none", 
+                    fontSize: "12px", 
+                    fontWeight: "800", 
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px"
+                  }}
+                >
+                  {hiddenCategories.includes(activeCategory) ? `More: ${activeCategory}` : "More"}
+                  <ChevronDown size={14} style={{ transform: showDropdown ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+                </button>
+                
+                {showDropdown && (
+                  <div 
+                    style={{ 
+                      position: "absolute", 
+                      top: "100%", 
+                      right: 0, 
+                      paddingTop: "8px", 
+                      zIndex: 100
+                    }}
+                  >
+                    <div 
+                      style={{ 
+                        background: "#161616", 
+                        border: "1px solid rgba(255,255,255,0.08)", 
+                        borderRadius: "16px", 
+                        padding: "12px", 
+                        display: "grid", 
+                        gridTemplateColumns: "repeat(2, 160px)", 
+                        gap: "8px", 
+                        boxShadow: "0 10px 30px rgba(0,0,0,0.5)"
+                      }}
+                    >
+                      {hiddenCategories.map(c => (
+                        <button
+                          key={c}
+                          onClick={() => {
+                            setActiveCategory(c);
+                            searchParams.set("category", c);
+                            setSearchParams(searchParams);
+                            setShowDropdown(false);
+                          }}
+                          style={{
+                            padding: "8px 16px",
+                            borderRadius: "8px",
+                            background: activeCategory === c ? "#FF6A00" : "transparent",
+                            color: activeCategory === c ? "white" : "rgba(255,255,255,0.6)",
+                            border: "none",
+                            fontSize: "12px",
+                            fontWeight: "700",
+                            cursor: "pointer",
+                            textAlign: "left",
+                            transition: "all 0.2s",
+                            width: "100%"
+                          }}
+                          onMouseEnter={(e) => {
+                            if (activeCategory !== c) {
+                              e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                              e.currentTarget.style.color = "white";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (activeCategory !== c) {
+                              e.currentTarget.style.background = "transparent";
+                              e.currentTarget.style.color = "rgba(255,255,255,0.6)";
+                            }
+                          }}
+                        >
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

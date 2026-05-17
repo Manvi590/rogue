@@ -20,7 +20,8 @@ const steps = [
     footerTitle: "Your Effort Deserves Professional Intake.",
     footerSub: "We process. We protect. We verify excellence.",
     time: "Intake Duration",
-    days: "24 - 48 Hours"
+    days: "24 - 48 Hours",
+    link: "/submit-evidence-info"
   },
   {
     num: "02",
@@ -37,7 +38,8 @@ const steps = [
     footerTitle: "Your Record Deserves True Recognition.",
     footerSub: "We verify. We validate. We uphold excellence.",
     time: "Typical Review Time",
-    days: "3 - 7 Business Days"
+    days: "3 - 7 Business Days",
+    link: "/adjudication-info"
   },
   {
     num: "03",
@@ -54,7 +56,8 @@ const steps = [
     footerTitle: "Welcome to the Elite League.",
     footerSub: "Celebrate. Inspire. Dominate the world stage.",
     time: "Certificate Delivery",
-    days: "10 - 14 Business Days"
+    days: "10 - 14 Business Days",
+    link: "/global-recognition-info"
   }
 ];
 
@@ -242,7 +245,7 @@ export default function StackingSteps() {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-                <Link to="/verify" style={{ textDecoration: 'none' }}>
+                <Link to={s.link} style={{ textDecoration: 'none' }}>
                   <button style={{ 
                     background: '#FF6A00', 
                     border: 'none', 
