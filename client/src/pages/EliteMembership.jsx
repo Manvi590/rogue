@@ -28,6 +28,7 @@ import { motion } from "framer-motion";
 const EliteMembership = () => {
   const [activeTab, setActiveTab] = useState("MONTHLY");
   const [selectedTier, setSelectedTier] = useState("silver");
+  const [selectedPack, setSelectedPack] = useState(1);
   const [windowWidth, setWindowWidth] = React.useState(window.innerWidth);
 
   React.useEffect(() => {
@@ -313,17 +314,58 @@ const EliteMembership = () => {
                   { count: "1 EXTRA SUBMISSION", price: "$4.99", icon: <Zap size={24} /> },
                   { count: "5 EXTRA SUBMISSIONS", price: "$14.99", icon: <Activity size={24} />, popular: true },
                   { count: "10 EXTRA SUBMISSIONS", price: "$24.99", icon: <Trophy size={24} /> }
-                ].map((pack, i) => (
-                  <div key={i} style={{ background: "#0A0A0A", borderRadius: "32px", padding: "40px", border: pack.popular ? "2px solid #FF6A00" : "1px solid rgba(255,255,255,0.05)", position: "relative" }}>
-                    {pack.popular && <div style={{ position: "absolute", top: "-14px", left: "50%", transform: "translateX(-50%)", background: "#FF6A00", color: "white", padding: "4px 16px", borderRadius: "100px", fontSize: "10px", fontWeight: "900" }}>BEST VALUE</div>}
-                    <div style={{ color: "#FF6A00", marginBottom: "20px", display: "flex", justifyContent: "center" }}>{pack.icon}</div>
-                    <div style={{ fontSize: "14px", fontWeight: "800", color: "rgba(255,255,255,0.4)", marginBottom: "12px" }}>{pack.count}</div>
-                    <div style={{ fontSize: "40px", fontWeight: "950", color: "white", marginBottom: "32px" }}>{pack.price}</div>
-                    <button style={{ width: "100%", background: "rgba(255,255,255,0.05)", color: "white", border: "none", borderRadius: "100px", padding: "18px", fontSize: "14px", fontWeight: "900", cursor: "pointer", transition: "0.3s" }} onMouseEnter={e => e.currentTarget.style.background = "#FF6A00"} onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}>
-                      PURCHASE PACK
-                    </button>
-                  </div>
-                ))}
+                ].map((pack, i) => {
+                  const isSelected = selectedPack === i;
+                  return (
+                    <div 
+                      key={i} 
+                      onClick={() => setSelectedPack(i)}
+                      style={{ 
+                        background: "#0A0A0A", 
+                        borderRadius: "32px", 
+                        padding: "40px", 
+                        border: isSelected ? "2px solid #FF6A00" : "1px solid rgba(255,255,255,0.05)", 
+                        position: "relative",
+                        cursor: "pointer",
+                        transform: isSelected ? "translateY(-8px)" : "translateY(0)",
+                        boxShadow: isSelected ? "0 20px 40px rgba(255, 106, 0, 0.15)" : "none",
+                        transition: "all 0.3s ease"
+                      }}
+                    >
+                      {pack.popular && <div style={{ position: "absolute", top: "-14px", left: "50%", transform: "translateX(-50%)", background: "#FF6A00", color: "white", padding: "4px 16px", borderRadius: "100px", fontSize: "10px", fontWeight: "900" }}>BEST VALUE</div>}
+                      <div style={{ color: "#FF6A00", marginBottom: "20px", display: "flex", justifyContent: "center" }}>{pack.icon}</div>
+                      <div style={{ fontSize: "14px", fontWeight: "800", color: "rgba(255,255,255,0.4)", marginBottom: "12px" }}>{pack.count}</div>
+                      <div style={{ fontSize: "40px", fontWeight: "950", color: "white", marginBottom: "32px" }}>{pack.price}</div>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPack(i);
+                        }}
+                        style={{ 
+                          width: "100%", 
+                          background: isSelected ? "#FF6A00" : "rgba(255,255,255,0.05)", 
+                          color: "white", 
+                          border: isSelected ? "none" : "1px solid rgba(255,255,255,0.1)", 
+                          borderRadius: "100px", 
+                          padding: "18px", 
+                          fontSize: "14px", 
+                          fontWeight: "900", 
+                          cursor: "pointer", 
+                          transition: "all 0.3s ease",
+                          boxShadow: isSelected ? "0 10px 20px rgba(255, 106, 0, 0.3)" : "none"
+                        }} 
+                        onMouseEnter={e => {
+                          if (!isSelected) e.currentTarget.style.background = "rgba(255, 106, 0, 0.2)";
+                        }} 
+                        onMouseLeave={e => {
+                          if (!isSelected) e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                        }}
+                      >
+                        PURCHASE PACK
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </ScrollReveal>
           </div>
