@@ -207,24 +207,37 @@ const About = () => {
                 Our growing list of achievements includes:
               </p>
               <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "16px", maxWidth: "1000px", margin: "0 auto" }}>
-                {["Athletics", "Strength & Power", "Endurance", "Gaming", "Skills & Precision", "Balance Challenges", "Mind & Memory", "Water Sports", "Entertainment", "Action Sports", "Speed & Reaction", "Creative Challenges", "And much more"].map((cat, idx) => (
-                  <motion.div 
-                    key={idx} 
-                    whileHover={{ scale: 1.05, background: "rgba(255,106,0,0.1)", borderColor: "#FF6A00", color: "#FF6A00" }}
-                    style={{ 
-                      background: "rgba(255,255,255,0.03)", 
-                      padding: "14px 28px", 
-                      borderRadius: "100px", 
-                      border: "1px solid rgba(255,255,255,0.1)", 
-                      fontSize: "14px", 
-                      fontWeight: "700",
-                      color: "white",
-                      cursor: "default",
-                      transition: "all 0.3s ease"
-                    }}
-                  >
-                    {cat}
-                  </motion.div>
+                {[
+                  { name: "Athletics", tabIdx: 0 },
+                  { name: "Strength", tabIdx: 1 },
+                  { name: "Endurance", tabIdx: 2 },
+                  { name: "Balance", tabIdx: 3 },
+                  { name: "Skills", tabIdx: 4 },
+                  { name: "Gaming", tabIdx: 5 },
+                  { name: "Water Sports", tabIdx: 6 },
+                  { name: "Reaction", tabIdx: 7 },
+                  { name: "Mind & Memory", tabIdx: 8 },
+                  { name: "Action Sports", tabIdx: 9 },
+                  { name: "Other", tabIdx: 13 }
+                ].map((cat, idx) => (
+                  <Link key={idx} to="/categories" state={{ activeTab: cat.tabIdx }} style={{ textDecoration: "none" }}>
+                    <motion.div 
+                      whileHover={{ scale: 1.05, background: "rgba(255,106,0,0.1)", borderColor: "#FF6A00", color: "#FF6A00" }}
+                      style={{ 
+                        background: "rgba(255,255,255,0.03)", 
+                        padding: "14px 28px", 
+                        borderRadius: "100px", 
+                        border: "1px solid rgba(255,255,255,0.1)", 
+                        fontSize: "14px", 
+                        fontWeight: "700",
+                        color: "white",
+                        cursor: "pointer",
+                        transition: "all 0.3s ease"
+                      }}
+                    >
+                      {cat.name}
+                    </motion.div>
+                  </Link>
                 ))}
               </div>
               <p style={{ textAlign: "center", marginTop: "40px", fontSize: "14px", color: "rgba(255,255,255,0.5)" }}>

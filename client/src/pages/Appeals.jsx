@@ -64,6 +64,22 @@ const labelStyle = {
 
 const Appeals = () => {
   const [step, setStep] = useState(1);
+  const categorySubcategories = {
+    "Athletics": ["Sprinting", "Long Distance", "Relay Races", "Obstacle Running", "Backwards Running", "High Jump", "Long Jump", "Vertical Jump", "Standing Broad Jump", "Javelin Throw", "Discus Throw", "Shot Put", "Accuracy Throws", "Fastest Mile", "Fastest Shuttle Run", "Stair Sprinting", "Cone Drills", "Ladder Drills", "Footwork Challenges", "Speed Course Runs"],
+    "Strength": ["Bench Press", "Push-Ups", "Pull-Ups", "Arm Wrestling", "Grip Strength", "Squats", "Leg Press", "Wall Sits", "Lunges", "Deadlifts", "Tire Flips", "Atlas Stone Lifts", "Weighted Carries", "Rope Pulling", "Object Carrying", "Vehicle Pulls", "Sandbag Challenges", "Punch Strength", "Kicking Power", "Sledgehammer Challenges"],
+    "Endurance": ["Cycling", "Treadmill Challenges", "Stair Climbing", "Continuous Running", "Push-Up Marathons", "Pull-Up Endurance", "Plank Holds", "Squat Reps", "Sleep Deprivation", "Cold Exposure", "Heat Challenges", "Survival", "Longest Duration", "Continuous Exercise Records"],
+    "Balance": ["One-Leg Stands", "Handstands", "Headstands", "Balance Beam Holds", "Chair Balancing", "Pole Balancing", "Stack Balancing", "Slackline Walking", "Tightrope Challenges", "Rolling Balance", "Elevated Challenges", "Moving Surface Balancing"],
+    "Skills": ["Card Throwing", "Trick Shots", "Accuracy Challenges", "Dart Challenges", "Juggling", "Cup Stacking", "Hand-Eye Coordination", "Puzzle Solving", "Rubik’s Cube", "Typing Speed", "Yo-Yo Tricks", "Pen Spinning", "Coin Tricks"],
+    "Gaming": ["Fastest Completion", "Category Speedruns", "Highest Scores", "Kill Records", "Combo Records", "Tournament Streaks", "Ranked Challenges", "VR Challenges", "Mobile High Scores", "Retro/Arcade Records"],
+    "Water Sports": ["Sprint/Distance", "Underwater", "High Diving", "Trick Diving", "Longest Ride", "Biggest Wave", "Kayaking", "Canoeing", "Paddle Boarding", "Water Skiing", "Wakeboarding", "Jet Ski Challenges", "Floating Endurance"],
+    "Reaction": ["Light Reaction", "Sound Reaction", "Catching Challenges", "Dodge Challenges", "Punch Reaction", "Aim Speed Challenges", "Rapid Response", "Split Decision Challenges"],
+    "Mind & Memory": ["Number/Card Memorization", "Name Recall", "Mental Math", "Fast Calc", "Puzzle Completion", "Focus Duration", "Meditation Challenges", "Chess", "Strategy Games", "Planning Challenges"],
+    "Action Sports": ["Skate Trick Records", "BMX Rotation", "Scooter Air Time", "Bike Wheelies", "Wall Runs", "Vault Challenges", "Board Breaking", "Kick Height", "Base Jumping", "Stunt Challenges", "Freestyle Challenges"],
+    "Other": []
+  };
+
+  const categories = Object.keys(categorySubcategories);
+
   const [formData, setFormData] = useState({
     fullName: "",
     username: "",
@@ -74,6 +90,7 @@ const Appeals = () => {
     submissionId: "",
     recordTitle: "",
     category: "",
+    subcategory: "",
     submissionDate: "",
     denialDate: "",
     appealReason: "",
@@ -156,8 +173,110 @@ const Appeals = () => {
     }, 2000);
   };
 
-  const nextStep = () => setStep(s => s + 1);
-  const prevStep = () => setStep(s => s - 1);
+  const [validationError, setValidationError] = useState("");
+
+  const validateCurrentStep = () => {
+    setValidationError("");
+
+    // Step 1 check
+    if (step === 1) {
+      if (!formData.fullName || !formData.fullName.trim()) {
+        setValidationError("Full legal name is required.");
+        return false;
+      }
+      if (!formData.username || !formData.username.trim()) {
+        setValidationError("Username is required.");
+        return false;
+      }
+      if (!formData.dob) {
+        setValidationError("Date of birth is required.");
+        return false;
+      }
+      if (!formData.email || !formData.email.trim()) {
+        setValidationError("Email address is required.");
+        return false;
+      }
+      if (!formData.country || !formData.country.trim()) {
+        setValidationError("Country is required.");
+        return false;
+      }
+    }
+
+    // Step 2 check
+    if (step === 2) {
+      if (!formData.submissionId || !formData.submissionId.trim()) {
+        setValidationError("Original Submission ID is required.");
+        return false;
+      }
+      if (!formData.recordTitle || !formData.recordTitle.trim()) {
+        setValidationError("Record title is required.");
+        return false;
+      }
+      if (!formData.category || !formData.category.trim()) {
+        setValidationError("Record category is required.");
+        return false;
+      }
+      if (formData.category && categorySubcategories[formData.category]?.length > 0 && !formData.subcategory) {
+        setValidationError("Record subcategory is required.");
+        return false;
+      }
+      if (!formData.submissionDate) {
+        setValidationError("Submission date is required.");
+        return false;
+      }
+      if (!formData.denialDate) {
+        setValidationError("Date of decision or denial is required.");
+        return false;
+      }
+    }
+
+    // Step 3 check
+    if (step === 3) {
+      if (!formData.appealReason) {
+        setValidationError("Please select a reason for appeal.");
+        return false;
+      }
+      if (!formData.explanation || !formData.explanation.trim()) {
+        setValidationError("Detailed appeal explanation is required.");
+        return false;
+      }
+    }
+
+    // Standard HTML5 validation check
+    const stepEl = document.querySelector(`#step-${step}-container`);
+    if (stepEl) {
+      const inputs = stepEl.querySelectorAll("input, textarea, select");
+      let isValid = true;
+      let firstInvalid = null;
+
+      inputs.forEach(input => {
+        if (!input.checkValidity()) {
+          isValid = false;
+          if (!firstInvalid) firstInvalid = input;
+        }
+      });
+
+      if (!isValid) {
+        if (firstInvalid) {
+          firstInvalid.reportValidity();
+          setValidationError("Please complete all required fields correctly.");
+        }
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const nextStep = () => {
+    if (!validateCurrentStep()) return;
+    setValidationError("");
+    setStep(s => s + 1);
+  };
+  const prevStep = () => {
+    setValidationError("");
+    setStep(s => s - 1);
+  };
 
   return (
     <PageTransition>
@@ -323,7 +442,7 @@ const Appeals = () => {
                   <form onSubmit={handleSubmit} style={{ padding: "60px 80px" }}>
                     <AnimatePresence mode="wait">
                       {step === 1 && (
-                        <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                        <motion.div id="step-1-container" key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                           <SectionTitle subtitle="Applicant Details" title="Personal Information" icon={Users} />
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "30px" }}>
                             <div className="form-group">
@@ -355,7 +474,7 @@ const Appeals = () => {
                       )}
 
                       {step === 2 && (
-                        <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                        <motion.div id="step-2-container" key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                           <SectionTitle subtitle="Original Request" title="Submission Information" icon={ClipboardList} />
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "30px" }}>
                             <div className="form-group">
@@ -368,8 +487,35 @@ const Appeals = () => {
                             </div>
                             <div className="form-group">
                               <label style={labelStyle}>Record Category</label>
-                              <input type="text" name="category" style={inputStyle} value={formData.category} onChange={handleChange} required />
+                              <select 
+                                name="category" 
+                                style={{...inputStyle, cursor: "pointer", appearance: "none"}} 
+                                value={formData.category} 
+                                onChange={(e) => {
+                                  handleChange(e);
+                                  setFormData(prev => ({ ...prev, subcategory: "" }));
+                                }} 
+                                required
+                              >
+                                <option value="" disabled style={{ background: "#111", color: "white" }}>Select a Category...</option>
+                                {categories.map(cat => <option key={cat} value={cat} style={{ background: "#111", color: "white" }}>{cat}</option>)}
+                              </select>
                             </div>
+                            {formData.category && categorySubcategories[formData.category]?.length > 0 && (
+                              <div className="form-group">
+                                <label style={labelStyle}>Subcategory</label>
+                                <select 
+                                  name="subcategory" 
+                                  style={{...inputStyle, cursor: "pointer", appearance: "none"}} 
+                                  value={formData.subcategory} 
+                                  onChange={handleChange} 
+                                  required
+                                >
+                                  <option value="" disabled style={{ background: "#111", color: "white" }}>Select a Subcategory...</option>
+                                  {categorySubcategories[formData.category].map(sub => <option key={sub} value={sub} style={{ background: "#111", color: "white" }}>{sub}</option>)}
+                                </select>
+                              </div>
+                            )}
                             <div className="form-group">
                               <label style={labelStyle}>Submission Date</label>
                               <input type="date" name="submissionDate" style={inputStyle} value={formData.submissionDate} onChange={handleChange} required />
@@ -383,7 +529,7 @@ const Appeals = () => {
                       )}
 
                       {step === 3 && (
-                        <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                        <motion.div id="step-3-container" key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                           <SectionTitle subtitle="Case Context" title="Appeal Type & Details" icon={Zap} />
                           <div style={{ marginBottom: "30px" }}>
                             <label style={labelStyle}>Select the Reason for Appeal</label>
@@ -408,7 +554,7 @@ const Appeals = () => {
                       )}
 
                       {step === 4 && (
-                        <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                        <motion.div id="step-4-container" key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                           <SectionTitle subtitle="Verification" title="Evidence & Witnesses" icon={FileCheck} />
                           <div style={{ marginBottom: "40px" }}>
                             <label style={labelStyle}>Witness Information (Optional)</label>
@@ -510,7 +656,7 @@ const Appeals = () => {
                       )}
 
                       {step === 5 && (
-                        <motion.div key="step5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                        <motion.div id="step-5-container" key="step5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                           <SectionTitle subtitle="Confirmation" title="Final Declaration" icon={Shield} />
                           <div style={{ background: "rgba(255,106,0,0.05)", border: "1px solid rgba(255,106,0,0.2)", borderRadius: "24px", padding: "40px", marginBottom: "40px" }}>
                              <ul style={{ fontSize: "14px", color: "rgba(255,255,255,0.7)", lineHeight: "1.8", paddingLeft: "20px" }}>
@@ -537,6 +683,11 @@ const Appeals = () => {
                       )}
                     </AnimatePresence>
 
+                    {validationError && (
+                      <div style={{ background: "rgba(255, 77, 77, 0.1)", border: "1px solid #FF4D4D", color: "#FF4D4D", padding: "16px 24px", borderRadius: "12px", fontSize: "14px", fontWeight: "700", marginBottom: "20px", width: "100%", textAlign: "center" }}>
+                        {validationError}
+                      </div>
+                    )}
                     <div style={{ marginTop: "60px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       {step > 1 ? (
                         <button type="button" onClick={prevStep} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "16px 32px", borderRadius: "100px", cursor: "pointer", fontWeight: "900", textTransform: "uppercase", fontSize: "12px" }}>BACK</button>

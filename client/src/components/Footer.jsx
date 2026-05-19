@@ -21,8 +21,15 @@ const Footer = () => {
               Structured divisions ensure fairness, increase participation, and scale record categories globally.
             </p>
             <div style={{ display: "flex", gap: "10px" }}>
-              {["X", "IG", "YT", "FB"].map(s => (
-                <div key={s} className="social-btn">{s}</div>
+              {[
+                { name: "X", url: "https://x.com/rogueworldrecords" },
+                { name: "IG", url: "https://instagram.com/rogueworldrecords" },
+                { name: "YT", url: "https://youtube.com/rogueworldrecords" },
+                { name: "FB", url: "https://facebook.com/rogueworldrecords" }
+              ].map(s => (
+                <a key={s.name} href={s.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+                  <div className="social-btn">{s.name}</div>
+                </a>
               ))}
             </div>
           </div>

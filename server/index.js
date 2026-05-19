@@ -30,6 +30,7 @@ app.use('/api/records', require('./routes/recordRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/shop', require('./routes/shopRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 app.get('/', (req, res) => {
   res.send('ROGUE API is running...');

@@ -254,7 +254,109 @@ const Verify = () => {
     }
   };
 
+  const [validationError, setValidationError] = useState("");
+
+  const validateCurrentStep = () => {
+    setValidationError("");
+
+    // Step 1 check
+    if (step === 1) {
+      if (!formData.fullName || !formData.fullName.trim()) {
+        setValidationError("Full legal name is required.");
+        return false;
+      }
+      if (!formData.username || !formData.username.trim()) {
+        setValidationError("Athlete handle is required.");
+        return false;
+      }
+      if (!formData.dob) {
+        setValidationError("Date of birth is required.");
+        return false;
+      }
+      if (!formData.email || !formData.email.trim()) {
+        setValidationError("Email address is required.");
+        return false;
+      }
+      if (!formData.country) {
+        setValidationError("Country of origin is required.");
+        return false;
+      }
+    }
+
+    // Step 2 check
+    if (step === 2) {
+      if (!formData.recordTitle || !formData.recordTitle.trim()) {
+        setValidationError("Record title is required.");
+        return false;
+      }
+      if (!formData.resultScore || !formData.resultScore.trim()) {
+        setValidationError("Result / Score value is required.");
+        return false;
+      }
+    }
+
+    // Step 3 check
+    if (step === 3) {
+      if (!formData.date) {
+        setValidationError("Attempt date is required.");
+        return false;
+      }
+      if (!formData.time) {
+        setValidationError("Attempt time is required.");
+        return false;
+      }
+      if (!formData.venueName || !formData.venueName.trim()) {
+        setValidationError("Venue / Facility name is required.");
+        return false;
+      }
+      if (!formData.city || !formData.city.trim()) {
+        setValidationError("City / Country is required.");
+        return false;
+      }
+      if (!formData.explanation || !formData.explanation.trim()) {
+        setValidationError("Please describe your attempt in the explanation field.");
+        return false;
+      }
+    }
+
+    // Step 4 check
+    if (step === 4) {
+      if (!uploadedFiles.video && (!formData.youtubeLink || !formData.youtubeLink.trim())) {
+        setValidationError("Please upload a primary video or provide a valid video link to continue.");
+        return false;
+      }
+    }
+
+    // Standard HTML5 validation check
+    const stepEl = document.querySelector(`#step-${step}-container`);
+    if (stepEl) {
+      const inputs = stepEl.querySelectorAll("input, textarea, select");
+      let isValid = true;
+      let firstInvalid = null;
+
+      inputs.forEach(input => {
+        if (!input.checkValidity()) {
+          isValid = false;
+          if (!firstInvalid) firstInvalid = input;
+        }
+      });
+
+      if (!isValid) {
+        if (firstInvalid) {
+          firstInvalid.reportValidity();
+          setValidationError("Please complete all required fields correctly.");
+        }
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const nextStep = () => {
+    if (!validateCurrentStep()) return;
+    setValidationError("");
+
     if (step < totalSteps) {
       setStep((prev) => prev + 1);
     } else {
@@ -354,7 +456,7 @@ const Verify = () => {
                 >
                   {step === 1 && (
                     <ScrollReveal>
-                      <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+                      <div id="step-1-container" style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
                       <div style={{ marginBottom: "40px" }}>
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 01</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
@@ -374,6 +476,7 @@ const Verify = () => {
                             placeholder="AS APPEARS ON PASSPORT" 
                             value={formData.fullName}
                             onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                            required
                             style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none" }}
                           />
                         </div>
@@ -384,6 +487,7 @@ const Verify = () => {
                             placeholder="ATHLETE HANDLE" 
                             value={formData.username}
                             onChange={(e) => setFormData({...formData, username: e.target.value})}
+                            required
                             style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none" }}
                           />
                         </div>
@@ -396,6 +500,7 @@ const Verify = () => {
                             type="date" 
                             value={formData.dob}
                             onChange={(e) => setFormData({...formData, dob: e.target.value})}
+                            required
                             style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none", colorScheme: "dark" }}
                           />
                         </div>
@@ -474,6 +579,7 @@ const Verify = () => {
                             placeholder="OFFICIAL CONTACT EMAIL" 
                             value={formData.email}
                             onChange={(e) => setFormData({...formData, email: e.target.value})}
+                            required
                             style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none" }}
                           />
                         </div>
@@ -484,6 +590,7 @@ const Verify = () => {
                             placeholder="+X XXX XXX XXXX" 
                             value={formData.phone}
                             onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                            required
                             style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none" }}
                           />
                         </div>
@@ -571,6 +678,11 @@ const Verify = () => {
                           </Link>
                         </div>
 
+                        {validationError && (
+                          <div style={{ background: "rgba(255, 77, 77, 0.1)", border: "1px solid #FF4D4D", color: "#FF4D4D", padding: "16px 24px", borderRadius: "12px", fontSize: "14px", fontWeight: "700", marginBottom: "20px", width: "100%", textAlign: "center" }}>
+                            {validationError}
+                          </div>
+                        )}
                         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "40px" }}>
                           <button 
                             onClick={nextStep}
@@ -598,7 +710,7 @@ const Verify = () => {
                 </ScrollReveal>
                     )}                  {step === 2 && (
                     <ScrollReveal>
-                      <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+                      <div id="step-2-container" style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
                       <div style={{ marginBottom: "40px" }}>
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 02</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
@@ -620,6 +732,7 @@ const Verify = () => {
                               placeholder="E.G. MOST PUSH-UPS IN ONE MINUTE" 
                               value={formData.recordTitle}
                               onChange={(e) => setFormData({...formData, recordTitle: e.target.value})}
+                              required
                               style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none" }}
                             />
                           </div>
@@ -897,6 +1010,7 @@ const Verify = () => {
                                 placeholder="E.G. 502.5" 
                                 value={formData.resultScore}
                                 onChange={(e) => setFormData({...formData, resultScore: e.target.value})}
+                                required
                                 style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none" }}
                               />
                             </div>
@@ -977,17 +1091,19 @@ const Verify = () => {
                           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "24px", padding: "32px" }}>
                             <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "#FF6A00", marginBottom: "20px", textTransform: "uppercase", letterSpacing: "0.1em" }}>ATTEMPT LOGISTICS</label>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "20px" }}>
-                              <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
-                              <input type="time" value={formData.time} onChange={(e) => setFormData({...formData, time: e.target.value})} style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
+                              <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} required style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
+                              <input type="time" value={formData.time} onChange={(e) => setFormData({...formData, time: e.target.value})} required style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
                             </div>
                             <input 
                               type="text" placeholder="VENUE / FACILITY NAME" value={formData.venueName} 
                               onChange={(e) => setFormData({...formData, venueName: e.target.value})}
+                              required
                               style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", marginBottom: "12px" }} 
                             />
                             <input 
                               type="text" placeholder="CITY / COUNTRY" value={formData.city} 
                               onChange={(e) => setFormData({...formData, city: e.target.value})}
+                              required
                               style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none" }} 
                             />
                           </div>
@@ -998,12 +1114,18 @@ const Verify = () => {
                               placeholder="DESCRIBE THE PROCESS AND METHODS USED..." 
                               value={formData.explanation}
                               onChange={(e) => setFormData({...formData, explanation: e.target.value})}
+                              required
                               style={{ width: "100%", minHeight: "150px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "13px", resize: "none" }}
                             />
                           </div>
                         </div>
                       </div>
 
+                      {validationError && (
+                        <div style={{ background: "rgba(255, 77, 77, 0.1)", border: "1px solid #FF4D4D", color: "#FF4D4D", padding: "16px 24px", borderRadius: "12px", fontSize: "14px", fontWeight: "700", marginBottom: "20px", width: "100%", textAlign: "center" }}>
+                          {validationError}
+                        </div>
+                      )}
                       <div style={{ display: "flex", justifyContent: "space-between", marginTop: "40px" }}>
                         <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                           <ArrowLeft size={16} /> PREVIOUS STEP
@@ -1018,7 +1140,7 @@ const Verify = () => {
 
                   {step === 3 && (
                     <ScrollReveal>
-                      <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+                      <div id="step-3-container" style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
                       <div style={{ marginBottom: "40px" }}>
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 03</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
@@ -1133,6 +1255,11 @@ const Verify = () => {
                           )}
                         </div>
                       </div>
+                      {validationError && (
+                        <div style={{ background: "rgba(255, 77, 77, 0.1)", border: "1px solid #FF4D4D", color: "#FF4D4D", padding: "16px 24px", borderRadius: "12px", fontSize: "14px", fontWeight: "700", marginBottom: "20px", width: "100%", textAlign: "center" }}>
+                          {validationError}
+                        </div>
+                      )}
                       <div style={{ display: "flex", justifyContent: "space-between", marginTop: "40px" }}>
                         <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><ArrowLeft size={16} /> PREVIOUS STEP</button>
                         <button onClick={nextStep} style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 40px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.2)" }}>
@@ -1145,7 +1272,7 @@ const Verify = () => {
 
                   {step === 4 && (
                     <ScrollReveal>
-                      <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+                      <div id="step-4-container" style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
                       <div style={{ marginBottom: "40px" }}>
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 04</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
@@ -1246,6 +1373,11 @@ const Verify = () => {
                         ))}
                       </div>
 
+                      {validationError && (
+                        <div style={{ background: "rgba(255, 77, 77, 0.1)", border: "1px solid #FF4D4D", color: "#FF4D4D", padding: "16px 24px", borderRadius: "12px", fontSize: "14px", fontWeight: "700", marginBottom: "20px", width: "100%", textAlign: "center" }}>
+                          {validationError}
+                        </div>
+                      )}
                       {/* NAVIGATION */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
@@ -1278,7 +1410,7 @@ const Verify = () => {
 
                   {step === 5 && (
                     <ScrollReveal>
-                      <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+                      <div id="step-5-container" style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
                       <div style={{ marginBottom: "40px" }}>
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 05</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
@@ -1391,7 +1523,7 @@ const Verify = () => {
 
                   {step === 6 && (
                     <ScrollReveal>
-                      <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+                      <div id="step-6-container" style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
                       <div style={{ marginBottom: "40px" }}>
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 06</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
@@ -1555,6 +1687,11 @@ const Verify = () => {
                           </div>
                         </div>
 
+                        {validationError && (
+                          <div style={{ background: "rgba(255, 77, 77, 0.1)", border: "1px solid #FF4D4D", color: "#FF4D4D", padding: "16px 24px", borderRadius: "12px", fontSize: "14px", fontWeight: "700", marginBottom: "20px", width: "100%", textAlign: "center" }}>
+                            {validationError}
+                          </div>
+                        )}
                         <div style={{ textAlign: "center" }}>
                           <button 
                             onClick={nextStep}

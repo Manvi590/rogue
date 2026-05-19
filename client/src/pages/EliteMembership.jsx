@@ -35,6 +35,45 @@ const EliteMembership = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  const [cardholderName, setCardholderName] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [cvv, setCvv] = useState("");
+
+  const handleCardNumberChange = (e) => {
+    const rawVal = e.target.value.replace(/\D/g, "");
+    const limitedVal = rawVal.substring(0, 16);
+    let formattedVal = "";
+    for (let i = 0; i < limitedVal.length; i++) {
+      if (i > 0 && i % 4 === 0) {
+        formattedVal += " ";
+      }
+      formattedVal += limitedVal[i];
+    }
+    setCardNumber(formattedVal);
+  };
+
+  const handleExpiryDateChange = (e) => {
+    const rawVal = e.target.value.replace(/\D/g, "");
+    const limitedVal = rawVal.substring(0, 4);
+    let formattedVal = "";
+    if (limitedVal.length > 2) {
+      formattedVal = `${limitedVal.substring(0, 2)}/${limitedVal.substring(2)}`;
+    } else {
+      formattedVal = limitedVal;
+    }
+    setExpiryDate(formattedVal);
+  };
+
+  const handleCvvChange = (e) => {
+    const cleanCard = cardNumber.replace(/\s/g, "");
+    const isAmex = cleanCard.startsWith("34") || cleanCard.startsWith("37");
+    const maxCvvLength = isAmex ? 4 : 3;
+    const rawVal = e.target.value.replace(/\D/g, "");
+    const limitedVal = rawVal.substring(0, maxCvvLength);
+    setCvv(limitedVal);
+  };
+
   React.useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
@@ -252,6 +291,10 @@ const EliteMembership = () => {
                           name: `${tier.name.toUpperCase()} MEMBERSHIP`,
                           price: tier.cost
                         });
+                        setCardholderName("");
+                        setCardNumber("");
+                        setExpiryDate("");
+                        setCvv("");
                         setShowCheckout(true);
                       }}
                       style={{ 
@@ -357,6 +400,10 @@ const EliteMembership = () => {
                             name: pack.count,
                             price: pack.price
                           });
+                          setCardholderName("");
+                          setCardNumber("");
+                          setExpiryDate("");
+                          setCvv("");
                           setShowCheckout(true);
                         }}
                         style={{ 
@@ -609,20 +656,20 @@ const EliteMembership = () => {
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                     <div style={{ textAlign: "left" }}>
                       <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>CARDHOLDER NAME</label>
-                      <input type="text" placeholder="John Doe" required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                      <input type="text" placeholder="John Doe" value={cardholderName} onChange={(e) => setCardholderName(e.target.value)} required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
                     </div>
                     <div style={{ textAlign: "left" }}>
                       <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>CARD NUMBER</label>
-                      <input type="text" placeholder="•••• •••• •••• ••••" required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                      <input type="text" placeholder="•••• •••• •••• ••••" value={cardNumber} onChange={handleCardNumberChange} required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", textAlign: "left" }}>
                       <div>
                         <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>EXPIRY DATE</label>
-                        <input type="text" placeholder="MM/YY" required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                        <input type="text" placeholder="MM/YY" value={expiryDate} onChange={handleExpiryDateChange} required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
                       </div>
                       <div>
                         <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>CVV</label>
-                        <input type="text" placeholder="•••" required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                        <input type="text" placeholder="•••" value={cvv} onChange={handleCvvChange} required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
                       </div>
                     </div>
                   </div>

@@ -136,7 +136,96 @@ const ChallengeVerify = () => {
     }
   };
 
+  const [validationError, setValidationError] = useState("");
+
+  const validateCurrentStep = () => {
+    setValidationError("");
+
+    // Step 1 check
+    if (step === 1) {
+      if (!formData.fullName || !formData.fullName.trim()) {
+        setValidationError("Full legal name is required.");
+        return false;
+      }
+      if (!formData.athleteId || !formData.athleteId.trim()) {
+        setValidationError("Athlete handle is required.");
+        return false;
+      }
+      if (!formData.country) {
+        setValidationError("Country of origin is required.");
+        return false;
+      }
+    }
+
+    // Step 2 check
+    if (step === 2) {
+      if (!formData.date) {
+        setValidationError("Attempt date is required.");
+        return false;
+      }
+      if (!formData.time) {
+        setValidationError("Attempt time is required.");
+        return false;
+      }
+      if (!formData.venueName || !formData.venueName.trim()) {
+        setValidationError("Venue / Facility name is required.");
+        return false;
+      }
+      if (!formData.city || !formData.city.trim()) {
+        setValidationError("City / Country is required.");
+        return false;
+      }
+      for (let i = 0; i < formData.witnesses.length; i++) {
+        const witness = formData.witnesses[i];
+        if (!witness.name || !witness.name.trim()) {
+          setValidationError(`Please enter a name for Witness #${i + 1}.`);
+          return false;
+        }
+        if (!witness.role) {
+          setValidationError(`Please select a role for Witness #${i + 1}.`);
+          return false;
+        }
+      }
+    }
+
+    // Step 3 check
+    if (step === 3) {
+      if (!uploadedFiles.video && (!formData.youtubeLink || !formData.youtubeLink.trim())) {
+        setValidationError("Please upload a primary video or provide a valid video link to continue.");
+        return false;
+      }
+    }
+
+    // Standard HTML5 validation check
+    const stepEl = document.querySelector(`#step-${step}-container`);
+    if (stepEl) {
+      const inputs = stepEl.querySelectorAll("input, textarea, select");
+      let isValid = true;
+      let firstInvalid = null;
+
+      inputs.forEach(input => {
+        if (!input.checkValidity()) {
+          isValid = false;
+          if (!firstInvalid) firstInvalid = input;
+        }
+      });
+
+      if (!isValid) {
+        if (firstInvalid) {
+          firstInvalid.reportValidity();
+          setValidationError("Please complete all required fields correctly.");
+        }
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const nextStep = () => {
+    if (!validateCurrentStep()) return;
+    setValidationError("");
+
     if (step < totalSteps) {
       setStep((prev) => prev + 1);
     } else {
@@ -228,7 +317,7 @@ const ChallengeVerify = () => {
                   transition={{ duration: 0.4 }}
                 >
                   {step === 1 && (
-                    <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+                    <div id="step-1-container" style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
                       <div style={{ marginBottom: "40px" }}>
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 01</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
@@ -248,6 +337,7 @@ const ChallengeVerify = () => {
                             placeholder="AS APPEARS ON PASSPORT" 
                             value={formData.fullName}
                             onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                            required
                             style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none", transition: "border-color 0.3s" }}
                           />
                         </div>
@@ -260,6 +350,7 @@ const ChallengeVerify = () => {
                               placeholder="RWR-XXXX-XXXX" 
                               value={formData.athleteId}
                               onChange={(e) => setFormData({...formData, athleteId: e.target.value})}
+                              required
                               style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "18px 24px", color: "white", fontSize: "14px", outline: "none" }}
                             />
                             <div style={{ position: "absolute", right: "20px", top: "50%", transform: "translateY(-50%)", color: "#FF6A00" }}>
@@ -336,6 +427,11 @@ const ChallengeVerify = () => {
                           </Link>
                         </div>
 
+                        {validationError && (
+                          <div style={{ background: "rgba(255, 77, 77, 0.1)", border: "1px solid #FF4D4D", color: "#FF4D4D", padding: "16px 24px", borderRadius: "12px", fontSize: "14px", fontWeight: "700", marginBottom: "20px", width: "100%", textAlign: "center" }}>
+                            {validationError}
+                          </div>
+                        )}
                         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "40px" }}>
                           <button 
                             onClick={nextStep}
@@ -364,7 +460,7 @@ const ChallengeVerify = () => {
                   )}
 
                   {step === 2 && (
-                    <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+                    <div id="step-2-container" style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
                       <div style={{ marginBottom: "40px" }}>
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 02</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
@@ -385,20 +481,22 @@ const ChallengeVerify = () => {
                         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
                           {/* LOCATION INFO */}
                           <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", padding: "32px" }}>
-                            <input 
+                             <input 
                               type="text" placeholder="NAME OF LOCATION" value={formData.venueName} 
                               onChange={(e) => setFormData({...formData, venueName: e.target.value})}
+                              required
                               style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", marginBottom: "20px" }} 
                             />
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
                               <input 
                                 type="text" placeholder="CITY / STATE" value={formData.city} 
                                 onChange={(e) => setFormData({...formData, city: e.target.value})}
+                                required
                                 style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none" }} 
                               />
                               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                                <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
-                                <input type="time" value={formData.time} onChange={(e) => setFormData({...formData, time: e.target.value})} style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
+                                <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} required style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
+                                <input type="time" value={formData.time} onChange={(e) => setFormData({...formData, time: e.target.value})} required style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
                               </div>
                             </div>
                           </div>
@@ -422,6 +520,7 @@ const ChallengeVerify = () => {
                                 <input 
                                   type="text" placeholder="WITNESS NAME" value={witness.name} 
                                   onChange={(e) => updateWitness(index, "name", e.target.value)}
+                                  required
                                   style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", marginBottom: "20px" }} 
                                 />
                                 
@@ -501,6 +600,11 @@ const ChallengeVerify = () => {
                           </div>
                         </div>
                       </div>
+                      {validationError && (
+                        <div style={{ background: "rgba(255, 77, 77, 0.1)", border: "1px solid #FF4D4D", color: "#FF4D4D", padding: "16px 24px", borderRadius: "12px", fontSize: "14px", fontWeight: "700", marginBottom: "20px", width: "100%", textAlign: "center" }}>
+                          {validationError}
+                        </div>
+                      )}
                       <div style={{ display: "flex", justifyContent: "space-between", marginTop: "40px" }}>
                         <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><ArrowLeft size={16} /> PREVIOUS STEP</button>
                         <button onClick={nextStep} style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 40px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.2)" }}>
@@ -511,7 +615,7 @@ const ChallengeVerify = () => {
                   )}
 
                   {step === 3 && (
-                    <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+                    <div id="step-3-container" style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
                       <div style={{ marginBottom: "40px" }}>
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 03</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
@@ -609,6 +713,11 @@ const ChallengeVerify = () => {
                         ))}
                       </div>
 
+                      {validationError && (
+                        <div style={{ background: "rgba(255, 77, 77, 0.1)", border: "1px solid #FF4D4D", color: "#FF4D4D", padding: "16px 24px", borderRadius: "12px", fontSize: "14px", fontWeight: "700", marginBottom: "20px", width: "100%", textAlign: "center" }}>
+                          {validationError}
+                        </div>
+                      )}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
                           <ArrowLeft size={18} /> PREVIOUS STEP
@@ -638,7 +747,7 @@ const ChallengeVerify = () => {
                   )}
 
                   {step === 4 && (
-                    <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+                    <div id="step-4-container" style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
                       <div style={{ marginBottom: "40px" }}>
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 04</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
@@ -749,7 +858,7 @@ const ChallengeVerify = () => {
                   )}
 
                   {step === 5 && (
-                    <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+                    <div id="step-5-container" style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
                       <div style={{ marginBottom: "40px" }}>
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 05</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
@@ -882,6 +991,11 @@ const ChallengeVerify = () => {
                           By hitting 'Submit to Global Ledger', you certify that all performance data, video evidence, and biometric logs are 100% authentic and unmanipulated. Any attempt to falsify record data will result in immediate permanent disqualification and revocation of Elite Membership. The Rogue World Records committee reserves the right to request a live re-verification of any performance.
                         </p>
                         
+                        {validationError && (
+                          <div style={{ background: "rgba(255, 77, 77, 0.1)", border: "1px solid #FF4D4D", color: "#FF4D4D", padding: "16px 24px", borderRadius: "12px", fontSize: "14px", fontWeight: "700", marginBottom: "20px", width: "100%", textAlign: "center" }}>
+                            {validationError}
+                          </div>
+                        )}
                         <button 
                           onClick={nextStep}
                           disabled={loading}

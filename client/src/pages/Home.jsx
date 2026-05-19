@@ -71,26 +71,91 @@ const RecCard = ({ img, cat, title, by }) => (
   </div>
 );
 
-const HolderCard = ({ img, badge, name, records, rank }) => (
-  <div className="holder-card">
-    <img src={img} alt={name} className="holder-card-img" />
-    <div className="holder-card-gradient" />
-    <div className="holder-side-strip" />
-    <div className="holder-card-top">
-      <span className="holder-badge-pill">{badge}</span>
-      <span className="holder-rank-num">#{String(rank).padStart(2, "0")}</span>
-    </div>
-    <div className="holder-card-bottom">
-      <div className="holder-name">{name}</div>
-      <div className="holder-records">{records} World Records</div>
-      <Link to={`/profile/${name.toLowerCase().replace(/\s+/g, '-')}`} style={{ textDecoration: "none" }}>
-        <div className="holder-view-link" style={{ transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "white"} onMouseLeave={(e) => e.currentTarget.style.color = "#FF6A00"}>
-          View Profile <ArrowRight style={{ width: 12, height: 12 }} />
+const HolderCard = ({ img, badge, name, records, rank, slug }) => {
+  const recordSlug = slug || "stair-climbing";
+  return (
+    <div className="holder-card" style={{ position: "relative" }}>
+      <Link to={`/record/${recordSlug}`} style={{ display: "block", position: "relative", width: "100%", height: "200px", overflow: "hidden" }}>
+        <img src={img} alt={name} className="holder-card-img" style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.4s ease" }} />
+        <div className="holder-card-gradient" />
+        
+        <div 
+          className="play-overlay"
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0,0,0,0.2)",
+            transition: "all 0.3s ease",
+            opacity: 0.8
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(0,0,0,0.4)";
+            const icon = e.currentTarget.querySelector(".play-icon-circle");
+            if (icon) {
+              icon.style.transform = "scale(1.15)";
+              icon.style.boxShadow = "0 0 25px rgba(255, 106, 0, 0.6)";
+              icon.style.borderColor = "#FF6A00";
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(0,0,0,0.2)";
+            const icon = e.currentTarget.querySelector(".play-icon-circle");
+            if (icon) {
+              icon.style.transform = "scale(1)";
+              icon.style.boxShadow = "none";
+              icon.style.borderColor = "rgba(255,255,255,0.4)";
+            }
+          }}
+        >
+          <div 
+            className="play-icon-circle"
+            style={{ 
+              width: "48px", 
+              height: "48px", 
+              borderRadius: "50%", 
+              background: "rgba(0, 0, 0, 0.6)", 
+              border: "1.5px solid rgba(255,255,255,0.4)", 
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "center", 
+              color: "#FF6A00",
+              transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+            }}
+          >
+            <Play size={16} fill="#FF6A00" style={{ marginLeft: "2px" }} />
+          </div>
         </div>
       </Link>
+      
+      <div className="holder-side-strip" />
+      <div className="holder-card-top">
+        <span className="holder-badge-pill">{badge}</span>
+        <span className="holder-rank-num">#{String(rank).padStart(2, "0")}</span>
+      </div>
+      <div className="holder-card-bottom" style={{ padding: "16px 20px 20px" }}>
+        <div className="holder-name" style={{ fontSize: "18px", fontWeight: "900", color: "white" }}>{name}</div>
+        <div className="holder-records" style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)", marginBottom: "12px" }}>{records} World Records</div>
+        
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", justifyContent: "space-between" }}>
+          <Link to={`/profile/${name.toLowerCase().replace(/\s+/g, '-')}`} style={{ textDecoration: "none" }}>
+            <div className="holder-view-link" style={{ transition: "color 0.2s", fontSize: "11px", fontWeight: "800", color: "#FF6A00", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "4px" }} onMouseEnter={(e) => e.currentTarget.style.color = "white"} onMouseLeave={(e) => e.currentTarget.style.color = "#FF6A00"}>
+              Profile <ArrowRight style={{ width: 10, height: 10 }} />
+            </div>
+          </Link>
+          <Link to={`/record/${recordSlug}`} style={{ textDecoration: "none" }}>
+            <div className="holder-view-link" style={{ transition: "color 0.2s", fontSize: "11px", fontWeight: "800", color: "#FF6A00", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "4px" }} onMouseEnter={(e) => e.currentTarget.style.color = "white"} onMouseLeave={(e) => e.currentTarget.style.color = "#FF6A00"}>
+              Watch Record <Play size={10} fill="#FF6A00" style={{ display: "inline-block" }} />
+            </div>
+          </Link>
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
 
 const AnimatedStat = ({ end, suffix, duration = 2000 }) => {
   const [count, setCount] = useState(0);
@@ -606,11 +671,11 @@ const Home = () => {
         </div>
         <div className="slider-wrapper holders-slider-wrapper">
           <InfiniteSlider gap={20} speed={32} reverse={true} cardWidth="260px">
-            <HolderCard img="https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=700&q=80" badge="Strength" name="Leo Vance" records="4" rank={2} />
-            <HolderCard img="https://images.unsplash.com/photo-1594882645126-14020914d58d?auto=format&fit=crop&w=800&q=80" badge="Speed" name="Jamal Carter" records="7" rank={1} />
-            <HolderCard img="https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=700&q=80" badge="Endurance" name="Elena Petrov" records="2" rank={4} />
-            <HolderCard img="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=700&q=80" badge="Gym" name="Iron K." records="5" rank={3} />
-            <HolderCard img="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=700&q=80" badge="Track" name="Marcus S." records="3" rank={5} />
+            <HolderCard img="https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=700&q=80" badge="Strength" name="Leo Vance" records="4" rank={2} slug="deadlifts" />
+            <HolderCard img="https://images.unsplash.com/photo-1594882645126-14020914d58d?auto=format&fit=crop&w=800&q=80" badge="Speed" name="Jamal Carter" records="7" rank={1} slug="sprinting" />
+            <HolderCard img="https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=700&q=80" badge="Endurance" name="Elena Petrov" records="2" rank={4} slug="plank-holds" />
+            <HolderCard img="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=700&q=80" badge="Gym" name="Iron K." records="5" rank={3} slug="bench-press" />
+            <HolderCard img="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=700&q=80" badge="Track" name="Marcus S." records="3" rank={5} slug="stair-climbing" />
           </InfiniteSlider>
         </div>
       </section>

@@ -90,9 +90,72 @@ const getLeaderboard = async (req, res) => {
   res.json(leaderboard);
 };
 
+// @desc    Get logged in user's records (pending, verified, rejected)
+// @route   GET /api/records/my-submissions
+// @access  Private
+const getMySubmissions = async (req, res) => {
+  try {
+    const { data: records, error } = await supabase
+      .from('records')
+      .select('*')
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json(records);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get all submissions for admin review
+// @route   GET /api/records/admin/submissions
+// @access  Private/Admin
+const getAllSubmissionsForAdmin = async (req, res) => {
+  try {
+    const { data: records, error } = await supabase
+      .from('records')
+      .select('*, user:users(name, email)')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json(records);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Adjudicate (verify/reject) record submission
+// @route   PUT /api/records/admin/adjudicate/:id
+// @access  Private/Admin
+const adjudicateRecord = async (req, res) => {
+  const { status } = req.body;
+  
+  if (!['verified', 'rejected', 'pending'].includes(status)) {
+    return res.status(400).json({ message: 'Invalid adjudication status' });
+  }
+
+  try {
+    const { data: updatedRecord, error } = await supabase
+      .from('records')
+      .update({ status, updated_at: new Date() })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(updatedRecord);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getRecords,
   getRecordById,
   createRecord,
   getLeaderboard,
+  getMySubmissions,
+  getAllSubmissionsForAdmin,
+  adjudicateRecord,
 };

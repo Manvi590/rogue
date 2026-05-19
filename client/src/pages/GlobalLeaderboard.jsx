@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { 
   Trophy, 
   Globe, 
-  Zap, 
   ArrowRight,
   TrendingUp,
   Activity,
@@ -12,42 +11,77 @@ import {
   Award,
   Crown,
   Star,
-  Users
+  Users,
+  Filter
 } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ScrollReveal from "../components/ScrollReveal";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
+
+const CustomSelect = ({ value, onChange, options, label }) => (
+  <div style={{ position: "relative", flex: "1", minWidth: "200px" }}>
+    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>{label}</label>
+    <div style={{ position: "relative" }}>
+      <select 
+        value={value} 
+        onChange={e => onChange(e.target.value)}
+        style={{ 
+          width: "100%", 
+          appearance: "none", 
+          background: "rgba(255,255,255,0.03)", 
+          border: "1px solid rgba(255,255,255,0.05)", 
+          borderRadius: "12px", 
+          padding: "14px 40px 14px 16px", 
+          color: "white", 
+          fontSize: "13px", 
+          fontWeight: "800", 
+          outline: "none",
+          cursor: "pointer",
+          transition: "all 0.2s"
+        }}
+        onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"}
+        onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)"}
+      >
+        {options.map(opt => <option key={opt} value={opt} style={{ background: "#111", color: "white" }}>{opt}</option>)}
+      </select>
+      <div style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px" }}>▼</div>
+    </div>
+  </div>
+);
 
 const GlobalLeaderboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("Worldwide Top 100");
+  
+  const categories = ["All Categories", "Athletics", "Strength", "Endurance", "Balance", "Skills", "Gaming", "Water Sports", "Reaction", "Mind & Memory", "Action Sports", "Other"];
+  const ageGroups = ["All Ages", "Junior Champions Division (5–12)", "Teen Legends Division (13–17)", "Adult Division (18–49)", "Masters Division (50+)"];
+  const countries = ["All Countries", "USA", "RUS", "GBR", "KOR", "ITA", "CHN", "JPN", "CAN", "GER", "AUS", "IND", "FRA"];
+  const sortOptions = ["Highest Score", "Newest Records", "Most Records Held"];
 
-  const filters = [
-    "Worldwide Top 100",
-    "Most Records Held",
-    "Highest Points Earned",
-    "Most Verified Wins",
-    "Fastest Rising",
-    "All-Time Greatest"
-  ];
+  const [activeCategory, setActiveCategory] = useState("All Categories");
+  const [activeCountry, setActiveCountry] = useState("All Countries");
+  const [activeAgeGroup, setActiveAgeGroup] = useState("All Ages");
+  const [activeSort, setActiveSort] = useState("Highest Score");
 
   const mockGlobalData = [
-    { rank: "#01", name: "Leo Vance", points: 24850, country: "USA", records: 12, trend: "+2", avatar: "https://randomuser.me/api/portraits/men/32.jpg" },
-    { rank: "#02", name: "Elena Petrov", points: 22410, country: "RUS", records: 10, trend: "-1", avatar: "https://randomuser.me/api/portraits/women/44.jpg" },
-    { rank: "#03", name: "Jamal Carter", points: 21900, country: "GBR", records: 15, trend: "STABLE", avatar: "https://randomuser.me/api/portraits/men/85.jpg" },
-    { rank: "#04", name: "Sarah Kim", points: 19540, country: "KOR", records: 8, trend: "+5", avatar: "https://randomuser.me/api/portraits/women/15.jpg" },
-    { rank: "#05", name: "Marcus Rossi", points: 18210, country: "ITA", records: 9, trend: "STABLE", avatar: "https://randomuser.me/api/portraits/men/12.jpg" },
-    { rank: "#06", name: "Chen Wei", points: 17800, country: "CHN", records: 11, trend: "-2", avatar: "https://randomuser.me/api/portraits/men/45.jpg" },
-    { rank: "#07", name: "Mina Chen", points: 16950, country: "JPN", records: 7, trend: "+1", avatar: "https://randomuser.me/api/portraits/women/22.jpg" },
-    { rank: "#08", name: "David Lu", points: 15400, country: "CAN", records: 6, trend: "STABLE", avatar: "https://randomuser.me/api/portraits/men/76.jpg" }
+    { rank: "#01", name: "Leo Vance", points: 24850, country: "USA", records: 12, trend: "+2", avatar: "https://randomuser.me/api/portraits/men/32.jpg", category: "Strength", ageGroup: "Adult Division (18–49)", score: "355 KG", date: "2026-05-18" },
+    { rank: "#02", name: "Elena Petrov", points: 22410, country: "RUS", records: 10, trend: "-1", avatar: "https://randomuser.me/api/portraits/women/44.jpg", category: "Endurance", ageGroup: "Adult Division (18–49)", score: "19h 12m", date: "2026-05-15" },
+    { rank: "#03", name: "Jamal Carter", points: 21900, country: "GBR", records: 15, trend: "STABLE", avatar: "https://randomuser.me/api/portraits/men/85.jpg", category: "Athletics", ageGroup: "Adult Division (18–49)", score: "9.76 Sec", date: "2026-05-10" },
+    { rank: "#04", name: "Sarah Kim", points: 19540, country: "KOR", records: 8, trend: "+5", avatar: "https://randomuser.me/api/portraits/women/15.jpg", category: "Gaming", ageGroup: "Teen Legends Division (13–17)", score: "3.13 Sec", date: "2026-05-17" },
+    { rank: "#05", name: "Marcus Rossi", points: 18210, country: "ITA", records: 9, trend: "STABLE", avatar: "https://randomuser.me/api/portraits/men/12.jpg", category: "Balance", ageGroup: "Masters Division (50+)", score: "2h 15m", date: "2026-05-01" },
+    { rank: "#06", name: "Chen Wei", points: 17800, country: "CHN", records: 11, trend: "-2", avatar: "https://randomuser.me/api/portraits/men/45.jpg", category: "Reaction", ageGroup: "Junior Champions Division (5–12)", score: "0.15 Sec", date: "2026-04-20" },
+    { rank: "#07", name: "Mina Chen", points: 16950, country: "JPN", records: 7, trend: "+1", avatar: "https://randomuser.me/api/portraits/women/22.jpg", category: "Skills", ageGroup: "Teen Legends Division (13–17)", score: "10,500 Pts", date: "2026-05-19" },
+    { rank: "#08", name: "David Lu", points: 15400, country: "CAN", records: 6, trend: "STABLE", avatar: "https://randomuser.me/api/portraits/men/76.jpg", category: "Mind & Memory", ageGroup: "Adult Division (18–49)", score: "52 Cards / 14s", date: "2026-03-15" }
   ];
 
   const getFilteredData = () => {
     let data = [...mockGlobalData];
     
-    // Search filter
+    if (activeCategory !== "All Categories") data = data.filter(d => d.category === activeCategory);
+    if (activeCountry !== "All Countries") data = data.filter(d => d.country === activeCountry);
+    if (activeAgeGroup !== "All Ages") data = data.filter(d => d.ageGroup === activeAgeGroup);
+    
     if (searchQuery) {
       data = data.filter(item => 
         item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -55,13 +89,12 @@ const GlobalLeaderboard = () => {
       );
     }
 
-    // Sort by criteria
-    if (activeFilter === "Most Records Held") {
+    if (activeSort === "Highest Score") {
+      data.sort((a, b) => b.points - a.points); // using points as unified score metric for mock sorting
+    } else if (activeSort === "Newest Records") {
+      data.sort((a, b) => new Date(b.date) - new Date(a.date));
+    } else if (activeSort === "Most Records Held") {
       data.sort((a, b) => b.records - a.records);
-    } else if (activeFilter === "Highest Points Earned") {
-      data.sort((a, b) => b.points - a.points);
-    } else if (activeFilter === "Worldwide Top 100") {
-      data.sort((a, b) => b.points - a.points);
     }
 
     return data;
@@ -76,7 +109,6 @@ const GlobalLeaderboard = () => {
 
         {/* HERO SECTION - GLOBAL VIBE */}
         <section style={{ padding: "180px 5% 100px", position: "relative", overflow: "hidden", textAlign: "center" }}>
-          {/* Background elements */}
           <div style={{ position: "absolute", top: "0", left: "50%", transform: "translateX(-50%)", width: "100%", height: "100%", background: "radial-gradient(circle at center, rgba(255,106,0,0.08) 0%, transparent 70%)", zIndex: 0 }} />
           
           <div style={{ maxWidth: "1000px", margin: "0 auto", position: "relative", zIndex: 1 }}>
@@ -89,13 +121,13 @@ const GlobalLeaderboard = () => {
               <span style={{ fontSize: "12px", fontWeight: "900", color: "#FF6A00", letterSpacing: "0.15em", textTransform: "uppercase" }}>WORLDWIDE ELITE STANDINGS</span>
             </motion.div>
 
-            <h1 style={{ fontSize: "clamp(48px, 8vw, 120px)", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.04em", lineHeight: "0.9", marginBottom: "40px" }}>
+            <h1 style={{ fontSize: "clamp(48px, 8vw, 120px)", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.04em", lineHeight: "0.95", marginBottom: "40px" }}>
               <ScrollReveal>GLOBAL</ScrollReveal><br />
-              <span style={{ color: "#FF6A00" }}><ScrollReveal>RANKINGS</ScrollReveal></span>
+              <span style={{ color: "#FF6A00" }}><ScrollReveal>LEADERBOARD</ScrollReveal></span>
             </h1>
             
-            <p style={{ fontSize: "20px", color: "rgba(255,255,255,0.5)", maxWidth: "700px", margin: "0 auto 60px", lineHeight: "1.6" }}>
-              The definitive list of the greatest record breakers on the planet. Ranks are determined by total verified records and points accumulated across all disciplines.
+            <p style={{ fontSize: "20px", color: "rgba(255,255,255,0.5)", maxWidth: "750px", margin: "0 auto 60px", lineHeight: "1.6" }}>
+              Top competitors worldwide and cross-country standings. Compare achievements across borders and track the absolute peaks of human performance across all ages and divisions.
             </p>
 
             {/* QUICK STATS */}
@@ -120,62 +152,46 @@ const GlobalLeaderboard = () => {
 
         {/* MAIN STANDINGS */}
         <section style={{ padding: "0 5% 160px" }}>
-          <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+          <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
             
             {/* FILTER BAR */}
             <div style={{ 
               display: "flex", 
-              justifyContent: "space-between", 
-              alignItems: "center", 
               marginBottom: "48px", 
-              gap: "24px",
+              gap: "20px",
               flexWrap: "wrap",
               background: "rgba(255,255,255,0.02)",
-              padding: "12px",
-              borderRadius: "20px",
+              padding: "24px",
+              borderRadius: "24px",
               border: "1px solid rgba(255,255,255,0.05)"
             }}>
-              <div style={{ display: "flex", gap: "8px", overflowX: "auto", padding: "4px" }} className="no-scrollbar">
-                {filters.map(f => (
-                  <button 
-                    key={f}
-                    onClick={() => setActiveFilter(f)}
-                    style={{ 
-                      background: activeFilter === f ? "#FF6A00" : "transparent",
-                      color: activeFilter === f ? "white" : "rgba(255,255,255,0.4)",
-                      border: "none",
-                      padding: "12px 24px",
-                      borderRadius: "12px",
-                      fontSize: "13px",
-                      fontWeight: "800",
-                      cursor: "pointer",
-                      transition: "all 0.3s ease",
-                      whiteSpace: "nowrap"
-                    }}
-                  >
-                    {f}
-                  </button>
-                ))}
-              </div>
+              <CustomSelect label="Category" value={activeCategory} onChange={setActiveCategory} options={categories} />
+              <CustomSelect label="Country" value={activeCountry} onChange={setActiveCountry} options={countries} />
+              <CustomSelect label="Age Group" value={activeAgeGroup} onChange={setActiveAgeGroup} options={ageGroups} />
+              <CustomSelect label="Sort By" value={activeSort} onChange={setActiveSort} options={sortOptions} />
               
-              <div style={{ position: "relative", minWidth: "300px", flex: "1" }}>
-                <Search style={{ position: "absolute", left: "20px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.3)" }} size={18} />
+              <div style={{ position: "relative", minWidth: "250px", flex: "1" }}>
+                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>Search Athletes</label>
+                <Search style={{ position: "absolute", left: "16px", top: "36px", color: "rgba(255,255,255,0.3)" }} size={16} />
                 <input 
                   type="text" 
-                  placeholder="SEARCH WORLDWIDE ATHLETES..." 
+                  placeholder="Athlete name..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   style={{ 
                     width: "100%", 
                     background: "rgba(255,255,255,0.03)", 
                     border: "1px solid rgba(255,255,255,0.05)", 
-                    borderRadius: "14px", 
-                    padding: "16px 20px 16px 54px", 
+                    borderRadius: "12px", 
+                    padding: "14px 20px 14px 44px", 
                     color: "white", 
-                    fontSize: "14px", 
-                    fontWeight: "700", 
-                    outline: "none" 
+                    fontSize: "13px", 
+                    fontWeight: "800", 
+                    outline: "none",
+                    transition: "all 0.2s"
                   }}
+                  onFocus={e => e.currentTarget.style.borderColor = "#FF6A00"}
+                  onBlur={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)"}
                 />
               </div>
             </div>
@@ -185,11 +201,11 @@ const GlobalLeaderboard = () => {
               {/* Header row */}
               <div style={{ 
                 display: "grid", 
-                gridTemplateColumns: "100px 1fr 180px 180px 180px", 
-                padding: "24px 48px", 
+                gridTemplateColumns: "80px 1.5fr 150px 200px 150px 150px 120px", 
+                padding: "24px 32px", 
                 background: "rgba(255,255,255,0.02)",
                 borderBottom: "1px solid rgba(255,255,255,0.05)",
-                fontSize: "11px",
+                fontSize: "10px",
                 fontWeight: "900",
                 color: "rgba(255,255,255,0.3)",
                 textTransform: "uppercase",
@@ -197,78 +213,83 @@ const GlobalLeaderboard = () => {
               }}>
                 <div>Rank</div>
                 <div>Athlete</div>
-                <div style={{ textAlign: "right" }}>Records Held</div>
-                <div style={{ textAlign: "right" }}>Total Points</div>
-                <div style={{ textAlign: "right" }}>Trend</div>
+                <div>Category</div>
+                <div>Division</div>
+                <div>Score</div>
+                <div>Date</div>
+                <div style={{ textAlign: "right" }}>Points</div>
               </div>
 
-              {filteredData.map((r, i) => (
-                <motion.div 
-                  key={i} 
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  style={{ 
-                    display: "grid", 
-                    gridTemplateColumns: "100px 1fr 180px 180px 180px", 
-                    padding: "32px 48px", 
-                    alignItems: "center", 
-                    borderBottom: i === mockGlobalData.length - 1 ? "none" : "1px solid rgba(255,255,255,0.03)",
-                    background: i < 3 ? "rgba(255,106,0,0.02)" : "transparent",
-                    transition: "background 0.3s ease",
-                    cursor: "pointer"
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,106,0,0.05)"}
-                  onMouseLeave={(e) => e.currentTarget.style.background = i < 3 ? "rgba(255,106,0,0.02)" : "transparent"}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    {i === 0 && <Crown size={16} color="#FFD700" />}
-                    <div style={{ 
-                      fontSize: i < 3 ? "28px" : "20px", 
-                      fontWeight: "950", 
-                      color: i < 3 ? "#FF6A00" : "rgba(255,255,255,0.2)",
-                      fontStyle: i < 3 ? "italic" : "normal"
-                    }}>
-                      #{String(i + 1).padStart(2, '0')}
-                    </div>
-                  </div>
-                  
-                  <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-                    <div style={{ position: "relative" }}>
-                      <img src={r.avatar} alt={r.name} style={{ width: "56px", height: "56px", borderRadius: "16px", border: i < 3 ? "2px solid #FF6A00" : "1px solid rgba(255,255,255,0.1)" }} />
-                      {i < 3 && <div style={{ position: "absolute", top: -5, right: -5, background: "#FF6A00", color: "white", padding: "4px", borderRadius: "50%" }}><Star size={10} fill="white" /></div>}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: "18px", fontWeight: "900", letterSpacing: "-0.02em" }}>{r.name}</div>
-                      <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
-                        <Flag size={12} /> {r.country}
+              {filteredData.length > 0 ? (
+                filteredData.map((r, i) => (
+                  <motion.div 
+                    key={i} 
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    style={{ 
+                      display: "grid", 
+                      gridTemplateColumns: "80px 1.5fr 150px 200px 150px 150px 120px", 
+                      padding: "24px 32px", 
+                      alignItems: "center", 
+                      borderBottom: i === filteredData.length - 1 ? "none" : "1px solid rgba(255,255,255,0.03)",
+                      background: i < 3 && activeSort === "Highest Score" ? "rgba(255,106,0,0.02)" : "transparent",
+                      transition: "background 0.3s ease",
+                      cursor: "pointer"
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,106,0,0.05)"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = i < 3 && activeSort === "Highest Score" ? "rgba(255,106,0,0.02)" : "transparent"}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      {i === 0 && activeSort === "Highest Score" && <Crown size={16} color="#FFD700" />}
+                      <div style={{ 
+                        fontSize: i < 3 && activeSort === "Highest Score" ? "24px" : "18px", 
+                        fontWeight: "950", 
+                        color: i < 3 && activeSort === "Highest Score" ? "#FF6A00" : "rgba(255,255,255,0.2)",
+                        fontStyle: i < 3 && activeSort === "Highest Score" ? "italic" : "normal"
+                      }}>
+                        #{String(i + 1).padStart(2, '0')}
                       </div>
                     </div>
-                  </div>
+                    
+                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                      <div style={{ position: "relative" }}>
+                        <img src={r.avatar} alt={r.name} style={{ width: "48px", height: "48px", borderRadius: "12px", border: i < 3 && activeSort === "Highest Score" ? "2px solid #FF6A00" : "1px solid rgba(255,255,255,0.1)", objectFit: "cover" }} />
+                        {i < 3 && activeSort === "Highest Score" && <div style={{ position: "absolute", top: -5, right: -5, background: "#FF6A00", color: "white", padding: "4px", borderRadius: "50%" }}><Star size={8} fill="white" /></div>}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "16px", fontWeight: "900", letterSpacing: "-0.02em" }}>{r.name}</div>
+                        <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "6px", marginTop: "4px", fontWeight: "700" }}>
+                          <Flag size={10} /> {r.country}
+                        </div>
+                      </div>
+                    </div>
 
-                  <div style={{ textAlign: "right" }}>
-                    <span style={{ fontSize: "20px", fontWeight: "950", color: "white" }}>{r.records}</span>
-                  </div>
+                    <div style={{ fontSize: "13px", fontWeight: "800", color: "rgba(255,255,255,0.8)" }}>{r.category}</div>
+                    
+                    <div>
+                      <div style={{ fontSize: "11px", fontWeight: "800", color: "#FF6A00", background: "rgba(255,106,0,0.1)", padding: "6px 10px", borderRadius: "6px", display: "inline-block", textTransform: "uppercase" }}>
+                        {r.ageGroup.split(" (")[0]}
+                      </div>
+                    </div>
+                    
+                    <div style={{ fontSize: "15px", fontWeight: "900", color: "white" }}>{r.score}</div>
+                    <div style={{ fontSize: "13px", fontWeight: "700", color: "rgba(255,255,255,0.5)" }}>{r.date}</div>
 
-                  <div style={{ textAlign: "right" }}>
-                    <span style={{ fontSize: "20px", fontWeight: "950", color: "#FF6A00" }}>{r.points.toLocaleString()}</span>
-                  </div>
-
-                  <div style={{ 
-                    textAlign: "right", 
-                    fontSize: "12px", 
-                    fontWeight: "900", 
-                    color: r.trend.includes("+") ? "#4ADE80" : r.trend.includes("-") ? "#F87171" : "#94A3B8",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
-                    gap: "6px"
-                  }}>
-                    {r.trend === "STABLE" ? <Activity size={14} /> : <TrendingUp size={14} style={{ transform: r.trend.includes("-") ? "rotate(180deg)" : "none" }} />}
-                    {r.trend}
-                  </div>
-                </motion.div>
-              ))}
+                    <div style={{ textAlign: "right", fontSize: "18px", fontWeight: "950", color: "#FF6A00" }}>
+                      {r.points.toLocaleString()}
+                    </div>
+                  </motion.div>
+                ))
+              ) : (
+                <div style={{ padding: "80px 40px", textAlign: "center" }}>
+                  <Filter size={40} color="rgba(255,255,255,0.1)" style={{ marginBottom: "16px" }} />
+                  <h3 style={{ fontSize: "18px", fontWeight: "900", marginBottom: "8px" }}>No athletes found</h3>
+                  <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.4)", maxWidth: "400px", margin: "0 auto" }}>
+                    Try adjusting your filters or searching for a different division or category.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* CALL TO ACTION */}

@@ -34,8 +34,11 @@ import VerificationProtocolLearnMore from './pages/VerificationProtocolLearnMore
 import Terms from './pages/Terms'
 import Cookies from './pages/Cookies'
 import GlobalLeaderboard from './pages/GlobalLeaderboard'
+import LocalLeaderboards from './pages/LocalLeaderboards'
+import GlobalRankings from './pages/GlobalRankings'
 import LoadingScreen from './components/LoadingScreen'
 import ScrollToTop from './components/ScrollToTop'
+import Admin from './pages/Admin'
 import './App.css'
 
 function App() {
@@ -56,6 +59,8 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/local-leaderboards" element={<LocalLeaderboards />} />
+            <Route path="/global-rankings" element={<GlobalRankings />} />
             <Route path="/global-leaderboard" element={<GlobalLeaderboard />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
@@ -78,6 +83,7 @@ function App() {
             <Route path="/categories" element={<Categories />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/:id" element={<Profile />} />
+            <Route path="/admin" element={<Admin />} />
             <Route path="/submit-evidence-info" element={<SubmitEvidenceLearnMore />} />
             <Route path="/global-recognition-info" element={<GlobalRecognitionLearnMore />} />
             <Route path="/adjudication-info" element={<ExpertAdjudicationLearnMore />} />

@@ -1,4 +1,6 @@
-const API_URL = 'https://server-henna-one-40.vercel.app/api';
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5001/api'
+  : 'https://server-henna-one-40.vercel.app/api';
 
 export const apiCall = async (endpoint, method = 'GET', body = null, token = null) => {
   const headers = {

@@ -13,7 +13,9 @@ import {
 
 const Signup = () => {
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,7 +26,9 @@ const Signup = () => {
   const [heightFt, setHeightFt] = useState("");
   const [heightIn, setHeightIn] = useState("");
   const [gender, setGender] = useState("");
+  const [dob, setDob] = useState("");
   const [country, setCountry] = useState("");
+  const [city, setCity] = useState("");
   const { signup } = useAuth();
   const navigate = useNavigate();
 
@@ -33,21 +37,37 @@ const Signup = () => {
     setError("");
     setLoading(true);
     try {
-      await signup(name, email, password);
+      const heightValFinal = heightUnit === "cm" ? heightVal : `${heightFt}'${heightIn}"`;
+      await signup({
+        name,
+        email,
+        password,
+        username,
+        phone,
+        gender,
+        dob,
+        weight: weightVal,
+        weightUnit,
+        height: heightValFinal,
+        heightUnit,
+        country,
+        city
+      });
       navigate("/profile");
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to create profile");
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <div style={{ background: "#0A0A0A", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <Navbar />
       <div style={{
         background: "#0A0A0A",
         color: "white",
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "'Outfit', 'Inter', sans-serif",
         flex: 1,
         display: "flex",
         alignItems: "center",
@@ -135,6 +155,7 @@ const Signup = () => {
           }}>
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               {error && <div style={{ color: "#ff4444", fontSize: "12px", fontWeight: "600", textAlign: "center" }}>{error}</div>}
+              
               {/* Row 1: Name & Username */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
@@ -150,7 +171,14 @@ const Signup = () => {
                 </div>
                 <div>
                   <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>USERNAME</label>
-                  <input type="text" placeholder="elite_athlete_01" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} />
+                  <input 
+                    type="text" 
+                    placeholder="elite_athlete_01" 
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                    style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                  />
                 </div>
               </div>
 
@@ -169,7 +197,13 @@ const Signup = () => {
                 </div>
                 <div>
                   <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>PHONE NUMBER</label>
-                  <input type="tel" placeholder="+1 (555) 000-0000" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} />
+                  <input 
+                    type="tel" 
+                    placeholder="+1 (555) 000-0000" 
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                  />
                 </div>
               </div>
 
@@ -253,7 +287,12 @@ const Signup = () => {
                 </div>
                 <div>
                   <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>DATE OF BIRTH</label>
-                  <input type="date" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px", colorScheme: "dark" }} />
+                  <input 
+                    type="date" 
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                    style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px", colorScheme: "dark" }} 
+                  />
                 </div>
               </div>
 
@@ -517,12 +556,18 @@ const Signup = () => {
                 </div>
                 <div>
                   <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>CITY / STATE</label>
-                  <input type="text" placeholder="Los Angeles, CA" style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} />
+                  <input 
+                    type="text" 
+                    placeholder="Los Angeles, CA" 
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                  />
                 </div>
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px" }}>
-                <input type="checkbox" id="terms" style={{ accentColor: "#FF6A00" }} />
+                <input type="checkbox" id="terms" style={{ accentColor: "#FF6A00" }} required />
                 <label htmlFor="terms" style={{ fontSize: "11px", color: "rgba(255, 255, 255, 0.6)" }}>
                   I agree to the <Link to="/terms" style={{ color: "#FF6A00", textDecoration: "none" }}>Terms of Service</Link> and <Link to="/privacy" style={{ color: "#FF6A00", textDecoration: "none" }}>Privacy Policy</Link>
                 </label>
@@ -532,24 +577,24 @@ const Signup = () => {
                 type="submit"
                 disabled={loading}
                 style={{
-                background: "#FF6A00",
-                color: "white",
-                border: "none",
-                borderRadius: "100px",
-                padding: "16px",
-                fontSize: "14px",
-                fontWeight: "900",
-                textTransform: "uppercase",
-                cursor: loading ? "not-allowed" : "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "10px",
-                marginTop: "8px",
-                boxShadow: "0 10px 30px rgba(255, 106, 0, 0.3)",
-                transition: "all 0.3s ease",
-                opacity: loading ? 0.7 : 1
-              }}>
+                  background: "#FF6A00",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "100px",
+                  padding: "16px",
+                  fontSize: "14px",
+                  fontWeight: "900",
+                  textTransform: "uppercase",
+                  cursor: loading ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "10px",
+                  marginTop: "8px",
+                  boxShadow: "0 10px 30px rgba(255, 106, 0, 0.3)",
+                  transition: "all 0.3s ease",
+                  opacity: loading ? 0.7 : 1
+                }}>
                 {loading ? "CREATING PROFILE..." : "CREATE ACCOUNT"} 
                 {loading ? <Loader2 className="animate-spin" size={18} /> : <ArrowRight size={18} />}
               </button>

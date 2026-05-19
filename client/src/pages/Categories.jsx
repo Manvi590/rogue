@@ -188,6 +188,16 @@ const Categories = () => {
         { name: "Core Skills", items: ["Fastest Cup Stacking", "Longest Hula Hoop", "Basketball Shots (1 Min)", "Fastest Puzzle"] },
         { name: "Play & Game", items: ["Jump Rope", "Balloon Balancing", "Toy Building", "Memory Games", "Beginner Gaming"] }
       ]
+    },
+    { 
+      name: "Other", 
+      icon: <Sparkles />, 
+      count: "Growing Section", 
+      desc: "Unique talents and miscellaneous achievements that defy standard classification.",
+      subcategories: [
+        { name: "Miscellaneous", items: ["Collections", "Mass Participation", "Large Constructions", "Oddities"] },
+        { name: "New Proposals", items: ["Emerging Talents", "Unusual Feats"] }
+      ]
     }
   ];
 

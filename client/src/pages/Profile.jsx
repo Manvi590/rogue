@@ -1,12 +1,21 @@
-import React from "react";
-import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Trophy, MapPin, Calendar, Activity, Zap, Timer, CheckCircle2, Share2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { 
+  ArrowLeft, Trophy, MapPin, Calendar, Activity, Zap, Timer, 
+  CheckCircle2, Share2, User, Mail, LogOut, Plus, ShieldCheck, 
+  Flame, Loader2, AlertCircle, Eye, RefreshCw, BarChart2, Shield,
+  Award, TrendingUp, Compass, ChevronRight, HardDrive, Bell, Settings,
+  Scale, Ruler, Heart, Phone, Sparkles, X, Edit3, Image
+} from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { useAuth } from "../context/AuthContext";
+import { apiCall } from "../utils/api";
 
 const ATHLETES = {
   "leo-vance": {
     name: "Leo Vance",
+    username: "leo_vance_02",
     rank: "02",
     img: "https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=700&q=80",
     cover: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1600&q=80",
@@ -15,6 +24,15 @@ const ATHLETES = {
     since: "2022",
     records: "4",
     bio: "Strength specialist focused on deadlift and overhead press records. Dedicated to pushing human limits in powerlifting.",
+    gender: "Male",
+    dob: "1994-06-12",
+    weight: "95",
+    weightUnit: "kg",
+    height: "188",
+    heightUnit: "cm",
+    phone: "+44 7911 123456",
+    country: "United Kingdom",
+    city: "London",
     stats: [
       { label: "Total Records", value: "4", sub: "Strength Div" },
       { label: "Power Rank", value: "A+", sub: "Global" },
@@ -27,6 +45,7 @@ const ATHLETES = {
   },
   "jamal-carter": {
     name: "Jamal Carter",
+    username: "jamal_sprinter",
     rank: "01",
     img: "https://images.unsplash.com/photo-1594882645126-14020914d58d?auto=format&fit=crop&w=800&q=80",
     cover: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1600&q=80",
@@ -35,6 +54,15 @@ const ATHLETES = {
     since: "2021",
     records: "7",
     bio: "Fastest man on sand and hurdles. Record breaker in multiple track categories across three continents.",
+    gender: "Male",
+    dob: "1996-03-24",
+    weight: "78",
+    weightUnit: "kg",
+    height: "182",
+    heightUnit: "cm",
+    phone: "+1 (555) 321-7654",
+    country: "United States",
+    city: "New York, NY",
     stats: [
       { label: "Total Records", value: "7", sub: "Speed Div" },
       { label: "Agility Rank", value: "S", sub: "World Rank" },
@@ -44,191 +72,1377 @@ const ATHLETES = {
       { title: "Fastest 100m Sand Sprint", category: "Speed", value: "10.4s", date: "Oct 2023" },
       { title: "Most Hurdles Jumped in 30s", category: "Agility", value: "28", date: "Dec 2023" }
     ]
-  },
-  "elena-petrov": {
-    name: "Elena Petrov",
-    rank: "04",
-    img: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=700&q=80",
-    cover: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1600&q=80",
-    cat: "ENDURANCE",
-    location: "Moscow, Russia",
-    since: "2023",
-    records: "2",
-    bio: "Long distance specialist. Holding multiple records in stationary plank and long-form treadmill runs.",
-    stats: [
-      { label: "Total Records", value: "2", sub: "Endurance Div" },
-      { label: "Stamina Rank", value: "A", sub: "Continental" },
-      { label: "Verified", value: "100%", sub: "Audit Pass" }
-    ],
-    recordList: [
-      { title: "Longest Stationary Plank", category: "Endurance", value: "4h 12m", date: "Nov 2023" }
-    ]
-  },
-  "iron-k.": {
-    name: "Iron K.",
-    rank: "03",
-    img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=700&q=80",
-    cover: "https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=1600&q=80",
-    cat: "GYM",
-    location: "Berlin, Germany",
-    since: "2020",
-    records: "5",
-    bio: "Gymnastics and bodyweight mastery. Expert in calisthenics records and high-intensity interval performance.",
-    stats: [
-      { label: "Total Records", value: "5", sub: "Calisthenics" },
-      { label: "Balance Rank", value: "B+", sub: "Regional" },
-      { label: "Verified", value: "100%", sub: "Audit Pass" }
-    ],
-    recordList: [
-      { title: "Most Muscle Ups in 1 Minute", category: "Gym", value: "18", date: "Jan 2024" }
-    ]
-  },
-  "marcus-s.": {
-    name: "Marcus S.",
-    rank: "05",
-    img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=700&q=80",
-    cover: "https://images.unsplash.com/photo-1594882645126-14020914d58d?auto=format&fit=crop&w=1600&q=80",
-    cat: "TRACK",
-    location: "Sydney, Australia",
-    since: "2024",
-    records: "3",
-    bio: "Rising star in track events. Focused on mid-distance speed and agility drills.",
-    stats: [
-      { label: "Total Records", value: "3", sub: "Track Div" },
-      { label: "Potential Rank", value: "S+", sub: "Emerging" },
-      { label: "Verified", value: "100%", sub: "Audit Pass" }
-    ],
-    recordList: [
-      { title: "Fastest 400m Shuttle Run", category: "Track", value: "48.2s", date: "Feb 2024" }
-    ]
   }
 };
 
 const Profile = () => {
   const { id } = useParams();
-  const athlete = ATHLETES[id] || ATHLETES["jamal-carter"]; // Fallback to jamal-carter if id not found
+  const { user, logout, updateProfile, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
+  const isOwnProfile = !id;
+  const [myRecords, setMyRecords] = useState([]);
+  const [loadingRecords, setLoadingRecords] = useState(false);
+  const [errorRecords, setErrorRecords] = useState(null);
+  const [activeTab, setActiveTab] = useState("submissions"); // submissions, biometrics
+  
+  // Edit profile state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    username: "",
+    phone: "",
+    gender: "",
+    dob: "",
+    weight: "",
+    weightUnit: "kg",
+    height: "",
+    heightUnit: "cm",
+    country: "",
+    city: "",
+    profileImage: ""
+  });
+
+  // Redirect if trying to view private profile without auth
+  useEffect(() => {
+    if (isOwnProfile && !authLoading && !user) {
+      navigate("/login");
+    }
+  }, [user, authLoading, isOwnProfile, navigate]);
+
+  // Fetch logged in user's submissions
+  useEffect(() => {
+    const fetchSubmissions = async () => {
+      if (isOwnProfile && user) {
+        setLoadingRecords(true);
+        setErrorRecords(null);
+        try {
+          const data = await apiCall("/records/my-submissions", "GET", null, user.token);
+          setMyRecords(data || []);
+        } catch (err) {
+          console.error("Error fetching my submissions:", err);
+          setErrorRecords(err.message || "Failed to load submitted records.");
+        } finally {
+          setLoadingRecords(false);
+        }
+      }
+    };
+
+    fetchSubmissions();
+  }, [user, isOwnProfile]);
+
+  // Sync edit form with current user details
+  const openEditModal = () => {
+    if (user) {
+      setEditForm({
+        name: user.name || "",
+        username: user.username || "",
+        phone: user.phone || "",
+        gender: user.gender || "",
+        dob: user.dob ? user.dob.split("T")[0] : "",
+        weight: user.weight || "",
+        weightUnit: user.weightUnit || "kg",
+        height: user.height || "",
+        heightUnit: user.heightUnit || "cm",
+        country: user.country || "",
+        city: user.city || "",
+        profileImage: user.profileImage || ""
+      });
+      setEditError("");
+      setIsEditModalOpen(true);
+    }
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    setEditError("");
+    setEditLoading(true);
+    try {
+      await updateProfile(editForm);
+      setIsEditModalOpen(false);
+    } catch (err) {
+      console.error("Update profile error:", err);
+      setEditError(err.message || "Failed to update registry details.");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  // Handle Loading Auth State
+  if (authLoading || (isOwnProfile && !user)) {
+    return (
+      <div style={{ background: "#030303", color: "white", minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+        <Loader2 className="animate-spin" size={48} color="#FF5500" />
+        <p style={{ marginTop: "16px", color: "#aaa", fontFamily: "'Outfit', 'Inter', sans-serif", letterSpacing: "1px" }}>SYNCING WITH ROGUE NETWORK...</p>
+      </div>
+    );
+  }
+
+  // Load public athlete or fall back to user profile variables
+  const athlete = !isOwnProfile ? (ATHLETES[id] || ATHLETES["jamal-carter"]) : null;
+
+  // Calculate user initials for dynamic avatar
+  const getInitials = (name) => {
+    if (!name) return "R";
+    const parts = name.split(" ");
+    return parts.map(p => p[0]).join("").toUpperCase().substring(0, 2);
+  };
 
   return (
-    <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ 
+      background: "#030303", 
+      color: "white", 
+      minHeight: "100vh", 
+      fontFamily: "'Outfit', 'Inter', sans-serif",
+      backgroundImage: `
+        radial-gradient(circle at 50% -10%, rgba(255, 85, 0, 0.12) 0%, transparent 60%),
+        radial-gradient(circle at 10% 40%, rgba(162, 0, 255, 0.05) 0%, transparent 40%),
+        linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px)
+      `,
+      backgroundSize: "100% 100%, 100% 100%, 45px 45px, 45px 45px",
+      overflowX: "hidden",
+      paddingTop: "80px"
+    }}>
       <Navbar />
 
-      {/* Hero Header Section */}
-      <section style={{ position: "relative", height: "500px", overflow: "hidden" }}>
+      {/* 1. Cover Photo Section */}
+      <section style={{ position: "relative", height: "300px", width: "100%", overflow: "hidden" }}>
         <img
-          src={athlete.cover}
-          alt="Profile Cover"
-          style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.6 }}
+          src={isOwnProfile 
+            ? "https://images.unsplash.com/photo-1517838357463-d25dfeac3438?auto=format&fit=crop&w=1600&q=80" 
+            : athlete.cover
+          }
+          alt="Cover Background"
+          style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.25, filter: "grayscale(20%) brightness(0.9)" }}
         />
         <div style={{
           position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: "300px",
-          background: "linear-gradient(to top, #0A0A0A 10%, transparent 100%)"
+          inset: 0,
+          background: "linear-gradient(to bottom, transparent 20%, rgba(3, 3, 3, 0.8) 80%, #030303 100%)",
         }} />
+      </section>
 
-        <div className="container" style={{ position: "absolute", bottom: "40px", left: "50%", transform: "translateX(-50%)", width: "100%", display: "flex", alignItems: "flex-end", gap: "32px" }}>
-          <div style={{ position: "relative" }}>
-            <img
-              src={athlete.img}
-              alt="Avatar"
-              style={{ width: "180px", height: "180px", borderRadius: "24px", border: "4px solid #FF6A00", objectFit: "cover", boxShadow: "0 20px 40px rgba(0,0,0,0.5)" }}
-            />
-            <div style={{ position: "absolute", bottom: "-10px", right: "-10px", background: "#FF6A00", color: "white", padding: "8px 16px", borderRadius: "100px", fontWeight: "900", fontSize: "14px", border: "4px solid #0A0A0A" }}>
-              RANK #{athlete.rank}
+      {/* 2. Floating Profile Header Card */}
+      <section className="container" style={{ position: "relative", zIndex: 10, marginTop: "-120px", paddingBottom: "20px" }}>
+        <div style={{ 
+          display: "flex", 
+          alignItems: "flex-end", 
+          gap: "36px", 
+          flexWrap: "wrap",
+          background: "rgba(10, 10, 12, 0.4)",
+          backdropFilter: "blur(20px)",
+          borderRadius: "32px",
+          padding: "36px",
+          border: "1px solid rgba(255, 255, 255, 0.03)",
+          boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.9)"
+        }}>
+          
+          {/* Avatar block with rotating neon border */}
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <div style={{ 
+              position: "absolute", 
+              inset: "-8px", 
+              borderRadius: "32px", 
+              background: "linear-gradient(135deg, #FF5500 0%, #a200ff 100%)",
+              opacity: 0.7,
+              zIndex: -1,
+              filter: "blur(6px)"
+            }} />
+            
+            {isOwnProfile ? (
+              user.profileImage ? (
+                <img
+                  src={user.profileImage}
+                  alt="User Avatar"
+                  style={{ width: "160px", height: "160px", borderRadius: "24px", border: "4px solid #030303", objectFit: "cover" }}
+                />
+              ) : (
+                <div style={{ 
+                  width: "160px", 
+                  height: "160px", 
+                  borderRadius: "24px", 
+                  border: "4px solid #030303", 
+                  background: "linear-gradient(135deg, #FF5500 0%, #7000ff 100%)",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  fontSize: "48px",
+                  fontWeight: "900",
+                  color: "white",
+                  textShadow: "0 4px 10px rgba(0,0,0,0.3)"
+                }}>
+                  {getInitials(user.name)}
+                </div>
+              )
+            ) : (
+              <img
+                src={athlete.img}
+                alt="Athlete Avatar"
+                style={{ width: "160px", height: "160px", borderRadius: "24px", border: "4px solid #030303", objectFit: "cover" }}
+              />
+            )}
+            
+            {/* Dynamic online ping badge */}
+            <div style={{ 
+              position: "absolute", 
+              top: "-4px", 
+              right: "-4px", 
+              background: "#22c55e", 
+              width: "14px", 
+              height: "14px", 
+              borderRadius: "50%",
+              border: "3px solid #030303",
+              boxShadow: "0 0 15px #22c55e"
+            }}>
+              <div style={{ 
+                position: "absolute", 
+                inset: "-4px", 
+                borderRadius: "50%", 
+                border: "2px solid #22c55e", 
+                animation: "radarPulse 1.8s infinite ease-out" 
+              }} />
+            </div>
+
+            <div style={{ 
+              position: "absolute", 
+              bottom: "-10px", 
+              left: "50%", 
+              transform: "translateX(-50%)", 
+              background: "linear-gradient(to right, #FF5500, #ff8800)", 
+              color: "white", 
+              padding: "4px 14px", 
+              borderRadius: "100px", 
+              fontWeight: "900", 
+              fontSize: "11px", 
+              letterSpacing: "1px",
+              border: "3px solid #0a0a0c",
+              boxShadow: "0 5px 15px rgba(255, 85, 0, 0.4)",
+              whiteSpace: "nowrap"
+            }}>
+              {isOwnProfile ? "NEW CHALLENGER" : `RANK #${athlete.rank}`}
             </div>
           </div>
 
-          <div style={{ flex: 1, paddingBottom: "10px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
-              <span style={{ background: "rgba(255,106,0,0.2)", color: "#FF6A00", padding: "4px 12px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", letterSpacing: "1px" }}>PRO ATHLETE</span>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <CheckCircle2 size={16} color="#FF6A00" />
-                <span style={{ fontSize: "13px", color: "#aaa" }}>Verified Record Holder</span>
+          {/* Core Name Meta block */}
+          <div style={{ flex: 1, minWidth: "280px" }}>
+            <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "10px", marginBottom: "12px" }}>
+              <span style={{ 
+                background: "linear-gradient(90deg, rgba(255,85,0,0.2) 0%, rgba(255,85,0,0.05) 100%)", 
+                color: "#FF5500", 
+                padding: "4px 14px", 
+                borderRadius: "100px", 
+                fontSize: "10px", 
+                fontWeight: "950", 
+                letterSpacing: "1.5px", 
+                border: "1px solid rgba(255, 85, 0, 0.35)",
+                boxShadow: "0 0 10px rgba(255, 85, 0, 0.1)"
+              }}>
+                {isOwnProfile ? "TIER-01 DIVISION" : "ELITE CLASS"}
+              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,0.03)", padding: "4px 12px", borderRadius: "100px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <ShieldCheck size={14} color="#a200ff" />
+                <span style={{ fontSize: "11px", color: "#ccc", fontWeight: "600", letterSpacing: "0.5px" }}>
+                  {isOwnProfile ? `@${user.username || "athlete"}` : `@${athlete.username}`}
+                </span>
               </div>
             </div>
-            <h1 style={{ fontSize: "64px", fontWeight: "900", margin: 0, textTransform: "uppercase", letterSpacing: "-2px", lineHeight: 1 }}>{athlete.name}</h1>
-            <div style={{ display: "flex", alignItems: "center", gap: "24px", marginTop: "16px", color: "#888", fontSize: "14px" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><MapPin size={16} /> {athlete.location}</span>
-              <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><Calendar size={16} /> Member since {athlete.since}</span>
+
+            <h1 style={{ 
+              fontSize: "clamp(32px, 5vw, 52px)", 
+              fontWeight: "950", 
+              margin: 0, 
+              textTransform: "uppercase", 
+              letterSpacing: "-1.5px", 
+              lineHeight: 1.1, 
+              color: "white"
+            }}>
+              {isOwnProfile ? user.name : athlete.name}
+            </h1>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "24px", marginTop: "14px", color: "#888", fontSize: "13px", flexWrap: "wrap" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: "500" }}>
+                <MapPin size={15} color="#FF5500" /> 
+                {isOwnProfile 
+                  ? (user.city && user.country ? `${user.city}, ${user.country}` : "ROGUE Network Node") 
+                  : athlete.location
+                }
+              </span>
+              <span style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: "500" }}><Calendar size={15} color="#FF5500" /> Registered May 2026</span>
             </div>
           </div>
+
         </div>
       </section>
 
-      {/* Main Content */}
-      <section className="container" style={{ padding: "80px 0", display: "grid", gridTemplateColumns: "1fr 350px", gap: "60px" }}>
-
-        {/* Left Column: Stats & Records */}
+      {/* 3. Main Content Dashboard Grid */}
+      <section className="container" style={{ padding: "20px 0 80px 0", display: "grid", gridTemplateColumns: "1fr 360px", gap: "48px" }}>
+        
+        {/* Left Column: Interactive Tab Dashboard */}
         <div>
-          <div style={{ marginBottom: "60px" }}>
-            <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "24px", color: "white", display: "flex", alignItems: "center", gap: "12px" }}>
-              <Activity color="#FF6A00" /> BIOMETRIC PERFORMANCE
-            </h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
-              {athlete.stats.map((stat, i) => (
-                <div key={i} style={{ background: "#151515", padding: "24px", borderRadius: "16px", border: "1px solid #222" }}>
-                  <div style={{ color: "#888", fontSize: "12px", fontWeight: "700", textTransform: "uppercase", marginBottom: "8px" }}>{stat.label}</div>
-                  <div style={{ fontSize: "32px", fontWeight: "900", color: "#FF6A00" }}>{stat.value}</div>
-                  <div style={{ color: "#555", fontSize: "11px", marginTop: "4px" }}>{stat.sub}</div>
-                </div>
-              ))}
-            </div>
-          </div>
+          {isOwnProfile ? (
+            /* ================== DYNAMIC USER PORTAL ================== */
+            <div>
+              {/* Futuristic Cyber Tab Navigation */}
+              <div style={{ 
+                display: "flex", 
+                background: "rgba(255,255,255,0.02)", 
+                padding: "6px", 
+                borderRadius: "16px", 
+                border: "1px solid rgba(255,255,255,0.05)", 
+                marginBottom: "36px",
+                gap: "6px"
+              }}>
+                <button 
+                  onClick={() => setActiveTab("submissions")}
+                  style={{
+                    flex: 1,
+                    background: activeTab === "submissions" ? "linear-gradient(135deg, #FF5500 0%, #ff7733 100%)" : "transparent",
+                    border: "none",
+                    color: activeTab === "submissions" ? "white" : "#888",
+                    padding: "14px 20px",
+                    borderRadius: "12px",
+                    fontSize: "13px",
+                    fontWeight: "900",
+                    letterSpacing: "1px",
+                    cursor: "pointer",
+                    transition: "all 0.25s",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: "8px",
+                    boxShadow: activeTab === "submissions" ? "0 10px 25px rgba(255, 85, 0, 0.25)" : "none"
+                  }}
+                >
+                  <Trophy size={15} /> SUBMISSIONS ({myRecords.length})
+                </button>
+                <button 
+                  onClick={() => setActiveTab("biometrics")}
+                  style={{
+                    flex: 1,
+                    background: activeTab === "biometrics" ? "linear-gradient(135deg, #FF5500 0%, #ff7733 100%)" : "transparent",
+                    border: "none",
+                    color: activeTab === "biometrics" ? "white" : "#888",
+                    padding: "14px 20px",
+                    borderRadius: "12px",
+                    fontSize: "13px",
+                    fontWeight: "900",
+                    letterSpacing: "1px",
+                    cursor: "pointer",
+                    transition: "all 0.25s",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: "8px",
+                    boxShadow: activeTab === "biometrics" ? "0 10px 25px rgba(255, 85, 0, 0.25)" : "none"
+                  }}
+                >
+                  <Activity size={15} /> COCKPIT STATS
+                </button>
+              </div>
 
-          <div>
-            <h2 style={{ fontSize: "24px", fontWeight: "800", marginBottom: "24px", color: "white", display: "flex", alignItems: "center", gap: "12px" }}>
-              <Trophy color="#FF6A00" /> ACTIVE WORLD RECORDS
-            </h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {athlete.recordList.map((record, i) => (
-                <div key={i} style={{ background: "#111", padding: "24px", borderRadius: "16px", border: "1px solid #1a1a1a", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "transform 0.2s, border-color 0.2s", cursor: "pointer" }} className="record-item-hover">
+              {/* TAB 1: Real-time Record Submissions list */}
+              {activeTab === "submissions" && (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
+                    <div>
+                      <h2 style={{ fontSize: "22px", fontWeight: "900", letterSpacing: "-0.5px", margin: 0, color: "white" }}>
+                        RECORD LEDGER
+                      </h2>
+                      <p style={{ color: "#666", fontSize: "13px", margin: "4px 0 0 0" }}>Chronological record of athletic verifications</p>
+                    </div>
+                    
+                    <Link to="/verify" style={{ textDecoration: "none" }}>
+                      <button style={{ 
+                        background: "rgba(255, 85, 0, 0.1)", 
+                        color: "#FF5500", 
+                        border: "1px solid rgba(255, 85, 0, 0.3)", 
+                        padding: "10px 20px", 
+                        borderRadius: "100px", 
+                        fontSize: "12px", 
+                        fontWeight: "900", 
+                        display: "flex", 
+                        alignItems: "center", 
+                        gap: "6px", 
+                        cursor: "pointer",
+                        letterSpacing: "0.5px",
+                        transition: "all 0.25s"
+                      }} className="btn-glow-neon">
+                        <Plus size={15} /> NEW ATTEMPT
+                      </button>
+                    </Link>
+                  </div>
+
+                  {loadingRecords ? (
+                    <div style={{ 
+                      display: "flex", 
+                      flexDirection: "column", 
+                      justifyContent: "center", 
+                      alignItems: "center", 
+                      padding: "80px 0", 
+                      background: "rgba(13,13,16,0.6)", 
+                      borderRadius: "24px", 
+                      border: "1px solid rgba(255, 255, 255, 0.04)"
+                    }}>
+                      <Loader2 className="animate-spin" size={36} color="#FF5500" />
+                      <p style={{ color: "#888", marginTop: "16px", fontSize: "14px", letterSpacing: "1px" }}>QUERYING SUPABASE METADATA...</p>
+                    </div>
+                  ) : errorRecords ? (
+                    <div style={{ 
+                      display: "flex", 
+                      padding: "24px", 
+                      gap: "16px", 
+                      background: "rgba(239, 68, 68, 0.08)", 
+                      border: "1px solid rgba(239, 68, 68, 0.15)", 
+                      borderRadius: "20px", 
+                      color: "#f87171"
+                    }}>
+                      <AlertCircle size={24} style={{ flexShrink: 0 }} />
+                      <div>
+                        <div style={{ fontWeight: "900", fontSize: "16px", letterSpacing: "-0.5px" }}>LEDGER SYNC FAILURE</div>
+                        <div style={{ fontSize: "13px", opacity: 0.8, marginTop: "4px" }}>{errorRecords}</div>
+                      </div>
+                    </div>
+                  ) : myRecords.length === 0 ? (
+                    <div style={{ 
+                      textAlign: "center", 
+                      padding: "80px 40px", 
+                      background: "rgba(13,13,16,0.3)", 
+                      borderRadius: "24px", 
+                      border: "1px dashed rgba(255,255,255,0.08)"
+                    }}>
+                      <div style={{ 
+                        width: "72px", 
+                        height: "72px", 
+                        background: "rgba(255, 85, 0, 0.04)", 
+                        borderRadius: "50%", 
+                        display: "flex", 
+                        justifyContent: "center", 
+                        alignItems: "center", 
+                        margin: "0 auto 20px auto",
+                        border: "1px solid rgba(255, 85, 0, 0.1)"
+                      }}>
+                        <Trophy size={32} color="#FF5500" style={{ opacity: 0.8 }} />
+                      </div>
+                      <h3 style={{ fontSize: "18px", fontWeight: "900", margin: "0 0 10px 0", letterSpacing: "-0.5px", color: "white" }}>LEDGER SECURE & VACANT</h3>
+                      <p style={{ color: "#777", fontSize: "13px", maxWidth: "440px", margin: "0 auto 24px auto", lineHeight: 1.6 }}>
+                        Your verified performance ledger is empty. Upload your evidence and get authenticated by our expert panel!
+                      </p>
+                      <Link to="/verify" style={{ textDecoration: "none" }}>
+                        <button style={{ 
+                          background: "linear-gradient(135deg, #FF5500 0%, #ff8800 100%)", 
+                          color: "white", 
+                          border: "none", 
+                          padding: "13px 32px", 
+                          borderRadius: "100px", 
+                          fontSize: "13px", 
+                          fontWeight: "900", 
+                          letterSpacing: "0.5px",
+                          cursor: "pointer",
+                          boxShadow: "0 10px 25px rgba(255, 85, 0, 0.35)",
+                          transition: "all 0.2s"
+                        }} className="btn-glow-neon">
+                          SUBMIT RECORD ATTEMPT
+                        </button>
+                      </Link>
+                    </div>
+                  ) : (
+                    /* Timeline style Submissions Feed */
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                      {myRecords.map((record) => {
+                        const statusColors = {
+                          pending: { bg: "rgba(255, 204, 0, 0.04)", text: "#ffcc00", border: "rgba(255, 204, 0, 0.12)", iconColor: "#ffcc00" },
+                          verified: { bg: "rgba(34, 197, 94, 0.04)", text: "#22c55e", border: "rgba(34, 197, 94, 0.12)", iconColor: "#22c55e" },
+                          rejected: { bg: "rgba(239, 68, 68, 0.04)", text: "#ef4444", border: "rgba(239, 68, 68, 0.12)", iconColor: "#ef4444" }
+                        };
+                        const status = record.status || "pending";
+                        const colors = statusColors[status] || statusColors.pending;
+
+                        return (
+                          <div 
+                            key={record.id} 
+                            style={{ 
+                              background: "rgba(13, 13, 16, 0.5)", 
+                              padding: "24px", 
+                              borderRadius: "20px", 
+                              border: "1px solid rgba(255, 255, 255, 0.03)", 
+                              backdropFilter: "blur(20px)",
+                              display: "flex", 
+                              justifyContent: "space-between", 
+                              alignItems: "center",
+                              position: "relative",
+                              overflow: "hidden",
+                              transition: "all 0.25s"
+                            }}
+                            className="quest-card"
+                          >
+                            {/* Scanning indicator trace line */}
+                            {status === "pending" && (
+                              <div style={{ 
+                                position: "absolute", 
+                                left: 0, 
+                                top: 0, 
+                                bottom: 0, 
+                                width: "3px", 
+                                background: "linear-gradient(to bottom, #ffcc00, transparent)", 
+                                animation: "timelineScan 2.5s infinite linear"
+                              }} />
+                            )}
+
+                            <div>
+                              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                                <span style={{ 
+                                  color: "#FF5500", 
+                                  fontSize: "10px", 
+                                  fontWeight: "900", 
+                                  textTransform: "uppercase", 
+                                  letterSpacing: "1.5px",
+                                  background: "rgba(255, 85, 0, 0.06)",
+                                  padding: "3px 8px",
+                                  borderRadius: "6px",
+                                  border: "1px solid rgba(255, 85, 0, 0.12)"
+                                }}>
+                                  {record.category}
+                                </span>
+                                <span style={{ 
+                                  background: colors.bg, 
+                                  color: colors.text, 
+                                  border: `1px solid ${colors.border}`,
+                                  fontSize: "10px", 
+                                  fontWeight: "900", 
+                                  padding: "2px 8px", 
+                                  borderRadius: "100px",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.5px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "5px"
+                                }}>
+                                  <span style={{ 
+                                    width: "5px", 
+                                    height: "5px", 
+                                    borderRadius: "50%", 
+                                    background: colors.iconColor,
+                                    boxShadow: `0 0 6px ${colors.iconColor}`,
+                                    display: "inline-block"
+                                  }} />
+                                  {status}
+                                </span>
+                              </div>
+                              
+                              <h3 style={{ fontSize: "19px", fontWeight: "800", margin: "0 0 6px 0", color: "white", letterSpacing: "-0.5px" }}>
+                                {record.title}
+                              </h3>
+                              
+                              <div style={{ display: "flex", alignItems: "center", gap: "14px", color: "#555", fontSize: "12px" }}>
+                                <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                  <Calendar size={12} /> {new Date(record.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                </span>
+                                <span>•</span>
+                                <span>ID: #{record.id.substring(0, 8).toUpperCase()}</span>
+                              </div>
+                            </div>
+
+                            <div style={{ textAlign: "right" }}>
+                              <div style={{ fontSize: "26px", fontWeight: "900", color: "white", letterSpacing: "-1px" }}>
+                                {record.value} <span style={{ fontSize: "14px", fontWeight: "600", color: "#888" }}>{record.unit}</span>
+                              </div>
+                              <span style={{ fontSize: "10px", color: "#555", fontWeight: "800", letterSpacing: "1px" }}>
+                                {record.record_type ? record.record_type.toUpperCase() : "STANDARD"}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 2: Athletic Cockpit telemetry */}
+              {activeTab === "biometrics" && (
+                <div>
+                  <h2 style={{ fontSize: "22px", fontWeight: "900", letterSpacing: "-0.5px", marginBottom: "28px", display: "flex", alignItems: "center", gap: "10px" }}>
+                    <Activity size={22} color="#FF5500" /> COCKPIT TELEMETRY
+                  </h2>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "20px" }}>
+                    
+                    {/* Power Gauge */}
+                    <div style={{ 
+                      background: "rgba(13,13,16,0.5)", 
+                      padding: "26px", 
+                      borderRadius: "24px", 
+                      border: "1px solid rgba(255,255,255,0.03)", 
+                      backdropFilter: "blur(20px)"
+                    }}>
+                      <div style={{ display: "flex", justifycontent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                        <span style={{ color: "#777", fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px", textTransform: "uppercase" }}>
+                          POWER CAPACITY
+                        </span>
+                        <Flame size={15} color="#FF5500" />
+                      </div>
+                      
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <div style={{ fontSize: "38px", fontWeight: "900", color: "white", letterSpacing: "-1px" }}>78%</div>
+                        <div style={{ background: "rgba(255,85,0,0.08)", color: "#FF5500", fontSize: "10px", fontWeight: "900", padding: "2px 6px", borderRadius: "4px" }}>
+                          S-TIER
+                        </div>
+                      </div>
+
+                      <div style={{ width: "100%", height: "6px", background: "rgba(255,255,255,0.04)", borderRadius: "10px", marginTop: "16px", overflow: "hidden" }}>
+                        <div style={{ width: "78%", height: "100%", background: "linear-gradient(to right, #FF5500, #ff8800)", borderRadius: "10px", boxShadow: "0 0 10px #FF5500" }} />
+                      </div>
+                      
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "10px", color: "#444", fontSize: "10px", fontWeight: "700" }}>
+                        <span>LIMIT: 100</span>
+                        <span>ACTUAL: 78.4</span>
+                      </div>
+                    </div>
+
+                    {/* Agility Gauge */}
+                    <div style={{ 
+                      background: "rgba(13,13,16,0.5)", 
+                      padding: "26px", 
+                      borderRadius: "24px", 
+                      border: "1px solid rgba(255,255,255,0.03)", 
+                      backdropFilter: "blur(20px)"
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                        <span style={{ color: "#777", fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px", textTransform: "uppercase" }}>
+                          AGILITY AGGREGATE
+                        </span>
+                        <Zap size={15} color="#a200ff" />
+                      </div>
+                      
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <div style={{ fontSize: "38px", fontWeight: "900", color: "white", letterSpacing: "-1px" }}>84%</div>
+                        <div style={{ background: "rgba(162,0,255,0.08)", color: "#a200ff", fontSize: "10px", fontWeight: "900", padding: "2px 6px", borderRadius: "4px" }}>
+                          PRO-GRADE
+                        </div>
+                      </div>
+
+                      <div style={{ width: "100%", height: "6px", background: "rgba(255,255,255,0.04)", borderRadius: "10px", marginTop: "16px", overflow: "hidden" }}>
+                        <div style={{ width: "84%", height: "100%", background: "linear-gradient(to right, #a200ff, #d900ff)", borderRadius: "10px", boxShadow: "0 0 10px #a200ff" }} />
+                      </div>
+
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "10px", color: "#444", fontSize: "10px", fontWeight: "700" }}>
+                        <span>LIMIT: 100</span>
+                        <span>ACTUAL: 84.1</span>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* ================== PUBLIC PRO ATHLETE VIEW ================== */
+            <div>
+              <div style={{ marginBottom: "40px" }}>
+                <h2 style={{ fontSize: "22px", fontWeight: "900", letterSpacing: "-0.5px", marginBottom: "20px", color: "white", display: "flex", alignItems: "center", gap: "10px" }}>
+                  <Activity color="#FF5500" size={22} /> BIOMETRIC RATINGS
+                </h2>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+                  {athlete.stats.map((stat, i) => (
+                    <div key={i} style={{ 
+                      background: "rgba(13,13,16,0.5)", 
+                      padding: "24px", 
+                      borderRadius: "20px", 
+                      border: "1px solid rgba(255,255,255,0.03)",
+                      backdropFilter: "blur(20px)"
+                    }}>
+                      <div style={{ color: "#777", fontSize: "11px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "6px" }}>{stat.label}</div>
+                      <div style={{ fontSize: "28px", fontWeight: "900", color: "#FF5500", letterSpacing: "-1px" }}>{stat.value}</div>
+                      <div style={{ color: "#555", fontSize: "11px", marginTop: "4px", fontWeight: "600" }}>{stat.sub}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h2 style={{ fontSize: "22px", fontWeight: "900", letterSpacing: "-0.5px", marginBottom: "20px", color: "white", display: "flex", alignItems: "center", gap: "10px" }}>
+                  <Trophy color="#FF5500" size={22} /> RECORD LEDGER
+                </h2>
+                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                  {athlete.recordList.map((record, i) => (
+                    <div key={i} style={{ 
+                      background: "rgba(13, 13, 16, 0.5)", 
+                      padding: "24px", 
+                      borderRadius: "20px", 
+                      border: "1px solid rgba(255, 255, 255, 0.03)", 
+                      backdropFilter: "blur(20px)",
+                      display: "flex", 
+                      justifyContent: "space-between", 
+                      alignItems: "center", 
+                      transition: "all 0.25s" 
+                    }} className="quest-card">
+                      <div>
+                        <div style={{ color: "#FF5500", fontSize: "10px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "4px" }}>{record.category}</div>
+                        <div style={{ fontSize: "18px", fontWeight: "800", color: "white", letterSpacing: "-0.5px" }}>{record.title}</div>
+                        <div style={{ color: "#555", fontSize: "12px", marginTop: "4px", fontWeight: "550" }}>Verified audit on {record.date}</div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: "24px", fontWeight: "900", color: "white", letterSpacing: "-1px" }}>{record.value}</div>
+                        <div style={{ color: "#FF5500", fontSize: "10px", fontWeight: "900", letterSpacing: "0.5px" }}>WORLD RECORD</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: Dynamic Side Dashboard Cards & Quick CTA Portals */}
+        <div>
+          <div style={{ position: "sticky", top: "110px", display: "flex", flexDirection: "column", gap: "24px" }}>
+            
+            {/* Dynamic Athlete Registry Dossier Card */}
+            <div style={{ 
+              background: "rgba(13, 13, 16, 0.5)", 
+              padding: "32px 24px", 
+              borderRadius: "24px", 
+              border: "1px solid rgba(255, 255, 255, 0.03)",
+              backdropFilter: "blur(25px)",
+              boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                <h3 style={{ 
+                  fontSize: "13px", 
+                  fontWeight: "900", 
+                  textTransform: "uppercase", 
+                  letterSpacing: "2px", 
+                  margin: 0, 
+                  color: "white", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "8px" 
+                }}>
+                  <Award size={15} color="#FF5500" />
+                  ATHLETE DOSSIER
+                </h3>
+                
+                {isOwnProfile && (
+                  <button 
+                    onClick={openEditModal}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: "#FF5500",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      fontSize: "11px",
+                      fontWeight: "900",
+                      letterSpacing: "0.5px"
+                    }}
+                    className="hover-opacity"
+                  >
+                    <Edit3 size={12} /> EDIT
+                  </button>
+                )}
+              </div>
+              
+              {isOwnProfile ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  
+                  {/* Name detail row */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{ background: "rgba(255, 85, 0, 0.06)", color: "#FF5500", padding: "8px", borderRadius: "8px", border: "1px solid rgba(255, 85, 0, 0.12)" }}><User size={14} /></div>
+                    <div>
+                      <div style={{ color: "#555", fontSize: "9px", fontWeight: "900", letterSpacing: "1px" }}>CREDENTIAL NAME</div>
+                      <div style={{ fontSize: "13px", fontWeight: "800", color: "white", letterSpacing: "-0.3px" }}>{user.name}</div>
+                    </div>
+                  </div>
+
+                  {/* Username row */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{ background: "rgba(255, 85, 0, 0.06)", color: "#FF5500", padding: "8px", borderRadius: "8px", border: "1px solid rgba(255, 85, 0, 0.12)" }}><ShieldCheck size={14} /></div>
+                    <div>
+                      <div style={{ color: "#555", fontSize: "9px", fontWeight: "900", letterSpacing: "1px" }}>REGISTRY USERNAME</div>
+                      <div style={{ fontSize: "13px", fontWeight: "800", color: "white", letterSpacing: "-0.3px" }}>@{user.username || "not_set"}</div>
+                    </div>
+                  </div>
+
+                  {/* Email detail row */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{ background: "rgba(255, 85, 0, 0.06)", color: "#FF5500", padding: "8px", borderRadius: "8px", border: "1px solid rgba(255, 85, 0, 0.12)" }}><Mail size={14} /></div>
+                    <div style={{ overflow: "hidden", width: "100%" }}>
+                      <div style={{ color: "#555", fontSize: "9px", fontWeight: "900", letterSpacing: "1px" }}>EMAIL ADRESS</div>
+                      <div style={{ fontSize: "12px", fontWeight: "700", color: "white", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{user.email}</div>
+                    </div>
+                  </div>
+
+                  {/* Phone row */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{ background: "rgba(255, 85, 0, 0.06)", color: "#FF5500", padding: "8px", borderRadius: "8px", border: "1px solid rgba(255, 85, 0, 0.12)" }}><Phone size={14} /></div>
+                    <div>
+                      <div style={{ color: "#555", fontSize: "9px", fontWeight: "900", letterSpacing: "1px" }}>PHONE DIRECT</div>
+                      <div style={{ fontSize: "13px", fontWeight: "800", color: "white", letterSpacing: "-0.3px" }}>{user.phone || "Not Specified"}</div>
+                    </div>
+                  </div>
+
+                  {/* Gender and DOB double column */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: "12px" }}>
+                    <div>
+                      <span style={{ color: "#555", fontSize: "9px", fontWeight: "900", letterSpacing: "1px", display: "block" }}>GENDER</span>
+                      <span style={{ fontSize: "13px", fontWeight: "800", color: "white", textTransform: "capitalize" }}>{user.gender || "Not Set"}</span>
+                    </div>
+                    <div>
+                      <span style={{ color: "#555", fontSize: "9px", fontWeight: "900", letterSpacing: "1px", display: "block" }}>BIRTH DATE</span>
+                      <span style={{ fontSize: "13px", fontWeight: "800", color: "white" }}>
+                        {user.dob ? new Date(user.dob).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : "Not Set"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Weight and Height details */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: "12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <Scale size={14} color="#FF5500" />
+                      <div>
+                        <span style={{ color: "#555", fontSize: "9px", fontWeight: "900", letterSpacing: "0.5px", display: "block" }}>WEIGHT</span>
+                        <span style={{ fontSize: "13px", fontWeight: "800", color: "white" }}>
+                          {user.weight ? `${user.weight} ${user.weightUnit || 'kg'}` : "Not Set"}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <Ruler size={14} color="#FF5500" />
+                      <div>
+                        <span style={{ color: "#555", fontSize: "9px", fontWeight: "900", letterSpacing: "0.5px", display: "block" }}>HEIGHT</span>
+                        <span style={{ fontSize: "13px", fontWeight: "800", color: "white" }}>
+                          {user.height ? `${user.height} ${user.heightUnit === 'cm' ? 'cm' : ''}` : "Not Set"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ color: "#555", fontSize: "11px", fontWeight: "600" }}>Registry Status</span>
+                    <span style={{ background: "rgba(34,197,94,0.08)", color: "#22c55e", padding: "3px 10px", borderRadius: "100px", fontSize: "9px", fontWeight: "900", border: "1px solid rgba(34,197,94,0.15)" }}>ACTIVE LEDGER</span>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p style={{ color: "#aaa", fontSize: "13px", lineHeight: "1.7", margin: "0 0 20px 0", fontWeight: "500" }}>
+                    {athlete.bio}
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "14px", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: "#555", fontSize: "12px", fontWeight: "600" }}>Class Division</span>
+                      <span style={{ fontWeight: "800", color: "white", fontSize: "13px" }}>Mastery</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: "#555", fontSize: "12px", fontWeight: "600" }}>Rogue Status</span>
+                      <span style={{ fontWeight: "800", color: "#FF5500", fontSize: "13px" }}>Grandmaster</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: "#555", fontSize: "12px", fontWeight: "600" }}>Gender</span>
+                      <span style={{ fontWeight: "800", color: "white", fontSize: "13px" }}>{athlete.gender}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: "#555", fontSize: "12px", fontWeight: "600" }}>Specs</span>
+                      <span style={{ fontWeight: "800", color: "white", fontSize: "13px" }}>
+                        {athlete.height}cm / {athlete.weight}kg
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Actions Panel */}
+            {isOwnProfile && (
+              <div style={{ 
+                background: "linear-gradient(135deg, rgba(255,85,0,0.04) 0%, rgba(112,0,255,0.04) 100%)",
+                padding: "24px", 
+                borderRadius: "24px", 
+                border: "1px solid rgba(255, 85, 0, 0.2)",
+                boxShadow: "0 15px 35px rgba(255, 85, 0, 0.06)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+                position: "relative",
+                overflow: "hidden"
+              }}>
+                <h4 style={{ margin: "0 0 4px 0", fontSize: "13px", fontWeight: "900", color: "white", letterSpacing: "1.5px" }}>ACTION PORTAL</h4>
+                
+                <Link to="/verify" style={{ textDecoration: "none" }}>
+                  <button style={{
+                    width: "100%",
+                    background: "linear-gradient(135deg, #FF5500 0%, #ff7700 100%)",
+                    color: "white",
+                    border: "none",
+                    padding: "12px",
+                    borderRadius: "10px",
+                    fontSize: "13px",
+                    fontWeight: "900",
+                    letterSpacing: "1px",
+                    cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: "8px",
+                    transition: "all 0.25s",
+                    boxShadow: "0 5px 15px rgba(255, 85, 0, 0.25)"
+                  }} className="btn-glow-neon">
+                    <Plus size={16} /> SUBMIT ATTEMPT
+                  </button>
+                </Link>
+
+                <Link to="/leaderboard" style={{ textDecoration: "none" }}>
+                  <button style={{
+                    width: "100%",
+                    background: "rgba(255,255,255,0.03)",
+                    color: "white",
+                    border: "1px solid rgba(255,255,255,0.05)",
+                    padding: "12px",
+                    borderRadius: "10px",
+                    fontSize: "13px",
+                    fontWeight: "900",
+                    letterSpacing: "1px",
+                    cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: "8px",
+                    transition: "all 0.2s"
+                  }} className="btn-secondary-hover">
+                    <BarChart2 size={16} color="#FF5500" /> GLOBAL STANDINGS
+                  </button>
+                </Link>
+
+                <button 
+                  onClick={logout}
+                  style={{
+                    width: "100%",
+                    background: "rgba(239, 68, 68, 0.06)",
+                    color: "#f87171",
+                    border: "1px solid rgba(239, 68, 68, 0.12)",
+                    padding: "12px",
+                    borderRadius: "10px",
+                    fontSize: "13px",
+                    fontWeight: "900",
+                    letterSpacing: "1px",
+                    cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: "8px",
+                    transition: "all 0.2s",
+                    marginTop: "4px"
+                  }}
+                  className="btn-danger-hover"
+                >
+                  <LogOut size={16} /> TERMINATE SESSION
+                </button>
+              </div>
+            )}
+
+            {/* Bronze Gold Pro Membership Card */}
+            <div style={{
+              background: "linear-gradient(135deg, #130f0a 0%, #291c07 100%)",
+              borderRadius: "24px",
+              padding: "24px",
+              border: "1px solid rgba(212, 163, 89, 0.2)",
+              boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
+              position: "relative",
+              overflow: "hidden"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "14px" }}>
+                <div style={{ 
+                  background: "rgba(212, 163, 89, 0.08)", 
+                  color: "#D4A359", 
+                  padding: "6px", 
+                  borderRadius: "8px", 
+                  border: "1px solid rgba(212, 163, 89, 0.15)" 
+                }}>
+                  <Shield size={18} />
+                </div>
+                <span style={{ color: "#D4A359", fontSize: "9px", fontWeight: "900", letterSpacing: "2px", textTransform: "uppercase" }}>
+                  PRO UPGRADE
+                </span>
+              </div>
+
+              <h4 style={{ margin: "0 0 6px 0", fontSize: "16px", fontWeight: "900", color: "white", letterSpacing: "-0.5px" }}>
+                ELITE VERIFICATION
+              </h4>
+              <p style={{ color: "#bda888", fontSize: "11px", margin: "0 0 16px 0", lineHeight: 1.5, fontWeight: "500" }}>
+                Priority physical adjudicator tracking, expedited auditing, and custom physical certificates.
+              </p>
+              
+              <Link to="/elite" style={{ textDecoration: "none" }}>
+                <button style={{
+                  width: "100%",
+                  background: "#D4A359",
+                  color: "#16110a",
+                  border: "none",
+                  padding: "10px",
+                  borderRadius: "8px",
+                  fontSize: "11px",
+                  fontWeight: "900",
+                  letterSpacing: "1px",
+                  cursor: "pointer",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: "6px",
+                  transition: "opacity 0.2s"
+                }} className="gold-btn-hover">
+                  UPGRADE ACCESS <ChevronRight size={12} />
+                </button>
+              </Link>
+            </div>
+            
+          </div>
+        </div>
+
+      </section>
+
+      {/* ================= EDIT REGISTRY DETAILS MODAL ================= */}
+      {isEditModalOpen && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.85)",
+          backdropFilter: "blur(10px)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 2000,
+          padding: "20px"
+        }}>
+          {/* Modal Container */}
+          <div style={{
+            background: "#0c0c0e",
+            border: "1px solid rgba(255, 85, 0, 0.15)",
+            width: "100%",
+            maxWidth: "680px",
+            borderRadius: "32px",
+            boxShadow: "0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(255, 85, 0, 0.05)",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            animation: "modalFadeIn 0.3s ease-out"
+          }}>
+            
+            {/* Modal Header */}
+            <div style={{
+              padding: "24px 32px",
+              borderBottom: "1px solid rgba(255,255,255,0.05)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}>
+              <div>
+                <h3 style={{ fontSize: "20px", fontWeight: "900", margin: 0, letterSpacing: "-0.5px", display: "flex", alignItems: "center", gap: "10px", color: "white" }}>
+                  <Settings size={20} color="#FF5500" /> EDIT ATHLETE REGISTRY
+                </h3>
+                <p style={{ color: "#555", fontSize: "11px", margin: "4px 0 0 0", fontWeight: "600", letterSpacing: "0.5px" }}>UPDATE PHYSICAL DOSSIER & SECURITY KEYS</p>
+              </div>
+              <button 
+                onClick={() => setIsEditModalOpen(false)}
+                style={{ background: "rgba(255,255,255,0.03)", border: "none", color: "#888", width: "36px", height: "36px", borderRadius: "50%", cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center" }}
+                className="hover-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body / Scrollable Form */}
+            <form onSubmit={handleEditSubmit} style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+              <div style={{ padding: "32px", overflowY: "auto", maxHeight: "60vh", display: "flex", flexDirection: "column", gap: "20px" }}>
+                
+                {editError && (
+                  <div style={{ background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.15)", borderRadius: "12px", color: "#f87171", padding: "12px 16px", fontSize: "12px", display: "flex", gap: "8px", alignItems: "center" }}>
+                    <AlertCircle size={16} />
+                    <span>{editError}</span>
+                  </div>
+                )}
+
+                {/* Section: Profile Image Upload */}
+                <div>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>PROFILE IMAGE (UPLOAD)</label>
+                  <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                    <div style={{ background: "rgba(255,255,255,0.02)", width: "48px", height: "48px", borderRadius: "8px", display: "flex", justifyContent: "center", alignItems: "center", border: "1px solid rgba(255,255,255,0.05)", overflow: "hidden", flexShrink: 0 }}>
+                      {editForm.profileImage ? (
+                        <img src={editForm.profileImage} alt="Avatar Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.display = 'none'; }} />
+                      ) : (
+                        <Image size={20} color="#555" />
+                      )}
+                    </div>
+                    <label style={{ flex: 1, background: "rgba(0,0,0,0.4)", border: "1px dashed rgba(255,255,255,0.2)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "0.3s" }} className="hover-white">
+                      <span>{editForm.profileImage && editForm.profileImage.startsWith('data:image') ? "CHANGE UPLOADED IMAGE" : "UPLOAD NEW PICTURE"}</span>
+                      <input 
+                        type="file" 
+                        accept="image/png, image/jpeg, image/webp"
+                        style={{ display: "none" }}
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            if (file.size > 2 * 1024 * 1024) {
+                              setEditError("Image size must be less than 2MB.");
+                              return;
+                            }
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setEditForm({ ...editForm, profileImage: reader.result });
+                              setEditError("");
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Row: Name & Username */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                   <div>
-                    <div style={{ color: "#FF6A00", fontSize: "11px", fontWeight: "800", textTransform: "uppercase", marginBottom: "4px" }}>{record.category}</div>
-                    <div style={{ fontSize: "18px", fontWeight: "700", color: "white" }}>{record.title}</div>
-                    <div style={{ color: "#555", fontSize: "12px", marginTop: "4px" }}>Verified on {record.date}</div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>FULL CREDENTIAL NAME</label>
+                    <input 
+                      type="text" 
+                      value={editForm.name}
+                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      required
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                    />
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: "24px", fontWeight: "900", color: "white" }}>{record.value}</div>
-                    <div style={{ color: "#FF6A00", fontSize: "11px", fontWeight: "700" }}>WORLD RECORD</div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>REGISTRY USERNAME</label>
+                    <input 
+                      type="text" 
+                      value={editForm.username}
+                      onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
+                      required
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
+
+                {/* Row: Phone & Birth Date */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>PHONE DIRECT</label>
+                    <input 
+                      type="tel" 
+                      placeholder="+1 (555) 000-0000"
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>DATE OF BIRTH</label>
+                    <input 
+                      type="date" 
+                      value={editForm.dob}
+                      onChange={(e) => setEditForm({ ...editForm, dob: e.target.value })}
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px", colorScheme: "dark" }} 
+                    />
+                  </div>
+                </div>
+
+                {/* Row: Gender & Country */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>GENDER</label>
+                    <select
+                      value={editForm.gender}
+                      onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }}
+                    >
+                      <option value="" style={{ background: "#0c0c0e" }}>Select Gender</option>
+                      <option value="male" style={{ background: "#0c0c0e" }}>Male</option>
+                      <option value="female" style={{ background: "#0c0c0e" }}>Female</option>
+                      <option value="other" style={{ background: "#0c0c0e" }}>Other</option>
+                      <option value="prefer_not_to_say" style={{ background: "#0c0c0e" }}>Prefer not to say</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>COUNTRY</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. United States"
+                      value={editForm.country}
+                      onChange={(e) => setEditForm({ ...editForm, country: e.target.value })}
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                    />
+                  </div>
+                </div>
+
+                {/* Row: Weight & Height */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                      <label style={{ fontSize: "10px", fontWeight: "900", color: "#555", letterSpacing: "1px" }}>WEIGHT</label>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <button type="button" onClick={() => setEditForm({ ...editForm, weightUnit: "kg" })} style={{ background: "transparent", border: "none", color: editForm.weightUnit === "kg" ? "#FF5500" : "#555", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}>KG</button>
+                        <button type="button" onClick={() => setEditForm({ ...editForm, weightUnit: "lbs" })} style={{ background: "transparent", border: "none", color: editForm.weightUnit === "lbs" ? "#FF5500" : "#555", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}>LBS</button>
+                      </div>
+                    </div>
+                    <input 
+                      type="number" 
+                      value={editForm.weight}
+                      onChange={(e) => setEditForm({ ...editForm, weight: e.target.value })}
+                      placeholder={editForm.weightUnit === "kg" ? "75" : "165"}
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                    />
+                  </div>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                      <label style={{ fontSize: "10px", fontWeight: "900", color: "#555", letterSpacing: "1px" }}>HEIGHT ({editForm.heightUnit.toUpperCase()})</label>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <button type="button" onClick={() => setEditForm({ ...editForm, heightUnit: "cm" })} style={{ background: "transparent", border: "none", color: editForm.heightUnit === "cm" ? "#FF5500" : "#555", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}>CM</button>
+                        <button type="button" onClick={() => setEditForm({ ...editForm, heightUnit: "ft_in" })} style={{ background: "transparent", border: "none", color: editForm.heightUnit === "ft_in" ? "#FF5500" : "#555", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}>FT/IN</button>
+                      </div>
+                    </div>
+                    <input 
+                      type="text" 
+                      value={editForm.height}
+                      onChange={(e) => setEditForm({ ...editForm, height: e.target.value })}
+                      placeholder={editForm.heightUnit === "cm" ? "180" : "5'11\""}
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                    />
+                  </div>
+                </div>
+
+                {/* City */}
+                <div>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>CITY / REGION</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. Los Angeles, CA"
+                    value={editForm.city}
+                    onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                    style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                  />
+                </div>
+
+              </div>
+
+              {/* Modal Footer */}
+              <div style={{
+                padding: "24px 32px",
+                borderTop: "1px solid rgba(255,255,255,0.05)",
+                background: "rgba(255,255,255,0.01)",
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "14px"
+              }}>
+                <button 
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    color: "#ccc",
+                    border: "1px solid rgba(255,255,255,0.05)",
+                    padding: "12px 24px",
+                    borderRadius: "10px",
+                    fontSize: "13px",
+                    fontWeight: "900",
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                  className="hover-gray"
+                >
+                  CANCEL
+                </button>
+                <button 
+                  type="submit"
+                  disabled={editLoading}
+                  style={{
+                    background: "linear-gradient(135deg, #FF5500 0%, #ff7700 100%)",
+                    color: "white",
+                    border: "none",
+                    padding: "12px 32px",
+                    borderRadius: "10px",
+                    fontSize: "13px",
+                    fontWeight: "900",
+                    cursor: editLoading ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    transition: "all 0.2s",
+                    boxShadow: "0 10px 20px rgba(255, 85, 0, 0.25)"
+                  }}
+                  className="btn-glow-neon"
+                >
+                  {editLoading ? "SAVING CHANGES..." : "SAVE REGISTRY"}
+                  {editLoading ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
+                </button>
+              </div>
+
+            </form>
+
           </div>
         </div>
-
-        {/* Right Column: Sidebar info */}
-        <div>
-          <div style={{ background: "#151515", padding: "32px", borderRadius: "24px", border: "1px solid #222", position: "sticky", top: "100px" }}>
-            <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "20px" }}>ATHLETE BIO</h3>
-            <p style={{ color: "#888", fontSize: "14px", lineHeight: "1.6", marginBottom: "24px" }}>
-              {athlete.bio}
-            </p>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px", borderTop: "1px solid #222", paddingTop: "24px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: "#555", fontSize: "13px" }}>Level</span>
-                <span style={{ fontWeight: "700" }}>Elite</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: "#555", fontSize: "13px" }}>Status</span>
-                <span style={{ fontWeight: "700", color: "#FF6A00" }}>Active</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </section>
+      )}
 
       <Footer />
 
+      {/* Extreme UI Styling & Keyframe Animations */}
       <style>{`
-        .record-item-hover:hover { 
-          transform: translateX(10px);
-          border-color: #FF6A00 !important;
-          background: #151515 !important;
+        @keyframes radarPulse {
+          0% { transform: scale(1); opacity: 1; }
+          100% { transform: scale(2.8); opacity: 0; }
+        }
+        @keyframes timelineScan {
+          0% { transform: translateY(-100%); opacity: 0.1; }
+          50% { opacity: 0.9; }
+          100% { transform: translateY(350%); opacity: 0.1; }
+        }
+        @keyframes modalFadeIn {
+          0% { transform: scale(0.95); opacity: 0; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .quest-card:hover { 
+          transform: translateY(-4px);
+          border-color: rgba(255, 85, 0, 0.25) !important;
+          box-shadow: 
+            0 12px 30px rgba(0, 0, 0, 0.6), 
+            0 0 20px rgba(255, 85, 0, 0.04) !important;
+          background: rgba(18, 18, 22, 0.8) !important;
+        }
+
+        .btn-glow-neon:hover {
+          opacity: 0.95;
+          box-shadow: 0 0 20px rgba(255, 85, 0, 0.4) !important;
+          transform: translateY(-2px);
+        }
+
+        .btn-secondary-hover:hover {
+          background: rgba(255,255,255,0.06) !important;
+          border-color: rgba(255, 85, 0, 0.15) !important;
+          transform: translateY(-2px);
+        }
+
+        .btn-danger-hover:hover {
+          background: rgba(239, 68, 68, 0.12) !important;
+          border-color: rgba(239, 68, 68, 0.25) !important;
+          transform: translateY(-2px);
+          box-shadow: 0 5px 15px rgba(239, 68, 68, 0.08) !important;
+        }
+
+        .gold-btn-hover:hover {
+          opacity: 0.9;
+          box-shadow: 0 5px 15px rgba(212, 163, 89, 0.25) !important;
+        }
+
+        .hover-white:hover {
+          background: rgba(255,255,255,0.08) !important;
+          color: white !important;
+        }
+
+        .hover-gray:hover {
+          background: rgba(255,255,255,0.08) !important;
         }
       `}</style>
     </div>

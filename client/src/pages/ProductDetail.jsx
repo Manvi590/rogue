@@ -83,7 +83,51 @@ const ProductDetail = () => {
   const incrementQty = () => setQuantity(q => q + 1);
   const decrementQty = () => setQuantity(q => q > 1 ? q - 1 : 1);
 
+  const getCalculatedPrice = () => {
+    let basePrice = parseFloat(product.price.replace(/[^0-9.]/g, ""));
+    if (selectedSize) {
+      const match = selectedSize.match(/\(\+\s*\$(\d+(\.\d+)?)\)/);
+      if (match) {
+        basePrice += parseFloat(match[1]);
+      }
+    }
+    return basePrice;
+  };
+
   const handleAddToCart = () => {
+    const numericPrice = getCalculatedPrice();
+    const cartItem = {
+      id: product.id,
+      title: product.title,
+      price: numericPrice,
+      img: product.img,
+      qty: quantity,
+      size: selectedSize,
+      color: selectedColor
+    };
+
+    let currentCart = [];
+    try {
+      const stored = localStorage.getItem("rogue_cart_items");
+      if (stored) {
+        currentCart = JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error("Failed to parse cart items from localStorage:", e);
+    }
+
+    const existingIndex = currentCart.findIndex(
+      item => item.id === product.id && item.size === selectedSize && item.color === selectedColor
+    );
+
+    if (existingIndex > -1) {
+      currentCart[existingIndex].qty += quantity;
+    } else {
+      currentCart.push(cartItem);
+    }
+
+    localStorage.setItem("rogue_cart_items", JSON.stringify(currentCart));
+
     setAdded(true);
     setTimeout(() => {
       setAdded(false);
@@ -135,7 +179,7 @@ const ProductDetail = () => {
                 </h1>
 
                 <div style={{ fontSize: "28px", fontWeight: "950", color: "#FF6A00", marginBottom: "24px" }}>
-                  {product.price}
+                  ${getCalculatedPrice().toFixed(2)}
                 </div>
 
                 <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "15px", lineHeight: "1.7", marginBottom: "32px" }}>
