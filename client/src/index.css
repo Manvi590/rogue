@@ -1211,7 +1211,7 @@ a:hover svg {
 
 /* ── HOLDERS SECTION ── */
 .holders-section {
-  background: linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.2)), url('/image copy 2.png') no-repeat center center / cover;
+  background: linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), url('/image copy 2.png') no-repeat center center / cover;
   padding: 100px 0 60px;
   position: relative;
   overflow: hidden;
@@ -1224,7 +1224,7 @@ a:hover svg {
   transform: translate(-50%, -50%);
   font-size: clamp(80px, 15vw, 160px);
   font-weight: 900;
-  color: rgba(0, 0, 0, 0.04);
+  color: rgba(255, 255, 255, 0.05);
   letter-spacing: -0.04em;
   white-space: nowrap;
   pointer-events: none;
@@ -1260,14 +1260,15 @@ a:hover svg {
 .holders-title {
   font-size: clamp(32px, 4.5vw, 52px);
   font-weight: 900;
-  color: #111;
+  color: #fff;
   line-height: 1.08;
   letter-spacing: -0.03em;
   margin: 0;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.5);
 }
 
 .holders-subtitle {
-  color: #888;
+  color: rgba(255,255,255,0.75);
   font-size: 15px;
   line-height: 1.6;
   max-width: 600px;
@@ -1282,17 +1283,20 @@ a:hover svg {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: white;
-  background: #111;
+  color: #111;
+  background: #FF6A00;
   padding: 14px 24px;
   border-radius: 100px;
   text-decoration: none;
-  transition: background 0.25s, color 0.25s;
+  transition: background 0.25s, color 0.25s, transform 0.2s;
   white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(255,106,0,0.4);
 }
 
 .holders-cta:hover {
-  background: #FF6A00;
+  background: #fff;
+  color: #FF6A00;
+  transform: translateY(-2px);
 }
 
 .holders-slider-wrapper {
@@ -1331,7 +1335,14 @@ a:hover svg {
 .holder-card-gradient {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.1) 55%, transparent 100%);
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.97) 0%,
+    rgba(0, 0, 0, 0.75) 40%,
+    rgba(0, 0, 0, 0.35) 70%,
+    rgba(0, 0, 0, 0.10) 100%
+  );
+  pointer-events: none;
 }
 
 .holder-side-strip {
@@ -1386,33 +1397,48 @@ a:hover svg {
   bottom: 0;
   left: 0;
   width: 100%;
-  padding: 20px 20px 22px;
+  padding: 18px 18px 20px;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.95) 0%,
+    rgba(0, 0, 0, 0.88) 60%,
+    rgba(0, 0, 0, 0.0) 100%
+  );
+  border-top: 1.5px solid rgba(255, 106, 0, 0.35);
+  box-sizing: border-box;
 }
 
 .holder-name {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 900;
-  color: white;
+  color: #ffffff;
   margin-bottom: 4px;
   letter-spacing: -0.02em;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.8);
 }
 
 .holder-records {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.65);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
   margin-bottom: 10px;
+  font-weight: 600;
 }
 
 .holder-view-link {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800;
   color: #FF6A00;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  transition: gap 0.2s;
+  transition: gap 0.2s, color 0.2s;
+  text-shadow: none;
+}
+
+.holder-view-link:hover {
+  color: #ffffff;
 }
 
 .holder-card:hover .holder-view-link {

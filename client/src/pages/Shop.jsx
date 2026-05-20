@@ -227,31 +227,70 @@ const Shop = () => {
 
         {/* PREMIUM ELITE CTA */}
         <section style={{ padding: "0 2.5% 120px" }}>
-          <div className="orange-cta" style={{ borderRadius: "40px", overflow: "hidden", minHeight: "500px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {/* Dynamic backgrounds */}
-            <div className="orange-cta-bg" style={{ opacity: 0.2 }} />
-            <div className="orange-cta-grid" />
-            <div className="orange-cta-glow" />
+          <div style={{ 
+            position: "relative", 
+            borderRadius: "40px", 
+            overflow: "hidden", 
+            minHeight: "500px", 
+            display: "flex", 
+            alignItems: "center",
+            boxShadow: "0 40px 80px rgba(0,0,0,0.8)"
+          }}>
+            {/* Background Image - Using a placeholder until the final asset is added to the repo */}
+            <img 
+              src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=1600&q=80" 
+              alt="Elite Member" 
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }} 
+            />
+            {/* Dark gradient fade from left to right */}
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.8) 40%, transparent 100%)" }} />
 
-            <div className="orange-cta-content" style={{ maxWidth: "800px", width: "100%" }}>
-              <span className="orange-cta-badge" style={{ marginBottom: "24px" }}>LEVEL UP YOUR STATUS</span>
-              <h2 className="orange-cta-title" style={{ fontSize: "clamp(48px, 6vw, 84px)", lineHeight: "0.95", marginBottom: "24px", textAlign: "center" }}>
-                <ScrollReveal>UNLOCKED </ScrollReveal><span className="orange-cta-highlight"><ScrollReveal>ACCESS</ScrollReveal></span>
+            <div style={{ position: "relative", zIndex: 10, padding: "80px", maxWidth: "800px", textAlign: "left" }}>
+              <span style={{ 
+                border: "1px solid #FF6A00", 
+                color: "#FF6A00", 
+                padding: "8px 20px", 
+                borderRadius: "100px", 
+                fontSize: "11px", 
+                fontWeight: "900", 
+                letterSpacing: "0.1em",
+                display: "inline-block",
+                marginBottom: "24px"
+              }}>
+                LEVEL UP YOUR STATUS
+              </span>
+              
+              <h2 style={{ 
+                fontSize: "clamp(60px, 8vw, 100px)", 
+                fontWeight: "950", 
+                marginBottom: "16px", 
+                lineHeight: "0.9", 
+                textTransform: "uppercase" 
+              }}>
+                <ScrollReveal>UNLOCKED</ScrollReveal><br/>
+                <span style={{ color: "#FF6A00" }}><ScrollReveal>ACCESS</ScrollReveal></span>
               </h2>
-              <p className="orange-cta-subtitle" style={{ fontSize: "18px", color: "rgba(255,255,255,0.8)", marginBottom: "48px", textAlign: "center", maxWidth: "600px" }}>
-                <ScrollReveal>Elite members receive 20% off all physical certificates and priority access to limited edition athlete apparel drops.</ScrollReveal>
+              
+              <p style={{ 
+                color: "white", 
+                fontSize: "18px", 
+                maxWidth: "450px", 
+                marginBottom: "40px", 
+                lineHeight: "1.6",
+                fontWeight: "500"
+              }}>
+                <ScrollReveal>Join the world's ultimate platform for record breakers, elite athletes, and unforgettable achievements.</ScrollReveal>
               </p>
 
-              <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", justifyContent: "center" }}>
+              <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
                 <button
                   onClick={() => navigate('/elite')}
-                  {...buttonHover}
                   style={{
-                    background: "#111",
+                    background: "#FF6A00",
                     color: "white",
                     border: "none",
                     borderRadius: "100px",
-                    padding: "20px 48px",
+                    padding: "16px 32px",
                     fontSize: "14px",
                     fontWeight: "900",
                     textTransform: "uppercase",
@@ -259,37 +298,46 @@ const Shop = () => {
                     display: "flex",
                     alignItems: "center",
                     gap: "12px",
-                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                    boxShadow: "0 20px 40px rgba(0,0,0,0.3)"
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.transform = "scale(1.05)";
+                    e.currentTarget.style.boxShadow = "0 10px 20px rgba(255,106,0,0.3)";
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.boxShadow = "none";
                   }}
                 >
-                  JOIN THE ELITE <Star size={18} fill="#FF6A00" color="#FF6A00" />
+                  JOIN THE ELITE <Star size={16} fill="white" />
                 </button>
                 <button
                   onClick={() => navigate('/process')}
                   style={{
-                    background: "rgba(255,255,255,0.15)",
+                    background: "transparent",
                     color: "white",
-                    backdropFilter: "blur(10px)",
-                    border: "1px solid rgba(255,255,255,0.2)",
+                    border: "1px solid rgba(255,255,255,0.4)",
                     borderRadius: "100px",
-                    padding: "20px 48px",
+                    padding: "16px 32px",
                     fontSize: "14px",
                     fontWeight: "900",
                     textTransform: "uppercase",
                     cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
                     transition: "all 0.3s"
                   }}
                   onMouseEnter={e => {
-                    e.currentTarget.style.background = "rgba(255,255,255,0.25)";
+                    e.currentTarget.style.background = "rgba(255,255,255,0.1)";
                     e.currentTarget.style.transform = "translateY(-2px)";
                   }}
                   onMouseLeave={e => {
-                    e.currentTarget.style.background = "rgba(255,255,255,0.15)";
+                    e.currentTarget.style.background = "transparent";
                     e.currentTarget.style.transform = "translateY(0)";
                   }}
                 >
-                  LEARN MORE
+                  LEARN MORE <ArrowRight size={16} />
                 </button>
               </div>
             </div>

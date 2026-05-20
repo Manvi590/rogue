@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Play, Lock, Unlock, CheckCircle2 } from "lucide-react";
 import PageTransition from "../components/PageTransition";
@@ -112,6 +112,17 @@ const Challenges = () => {
   const [selectedChallenge, setSelectedChallenge] = useState(null);
   const [hasWatched, setHasWatched] = useState(false);
 
+  useEffect(() => {
+    if (selectedChallenge) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [selectedChallenge]);
+
   const filteredChallenges = activeTab === "ALL" 
     ? challengeCards 
     : challengeCards.filter(c => c.cat === activeTab);
@@ -128,6 +139,16 @@ const Challenges = () => {
 
   const handleVideoEnded = () => {
     setHasWatched(true);
+  };
+
+  const getMockAttempts = (challenge) => {
+    return [
+      { id: 1, name: "James Walker", value: "35 Bounces", date: "May 16, 2026", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)" },
+      { id: 2, name: "Alex Rodriguez", value: "34 Bounces", date: "May 15, 2026", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)" },
+      { id: 3, name: "Liam Thompson", value: "35 Bounces", date: "May 14, 2026", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)" },
+      { id: 4, name: "Daniel Kim", value: "36 Bounces", date: "May 12, 2026", status: "PENDING REVIEW", img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=400&q=80", color: "#F59E0B", bg: "rgba(245, 158, 11, 0.1)" },
+      { id: 5, name: challenge ? challenge.holder : "Pavol Durdik", value: challenge ? challenge.score : "36 Bounces", date: "May 12, 2026", status: "CURRENT RECORD", img: challenge ? challenge.img : "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=400&q=80", color: "#10B981", bg: "rgba(16, 185, 129, 0.1)" }
+    ];
   };
 
   return (
@@ -306,9 +327,9 @@ const Challenges = () => {
               borderRadius: "40px",
               width: "100%",
               maxWidth: "1150px",
-              height: "85vh",
-              display: "grid",
-              gridTemplateColumns: "1.2fr 1fr",
+              height: "90vh",
+              display: "flex",
+              flexDirection: "column",
               overflow: "hidden",
               position: "relative",
               boxShadow: "0 50px 100px rgba(0,0,0,0.8)"
@@ -341,8 +362,10 @@ const Challenges = () => {
                 ✕
               </button>
 
-              {/* Video Player Side */}
-              <div style={{ background: "black", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {/* Content Top Part */}
+              <div style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
+                {/* Video Player Side */}
+                <div style={{ flex: "1.2", background: "black", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", height: "100%", overflow: "hidden" }}>
                 <video
                   src={selectedChallenge.videoUrl}
                   controls
@@ -396,91 +419,173 @@ const Challenges = () => {
                 )}
               </div>
 
-              {/* Record Metadata Side */}
-              <div style={{ padding: "50px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "28px", textAlign: "left" }}>
-                <div>
-                  <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
-                    <span style={{ background: "rgba(255,106,0,0.1)", color: "#FF6A00", fontSize: "10px", fontWeight: "900", padding: "4px 12px", borderRadius: "100px", textTransform: "uppercase" }}>{selectedChallenge.cat}</span>
-                    <span style={{ background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)", fontSize: "10px", fontWeight: "900", padding: "4px 12px", borderRadius: "100px" }}>{selectedChallenge.subcat}</span>
+                {/* Record Metadata Side */}
+                <div style={{ flex: "1", overflowY: "auto", height: "100%" }}>
+                  <div style={{ padding: "40px 50px", display: "flex", flexDirection: "column", gap: "28px", textAlign: "left" }}>
+                    <div>
+                      <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+                        <span style={{ background: "rgba(255,106,0,0.1)", color: "#FF6A00", fontSize: "10px", fontWeight: "900", padding: "4px 12px", borderRadius: "100px", textTransform: "uppercase" }}>{selectedChallenge.cat}</span>
+                        <span style={{ background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)", fontSize: "10px", fontWeight: "900", padding: "4px 12px", borderRadius: "100px" }}>{selectedChallenge.subcat}</span>
+                      </div>
+                      <h2 style={{ fontSize: "36px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", color: "white", lineHeight: "1.1" }}>{selectedChallenge.title}</h2>
+                      <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px", marginTop: "8px" }}>Record Holder: <strong style={{ color: "white" }}>{selectedChallenge.holder}</strong></p>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", padding: "20px", borderRadius: "16px" }}>
+                      <div>
+                        <div style={{ fontSize: "9px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>Official Score</div>
+                        <div style={{ fontSize: "18px", fontWeight: "950", color: "#FF6A00" }}>{selectedChallenge.score}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "9px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>Date Verified</div>
+                        <div style={{ fontSize: "16px", fontWeight: "800", color: "white" }}>{selectedChallenge.dateVerified}</div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>DESCRIPTION</h4>
+                      <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.6)", lineHeight: "1.6" }}>{selectedChallenge.description}</p>
+                    </div>
+
+                    <div>
+                      <h4 style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "10px" }}>OFFICIAL RULES</h4>
+                      <ul style={{ paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                        {selectedChallenge.rules.map((rule, idx) => (
+                          <li key={idx} style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)", lineHeight: "1.5" }}>{rule}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div style={{ marginTop: "auto", paddingTop: "20px" }}>
+                      {hasWatched ? (
+                        <Link to="/challenge-verify" style={{ textDecoration: "none" }}>
+                          <button style={{
+                            width: "100%",
+                            background: "#FF6A00",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "100px",
+                            padding: "20px",
+                            fontSize: "14px",
+                            fontWeight: "900",
+                            textTransform: "uppercase",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "10px",
+                            boxShadow: "0 10px 20px rgba(255,106,0,0.3)",
+                            transition: "0.3s"
+                          }}>
+                            CHALLENGE THIS RECORD <ArrowRight size={18} />
+                          </button>
+                        </Link>
+                      ) : (
+                        <button 
+                          disabled
+                          style={{
+                            width: "100%",
+                            background: "rgba(255,255,255,0.03)",
+                            color: "rgba(255,255,255,0.25)",
+                            border: "1px solid rgba(255,255,255,0.05)",
+                            borderRadius: "100px",
+                            padding: "20px",
+                            fontSize: "14px",
+                            fontWeight: "900",
+                            textTransform: "uppercase",
+                            cursor: "not-allowed",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "10px"
+                          }}
+                        >
+                          <Lock size={14} /> WATCH RECORD VIDEO TO CHALLENGE
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <h2 style={{ fontSize: "36px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", color: "white", lineHeight: "1.1" }}>{selectedChallenge.title}</h2>
-                  <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px", marginTop: "8px" }}>Record Holder: <strong style={{ color: "white" }}>{selectedChallenge.holder}</strong></p>
                 </div>
+            </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", padding: "20px", borderRadius: "16px" }}>
-                  <div>
-                    <div style={{ fontSize: "9px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>Official Score</div>
-                    <div style={{ fontSize: "18px", fontWeight: "950", color: "#FF6A00" }}>{selectedChallenge.score}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: "9px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>Date Verified</div>
-                    <div style={{ fontSize: "16px", fontWeight: "800", color: "white" }}>{selectedChallenge.dateVerified}</div>
-                  </div>
-                </div>
-
+            {/* ATTEMPT HISTORY SECTION */}
+            <div style={{ background: "#080808", borderTop: "1px solid rgba(255,255,255,0.05)", padding: "24px 40px", flexShrink: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "16px" }}>
                 <div>
-                  <h4 style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>DESCRIPTION</h4>
-                  <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.6)", lineHeight: "1.6" }}>{selectedChallenge.description}</p>
+                  <h3 style={{ fontSize: "14px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "4px" }}>ATTEMPT HISTORY</h3>
+                  <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)" }}>See how other members have attempted to break this record.</p>
                 </div>
-
-                <div>
-                  <h4 style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "10px" }}>OFFICIAL RULES</h4>
-                  <ul style={{ paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {selectedChallenge.rules.map((rule, idx) => (
-                      <li key={idx} style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)", lineHeight: "1.5" }}>{rule}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div style={{ marginTop: "auto", paddingTop: "20px" }}>
-                  {hasWatched ? (
-                    <Link to="/challenge-verify" style={{ textDecoration: "none" }}>
-                      <button style={{
-                        width: "100%",
-                        background: "#FF6A00",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "100px",
-                        padding: "20px",
-                        fontSize: "14px",
-                        fontWeight: "900",
-                        textTransform: "uppercase",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "10px",
-                        boxShadow: "0 10px 20px rgba(255,106,0,0.3)",
-                        transition: "0.3s"
-                      }}>
-                        CHALLENGE THIS RECORD <ArrowRight size={18} />
-                      </button>
-                    </Link>
-                  ) : (
-                    <button 
-                      disabled
-                      style={{
-                        width: "100%",
-                        background: "rgba(255,255,255,0.03)",
-                        color: "rgba(255,255,255,0.25)",
-                        border: "1px solid rgba(255,255,255,0.05)",
-                        borderRadius: "100px",
-                        padding: "20px",
-                        fontSize: "14px",
-                        fontWeight: "900",
-                        textTransform: "uppercase",
-                        cursor: "not-allowed",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "10px"
-                      }}
-                    >
-                      <Lock size={14} /> WATCH RECORD VIDEO TO CHALLENGE
-                    </button>
-                  )}
-                </div>
+                <Link to="/explore" style={{ color: "#FF6A00", fontSize: "11px", fontWeight: "800", textDecoration: "none", textTransform: "uppercase", letterSpacing: "0.1em", flexShrink: 0 }}>
+                  VIEW ALL ATTEMPTS {">"}
+                </Link>
               </div>
+
+              <div className="attempt-history-scroll" style={{ 
+                display: "flex", 
+                gap: "16px", 
+                overflowX: "auto", 
+                paddingBottom: "8px",
+                msOverflowStyle: "none", 
+                scrollbarWidth: "none"
+              }}>
+                <style>{`
+                  .attempt-history-scroll::-webkit-scrollbar {
+                    display: none;
+                  }
+                `}</style>
+                
+                {getMockAttempts(selectedChallenge).map(attempt => (
+                  <Link key={attempt.id} to={`/explore`} style={{ textDecoration: "none", color: "inherit" }}>
+                    <div style={{ 
+                      flex: "0 0 200px", 
+                      width: "200px",
+                      background: "#161616", 
+                      borderRadius: "12px", 
+                      overflow: "hidden", 
+                      border: attempt.status === "CURRENT RECORD" ? "1px solid #10B981" : "1px solid rgba(255,255,255,0.05)",
+                      cursor: "pointer",
+                      transition: "transform 0.2s, box-shadow 0.2s"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-4px)";
+                      e.currentTarget.style.boxShadow = "0 10px 20px rgba(0,0,0,0.4)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
+                    >
+                    {/* Thumbnail */}
+                    <div style={{ position: "relative", height: "100px" }}>
+                      <img src={attempt.img} alt={attempt.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.2)" }}>
+                          <Play fill="white" size={12} />
+                        </div>
+                      </div>
+                      <div style={{ position: "absolute", bottom: "6px", right: "6px", background: "rgba(0,0,0,0.8)", padding: "2px 6px", borderRadius: "4px", fontSize: "9px", fontWeight: "700" }}>
+                        0:00
+                      </div>
+                    </div>
+                    
+                    {/* Info */}
+                    <div style={{ padding: "12px" }}>
+                      <div style={{ fontSize: "12px", fontWeight: "800", marginBottom: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textTransform: "uppercase" }}>{attempt.name}</div>
+                      <div style={{ fontSize: "11px", color: "#FF6A00", fontWeight: "700", marginBottom: "10px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{attempt.value}</div>
+                      
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
+                        <div style={{ fontSize: "9px", color: "rgba(255,255,255,0.4)", fontWeight: "600" }}>{attempt.date}</div>
+                        <div style={{ fontSize: "8px", fontWeight: "900", padding: "3px 6px", borderRadius: "4px", background: attempt.bg, color: attempt.color, textTransform: "uppercase" }}>
+                          {attempt.status}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
             </div>
           </div>
         )}

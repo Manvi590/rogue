@@ -75,78 +75,92 @@ const HolderCard = ({ img, badge, name, records, rank, slug }) => {
   const recordSlug = slug || "stair-climbing";
   return (
     <div className="holder-card" style={{ position: "relative" }}>
-      <Link to={`/record/${recordSlug}`} style={{ display: "block", position: "relative", width: "100%", height: "200px", overflow: "hidden" }}>
-        <img src={img} alt={name} className="holder-card-img" style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.4s ease" }} />
-        <div className="holder-card-gradient" />
-        
-        <div 
-          className="play-overlay"
+      {/* Full-card background image */}
+      <img src={img} alt={name} className="holder-card-img" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.5s ease", zIndex: 0 }} />
+
+      {/* Full-card dark gradient overlay */}
+      <div style={{
+        position: "absolute",
+        inset: 0,
+        background: "linear-gradient(to top, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.72) 40%, rgba(0,0,0,0.30) 70%, rgba(0,0,0,0.10) 100%)",
+        zIndex: 1,
+        pointerEvents: "none"
+      }} />
+
+      {/* Play button overlay (clickable) */}
+      <Link to={`/record/${recordSlug}`} style={{ position: "absolute", inset: 0, zIndex: 2, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div
+          className="play-icon-circle"
           style={{
-            position: "absolute",
-            inset: 0,
+            width: "48px",
+            height: "48px",
+            borderRadius: "50%",
+            background: "rgba(0, 0, 0, 0.65)",
+            border: "1.5px solid rgba(255,255,255,0.5)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "rgba(0,0,0,0.2)",
-            transition: "all 0.3s ease",
-            opacity: 0.8
+            color: "#FF6A00",
+            transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.4)"
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(0,0,0,0.4)";
-            const icon = e.currentTarget.querySelector(".play-icon-circle");
-            if (icon) {
-              icon.style.transform = "scale(1.15)";
-              icon.style.boxShadow = "0 0 25px rgba(255, 106, 0, 0.6)";
-              icon.style.borderColor = "#FF6A00";
-            }
+            e.currentTarget.style.transform = "scale(1.15)";
+            e.currentTarget.style.boxShadow = "0 0 25px rgba(255,106,0,0.6)";
+            e.currentTarget.style.borderColor = "#FF6A00";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgba(0,0,0,0.2)";
-            const icon = e.currentTarget.querySelector(".play-icon-circle");
-            if (icon) {
-              icon.style.transform = "scale(1)";
-              icon.style.boxShadow = "none";
-              icon.style.borderColor = "rgba(255,255,255,0.4)";
-            }
+            e.currentTarget.style.transform = "scale(1)";
+            e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.4)";
+            e.currentTarget.style.borderColor = "rgba(255,255,255,0.5)";
           }}
         >
-          <div 
-            className="play-icon-circle"
-            style={{ 
-              width: "48px", 
-              height: "48px", 
-              borderRadius: "50%", 
-              background: "rgba(0, 0, 0, 0.6)", 
-              border: "1.5px solid rgba(255,255,255,0.4)", 
-              display: "flex", 
-              alignItems: "center", 
-              justifyContent: "center", 
-              color: "#FF6A00",
-              transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
-            }}
-          >
-            <Play size={16} fill="#FF6A00" style={{ marginLeft: "2px" }} />
-          </div>
+          <Play size={16} fill="#FF6A00" style={{ marginLeft: "2px" }} />
         </div>
       </Link>
-      
-      <div className="holder-side-strip" />
-      <div className="holder-card-top">
+
+      {/* Side orange accent strip */}
+      <div className="holder-side-strip" style={{ zIndex: 3 }} />
+
+      {/* Badge + Rank */}
+      <div className="holder-card-top" style={{ zIndex: 3 }}>
         <span className="holder-badge-pill">{badge}</span>
         <span className="holder-rank-num">#{String(rank).padStart(2, "0")}</span>
       </div>
-      <div className="holder-card-bottom" style={{ padding: "16px 20px 20px" }}>
-        <div className="holder-name" style={{ fontSize: "18px", fontWeight: "900", color: "white" }}>{name}</div>
-        <div className="holder-records" style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)", marginBottom: "12px" }}>{records} World Records</div>
-        
+
+      {/* Bottom text panel with explicit dark background */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          padding: "16px 18px 18px",
+          background: "linear-gradient(to top, rgba(0,0,0,0.97) 0%, rgba(0,0,0,0.90) 55%, rgba(0,0,0,0.0) 100%)",
+          borderTop: "1.5px solid rgba(255,106,0,0.4)",
+          zIndex: 3,
+          boxSizing: "border-box"
+        }}
+      >
+        <div style={{ fontSize: "17px", fontWeight: "900", color: "#ffffff", marginBottom: "3px", textShadow: "0 1px 8px rgba(0,0,0,0.9)", letterSpacing: "-0.01em" }}>{name}</div>
+        <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.78)", marginBottom: "10px", fontWeight: "600" }}>{records} World Records</div>
+
         <div style={{ display: "flex", gap: "12px", alignItems: "center", justifyContent: "space-between" }}>
           <Link to={`/profile/${name.toLowerCase().replace(/\s+/g, '-')}`} style={{ textDecoration: "none" }}>
-            <div className="holder-view-link" style={{ transition: "color 0.2s", fontSize: "11px", fontWeight: "800", color: "#FF6A00", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "4px" }} onMouseEnter={(e) => e.currentTarget.style.color = "white"} onMouseLeave={(e) => e.currentTarget.style.color = "#FF6A00"}>
+            <div
+              style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", fontWeight: "800", color: "#FF6A00", textTransform: "uppercase", letterSpacing: "0.08em", transition: "color 0.2s" }}
+              onMouseEnter={(e) => e.currentTarget.style.color = "#ffffff"}
+              onMouseLeave={(e) => e.currentTarget.style.color = "#FF6A00"}
+            >
               Profile <ArrowRight style={{ width: 10, height: 10 }} />
             </div>
           </Link>
           <Link to={`/record/${recordSlug}`} style={{ textDecoration: "none" }}>
-            <div className="holder-view-link" style={{ transition: "color 0.2s", fontSize: "11px", fontWeight: "800", color: "#FF6A00", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "4px" }} onMouseEnter={(e) => e.currentTarget.style.color = "white"} onMouseLeave={(e) => e.currentTarget.style.color = "#FF6A00"}>
+            <div
+              style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", fontWeight: "800", color: "#FF6A00", textTransform: "uppercase", letterSpacing: "0.08em", transition: "color 0.2s" }}
+              onMouseEnter={(e) => e.currentTarget.style.color = "#ffffff"}
+              onMouseLeave={(e) => e.currentTarget.style.color = "#FF6A00"}
+            >
               Watch Record <Play size={10} fill="#FF6A00" style={{ display: "inline-block" }} />
             </div>
           </Link>
@@ -155,6 +169,7 @@ const HolderCard = ({ img, badge, name, records, rank, slug }) => {
     </div>
   );
 };
+
 
 
 const AnimatedStat = ({ end, suffix, duration = 2000 }) => {

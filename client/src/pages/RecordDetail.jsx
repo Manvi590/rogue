@@ -103,6 +103,15 @@ const RecordDetail = () => {
 
   const record = getRecordData(id);
 
+  // Mock attempts history based on current record
+  const attempts = [
+    { id: 1, name: record.athlete, value: record.value, date: record.date, status: "CURRENT RECORD", img: record.img, color: "#10B981", bg: "rgba(16, 185, 129, 0.1)" },
+    { id: 2, name: "Daniel Kim", value: "Pending Verification", date: "May 12, 2024", status: "PENDING REVIEW", img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=400&q=80", color: "#F59E0B", bg: "rgba(245, 158, 11, 0.1)" },
+    { id: 3, name: "Liam Thompson", value: "Failed - Rule 3B", date: "May 14, 2024", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)" },
+    { id: 4, name: "Alex Rodriguez", value: "Failed - Time Limit", date: "May 13, 2024", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)" },
+    { id: 5, name: "James Walker", value: "Broken (Previous)", date: "May 10, 2024", status: "BROKEN", img: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=400&q=80", color: "#9CA3AF", bg: "rgba(156, 163, 175, 0.1)" }
+  ];
+
   return (
     <PageTransition>
       <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
@@ -147,7 +156,7 @@ const RecordDetail = () => {
         <section style={{ padding: "80px 5%", maxWidth: "1400px", margin: "0 auto", display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "60px" }}>
           
           {/* LEFT: DETAILS & VIDEO */}
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div style={{ background: "#161616", borderRadius: "32px", border: "1px solid rgba(255,255,255,0.05)", padding: "48px", marginBottom: "40px" }}>
               <h2 style={{ fontSize: "24px", fontWeight: "950", textTransform: "uppercase", marginBottom: "24px" }}>RECORD STORY</h2>
               <p style={{ fontSize: "18px", color: "rgba(255,255,255,0.6)", lineHeight: "1.8", marginBottom: "40px" }}>
@@ -180,6 +189,81 @@ const RecordDetail = () => {
                   <Play fill="white" size={32} />
                 </div>
                 <span style={{ marginTop: "20px", fontSize: "12px", fontWeight: "900", letterSpacing: "0.2em" }}>WATCH ATTEMPT FOOTAGE</span>
+              </div>
+            </div>
+
+            {/* ATTEMPT HISTORY SECTION */}
+            <div style={{ marginTop: "40px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "20px" }}>
+                <div>
+                  <h3 style={{ fontSize: "16px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>ATTEMPT HISTORY</h3>
+                  <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.5)" }}>See how other members have attempted to break this record.</p>
+                </div>
+                <Link to="#" style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "800", textDecoration: "none", textTransform: "uppercase", letterSpacing: "0.1em", flexShrink: 0 }}>
+                  VIEW ALL ATTEMPTS {">"}
+                </Link>
+              </div>
+
+              <div className="attempt-history-scroll" style={{ 
+                display: "flex", 
+                gap: "16px", 
+                overflowX: "auto", 
+                paddingBottom: "20px",
+                msOverflowStyle: "none", 
+                scrollbarWidth: "none"
+              }}>
+                <style>{`
+                  .attempt-history-scroll::-webkit-scrollbar {
+                    display: none;
+                  }
+                `}</style>
+                
+                {attempts.map(attempt => (
+                  <div key={attempt.id} style={{ 
+                    flex: "0 0 240px", 
+                    background: "#161616", 
+                    borderRadius: "16px", 
+                    overflow: "hidden", 
+                    border: attempt.status === "CURRENT RECORD" ? "1px solid #10B981" : "1px solid rgba(255,255,255,0.05)",
+                    cursor: "pointer",
+                    transition: "transform 0.2s, box-shadow 0.2s"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-4px)";
+                    e.currentTarget.style.boxShadow = "0 10px 20px rgba(0,0,0,0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                  >
+                    {/* Thumbnail */}
+                    <div style={{ position: "relative", height: "135px" }}>
+                      <img src={attempt.img} alt={attempt.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.2)" }}>
+                          <Play fill="white" size={16} />
+                        </div>
+                      </div>
+                      <div style={{ position: "absolute", bottom: "8px", right: "8px", background: "rgba(0,0,0,0.8)", padding: "4px 8px", borderRadius: "4px", fontSize: "10px", fontWeight: "700" }}>
+                        0:00
+                      </div>
+                    </div>
+                    
+                    {/* Info */}
+                    <div style={{ padding: "16px" }}>
+                      <div style={{ fontSize: "14px", fontWeight: "800", marginBottom: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{attempt.name}</div>
+                      <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.6)", marginBottom: "12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{attempt.value}</div>
+                      
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+                        <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", fontWeight: "600" }}>{attempt.date}</div>
+                        <div style={{ fontSize: "9px", fontWeight: "900", padding: "4px 8px", borderRadius: "4px", background: attempt.bg, color: attempt.color, textTransform: "uppercase" }}>
+                          {attempt.status}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

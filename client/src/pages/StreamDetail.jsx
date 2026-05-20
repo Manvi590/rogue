@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, Play, Eye, Users, MessageSquare, Share2, Shield,
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { useAuth } from "../context/AuthContext";
 
 const CountdownBox = ({ value, label }) => (
   <div style={{ textAlign: "center" }}>
@@ -35,6 +36,7 @@ const eventsData = [
     viewers: "34,285",
     img: "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1600&q=80",
     isFeatured: true,
+    isFreeStream: false,
     desc: "The pinnacle of raw powerlifting. The world's top heavyweight lifters battle for the absolute bench press record live."
   },
   {
@@ -46,6 +48,7 @@ const eventsData = [
     athletes: "2 PLAYERS",
     viewers: "18,490",
     img: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=800&q=80",
+    isFreeStream: true,
     desc: "The final game between two absolute block-stacking legends competing for the maxout 999,999 record."
   },
   {
@@ -101,6 +104,7 @@ const eventsData = [
 
 const StreamDetail = () => {
   const { id } = useParams();
+  const { user } = useAuth();
   const [timeLeft, setTimeLeft] = React.useState({
     hours: "02",
     minutes: "45",
@@ -116,14 +120,16 @@ const StreamDetail = () => {
   const [toast, setToast] = React.useState("");
 
   const currentEvent = eventsData.find(e => e.id === id) || eventsData[0];
+  const isLocked = !currentEvent.isFreeStream && !hasTicket;
 
   const handleWatchClick = () => {
-    if (currentEvent.status === "PAST" || hasTicket) {
-      setIsPlaying(prev => !prev);
-      showToast(isPlaying ? "🔴 Stream paused." : currentEvent.status === "PAST" ? "▶️ Playing completed event playback!" : "🔴 Live HD Stream Loaded Successfully!");
-    } else {
+    if (isLocked) {
       setShowModal(true);
+      return;
     }
+    
+    setIsPlaying(prev => !prev);
+    showToast(isPlaying ? "🔴 Stream paused." : currentEvent.status === "PAST" ? "▶️ Playing completed event playback!" : "🔴 Live HD Stream Loaded Successfully!");
   };
 
   const purchaseTicket = () => {
@@ -317,7 +323,37 @@ const StreamDetail = () => {
 
             {/* VIDEO PLAYER */}
             <div style={{ position: "relative", height: "600px", background: "#000", borderRadius: "24px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)" }}>
-              {isPlaying ? (
+              {isLocked ? (
+                <>
+                  <img
+                    src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1600&q=80"
+                    alt="Stream locked"
+                    style={{ width: "100%", height: "100%", objectFit: "cover", filter: "blur(16px)", opacity: 0.4 }}
+                  />
+                  <div style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)", padding: "20px" }}>
+                    <Shield size={56} color="#FF6A00" style={{ marginBottom: "20px", opacity: 0.9 }} />
+                    <h3 style={{ fontSize: "22px", fontWeight: "950", marginBottom: "12px", textAlign: "center", textTransform: "uppercase", letterSpacing: "0.05em" }}>THIS LIVESTREAM REQUIRES A VALID EVENT TICKET TO ACCESS</h3>
+                    <p style={{ fontSize: "15px", color: "rgba(255,255,255,0.7)", marginBottom: "32px", textAlign: "center", maxWidth: "480px", lineHeight: "1.6" }}>
+                      You need to {user ? "purchase a spectator pass" : "log in and purchase a spectator pass"} to unlock this premium live event.
+                    </p>
+                    <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", justifyContent: "center" }}>
+                      {!user && (
+                        <Link to="/login" style={{ textDecoration: "none" }}>
+                          <button style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.3)", color: "white", padding: "14px 32px", borderRadius: "100px", fontWeight: "800", fontSize: "13px", cursor: "pointer", transition: "background 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                            LOGIN
+                          </button>
+                        </Link>
+                      )}
+                      <button onClick={() => setShowModal(true)} style={{ background: "#FF6A00", border: "none", color: "white", padding: "14px 32px", borderRadius: "100px", fontWeight: "900", fontSize: "13px", cursor: "pointer", boxShadow: "0 10px 20px rgba(255,106,0,0.25)", transition: "transform 0.2s" }} onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
+                        PURCHASE TICKET
+                      </button>
+                      <button style={{ background: "transparent", border: "none", color: "#FF6A00", padding: "14px 32px", borderRadius: "100px", fontWeight: "800", fontSize: "13px", cursor: "pointer" }}>
+                        REDEEM ACCESS CODE
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : isPlaying ? (
                 <div style={{ width: "100%", height: "100%", position: "relative", background: "#0c0c0c" }}>
                   <img
                     src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1600&q=80"
@@ -360,7 +396,7 @@ const StreamDetail = () => {
               {/* Overlay Info */}
               <div style={{ position: "absolute", top: "24px", left: "24px", display: "flex", gap: "12px", zIndex: 10 }}>
                 <div style={{ background: isPlaying ? "#EF4444" : "#FF6A00", padding: "6px 16px", borderRadius: "6px", fontSize: "12px", fontWeight: "900", display: "flex", alignItems: "center", gap: "8px", transition: "background 0.3s" }}>
-                  <div style={{ width: "6px", height: "6px", background: "white", borderRadius: "50%" }}></div> {isPlaying ? "LIVE FEED" : "LIVE"}
+                  <div style={{ width: "6px", height: "6px", background: "white", borderRadius: "50%" }}></div> {currentEvent.isFreeStream ? "FREE STREAM" : isPlaying ? "LIVE FEED" : "LIVE"}
                 </div>
                 <div style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(10px)", padding: "6px 16px", borderRadius: "6px", fontSize: "12px", fontWeight: "900", display: "flex", alignItems: "center", gap: "8px" }}>
                   <Eye size={14} /> 34.2K VIEWERS
@@ -440,7 +476,15 @@ const StreamDetail = () => {
                     onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
                     onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
                   >
-                    <Play size={14} fill="white" /> {isPlaying ? (currentEvent.status === "PAST" ? "PAUSE PLAYBACK" : "PAUSE FEED") : (currentEvent.status === "PAST" ? "WATCH PLAYBACK" : hasTicket ? "WATCH STREAM" : "WATCH LIVE")}
+                    {isLocked ? (
+                      <>
+                        <Shield size={14} fill="white" /> UNLOCK STREAM
+                      </>
+                    ) : (
+                      <>
+                        <Play size={14} fill="white" /> {isPlaying ? (currentEvent.status === "PAST" ? "PAUSE PLAYBACK" : "PAUSE FEED") : (currentEvent.status === "PAST" ? "WATCH PLAYBACK" : hasTicket ? "WATCH STREAM" : "WATCH LIVE")}
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
