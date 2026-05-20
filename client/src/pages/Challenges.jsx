@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Play, Lock, Unlock, CheckCircle2 } from "lucide-react";
+import { ArrowRight, ArrowLeft, Play, Lock, Unlock, CheckCircle2 } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -111,9 +111,11 @@ const Challenges = () => {
   const [activeTab, setActiveTab] = useState("ALL");
   const [selectedChallenge, setSelectedChallenge] = useState(null);
   const [hasWatched, setHasWatched] = useState(false);
+  const [selectedAttempt, setSelectedAttempt] = useState(null);
+  const [showAllAttempts, setShowAllAttempts] = useState(false);
 
   useEffect(() => {
-    if (selectedChallenge) {
+    if (selectedChallenge || selectedAttempt || showAllAttempts) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "unset";
@@ -121,7 +123,7 @@ const Challenges = () => {
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [selectedChallenge]);
+  }, [selectedChallenge, selectedAttempt, showAllAttempts]);
 
   const filteredChallenges = activeTab === "ALL" 
     ? challengeCards 
@@ -142,13 +144,23 @@ const Challenges = () => {
   };
 
   const getMockAttempts = (challenge) => {
-    return [
-      { id: 1, name: "James Walker", value: "35 Bounces", date: "May 16, 2026", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)" },
-      { id: 2, name: "Alex Rodriguez", value: "34 Bounces", date: "May 15, 2026", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)" },
-      { id: 3, name: "Liam Thompson", value: "35 Bounces", date: "May 14, 2026", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)" },
-      { id: 4, name: "Daniel Kim", value: "36 Bounces", date: "May 12, 2026", status: "PENDING REVIEW", img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=400&q=80", color: "#F59E0B", bg: "rgba(245, 158, 11, 0.1)" },
-      { id: 5, name: challenge ? challenge.holder : "Pavol Durdik", value: challenge ? challenge.score : "36 Bounces", date: "May 12, 2026", status: "CURRENT RECORD", img: challenge ? challenge.img : "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=400&q=80", color: "#10B981", bg: "rgba(16, 185, 129, 0.1)" }
+    const attempts = [
+      { id: 1, name: "James Walker", value: "35 Bounces", date: "May 16, 2026", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4" },
+      { id: 2, name: "Alex Rodriguez", value: "34 Bounces", date: "May 15, 2026", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4" },
+      { id: 3, name: "Liam Thompson", value: "35 Bounces", date: "May 14, 2026", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4" },
+      { id: 4, name: "Daniel Kim", value: "36 Bounces", date: "May 12, 2026", status: "PENDING REVIEW", img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=400&q=80", color: "#F59E0B", bg: "rgba(245, 158, 11, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" },
+      { id: 5, name: challenge ? challenge.holder : "Pavol Durdik", value: challenge ? challenge.score : "36 Bounces", date: "May 12, 2026", status: "CURRENT RECORD", img: challenge ? challenge.img : "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=400&q=80", color: "#10B981", bg: "rgba(16, 185, 129, 0.1)", videoUrl: challenge ? challenge.videoUrl : "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" }
     ];
+
+    const statusOrder = {
+      "CURRENT RECORD": 1,
+      "PENDING REVIEW": 2,
+      "APPROVED ATTEMPT": 3,
+      "BROKEN": 4,
+      "FAILED ATTEMPT": 5
+    };
+
+    return attempts.sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99));
   };
 
   return (
@@ -515,9 +527,11 @@ const Challenges = () => {
                   <h3 style={{ fontSize: "14px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "4px" }}>ATTEMPT HISTORY</h3>
                   <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)" }}>See how other members have attempted to break this record.</p>
                 </div>
-                <Link to="/explore" style={{ color: "#FF6A00", fontSize: "11px", fontWeight: "800", textDecoration: "none", textTransform: "uppercase", letterSpacing: "0.1em", flexShrink: 0 }}>
+                <button 
+                  onClick={() => setShowAllAttempts(true)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "#FF6A00", fontSize: "11px", fontWeight: "800", textDecoration: "none", textTransform: "uppercase", letterSpacing: "0.1em", flexShrink: 0 }}>
                   VIEW ALL ATTEMPTS {">"}
-                </Link>
+                </button>
               </div>
 
               <div className="attempt-history-scroll" style={{ 
@@ -535,8 +549,9 @@ const Challenges = () => {
                 `}</style>
                 
                 {getMockAttempts(selectedChallenge).map(attempt => (
-                  <Link key={attempt.id} to={`/explore`} style={{ textDecoration: "none", color: "inherit" }}>
-                    <div style={{ 
+                    <div key={attempt.id} 
+                      onClick={() => setSelectedAttempt(attempt)}
+                      style={{ 
                       flex: "0 0 200px", 
                       width: "200px",
                       background: "#161616", 
@@ -581,7 +596,6 @@ const Challenges = () => {
                       </div>
                     </div>
                   </div>
-                  </Link>
                 ))}
               </div>
             </div>
@@ -590,9 +604,167 @@ const Challenges = () => {
           </div>
         )}
 
+        {/* ALL ATTEMPTS OVERLAY */}
+        {showAllAttempts && selectedChallenge && (
+          <div data-lenis-prevent="true" style={{
+            position: "fixed",
+            inset: 0,
+            background: "#0A0A0A",
+            zIndex: 10000,
+            overflowY: "auto",
+            padding: "80px 5%"
+          }}>
+            <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
+              <button 
+                onClick={() => setShowAllAttempts(false)} 
+                style={{ display: "flex", alignItems: "center", gap: "8px", color: "#FF6A00", background: "none", border: "none", cursor: "pointer", fontSize: "14px", fontWeight: "800", textTransform: "uppercase", marginBottom: "40px" }}>
+                <ArrowLeft size={16} /> BACK TO CHALLENGE DETAIL
+              </button>
+
+              <h1 style={{ fontSize: "clamp(32px, 5vw, 48px)", fontWeight: "950", textTransform: "uppercase", marginBottom: "16px", color: "white" }}>
+                ALL ATTEMPTS: <span style={{ color: "#FF6A00" }}>{selectedChallenge.title}</span>
+              </h1>
+              <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.5)", marginBottom: "40px" }}>Browse all verification attempts submitted by members for this specific record.</p>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "32px" }}>
+                {getMockAttempts(selectedChallenge).map(attempt => (
+                  <div key={attempt.id} 
+                    onClick={() => setSelectedAttempt(attempt)}
+                    style={{ 
+                      background: "#161616", 
+                      borderRadius: "16px", 
+                      overflow: "hidden", 
+                      border: attempt.status === "CURRENT RECORD" ? "1px solid #10B981" : "1px solid rgba(255,255,255,0.05)",
+                      cursor: "pointer",
+                      transition: "transform 0.2s, box-shadow 0.2s"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-4px)";
+                      e.currentTarget.style.boxShadow = "0 10px 20px rgba(0,0,0,0.4)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
+                    >
+                    {/* Thumbnail */}
+                    <div style={{ position: "relative", height: "180px" }}>
+                      <img src={attempt.img} alt={attempt.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.2)" }}>
+                          <Play fill="white" size={24} />
+                        </div>
+                      </div>
+                      <div style={{ position: "absolute", bottom: "12px", right: "12px", background: "rgba(0,0,0,0.8)", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: "700" }}>
+                        0:00
+                      </div>
+                    </div>
+                    
+                    {/* Info */}
+                    <div style={{ padding: "24px" }}>
+                      <div style={{ fontSize: "18px", fontWeight: "900", marginBottom: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textTransform: "uppercase", color: "white" }}>{attempt.name}</div>
+                      <div style={{ fontSize: "16px", color: "#FF6A00", fontWeight: "800", marginBottom: "16px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{attempt.value}</div>
+                      
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+                        <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", fontWeight: "700" }}>{attempt.date}</div>
+                        <div style={{ fontSize: "10px", fontWeight: "900", padding: "6px 10px", borderRadius: "4px", background: attempt.bg, color: attempt.color, textTransform: "uppercase" }}>
+                          {attempt.status}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* FOOTER */}
         <Footer />
 
+        {/* ATTEMPT VIDEO MODAL */}
+        {selectedAttempt && (
+          <div style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.95)",
+            backdropFilter: "blur(16px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10001,
+            padding: "40px"
+          }}>
+            <div style={{
+              background: "#121212",
+              border: `1px solid ${selectedAttempt.color || '#FF6A00'}`,
+              borderRadius: "40px",
+              width: "100%",
+              maxWidth: "1150px",
+              height: "90vh",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              position: "relative",
+              boxShadow: "0 50px 100px rgba(0,0,0,0.8)"
+            }}>
+              <button 
+                onClick={() => setSelectedAttempt(null)}
+                style={{
+                  position: "absolute",
+                  top: "24px",
+                  right: "24px",
+                  background: "rgba(255,255,255,0.05)",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "40px",
+                  height: "40px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "white",
+                  cursor: "pointer",
+                  zIndex: 10,
+                  fontSize: "18px",
+                  fontWeight: "bold"
+                }}
+              >✕</button>
+              <div style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
+                <div style={{ flex: "1.2", background: "black", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", height: "100%", overflow: "hidden" }}>
+                  <video
+                    src={selectedAttempt.videoUrl}
+                    controls
+                    autoPlay
+                    style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                  />
+                </div>
+                <div data-lenis-prevent="true" style={{ flex: "1", overflowY: "auto", height: "100%", background: "#161616" }}>
+                  <div style={{ padding: "40px 50px", display: "flex", flexDirection: "column", gap: "28px", textAlign: "left" }}>
+                    <div>
+                      <span style={{ background: selectedAttempt.bg, color: selectedAttempt.color, fontSize: "12px", fontWeight: "900", padding: "6px 16px", borderRadius: "100px", textTransform: "uppercase" }}>{selectedAttempt.status}</span>
+                      <h2 style={{ fontSize: "32px", fontWeight: "950", textTransform: "uppercase", color: "white", lineHeight: "1.1", marginTop: "24px", marginBottom: "8px" }}>{selectedAttempt.name}</h2>
+                      <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px", fontWeight: "600" }}>Attempt Date: <strong style={{ color: "white" }}>{selectedAttempt.date}</strong></p>
+                    </div>
+
+                    <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", padding: "24px", borderRadius: "16px" }}>
+                      <div style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Recorded Score / Result</div>
+                      <div style={{ fontSize: "24px", fontWeight: "950", color: selectedAttempt.color }}>{selectedAttempt.value}</div>
+                    </div>
+
+                    {selectedAttempt.img && (
+                      <div>
+                        <h4 style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>ATTEMPT THUMBNAIL</h4>
+                        <div style={{ borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)" }}>
+                          <img src={selectedAttempt.img} alt={selectedAttempt.name} style={{ width: "100%", height: "auto", display: "block" }} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </PageTransition>
   );

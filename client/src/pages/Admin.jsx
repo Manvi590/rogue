@@ -542,14 +542,27 @@ WHERE email = 'admin@rogue.com';`}
                       {/* Column 3: Biometric/Verification/Price metric value */}
                       <td style={{ padding: "20px 24px" }}>
                         {activeTab === "records" && (
-                          <div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                             <div style={{ fontSize: "16px", fontWeight: "900", color: "white" }}>{item.value} {item.unit}</div>
-                            <span style={{
-                              color: item.status === "verified" ? "#22c55e" : item.status === "rejected" ? "#ef4444" : "#ffcc00",
-                              fontSize: "10px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.5px"
-                            }}>
-                              {item.status}
-                            </span>
+                            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                              <span style={{
+                                color: item.status === "verified" ? "#22c55e" : item.status === "rejected" ? "#ef4444" : "#ffcc00",
+                                fontSize: "10px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.5px"
+                              }}>
+                                {item.status}
+                              </span>
+                              {(item.paymentStatus || item.payment_status) && (
+                                <span style={{
+                                  background: (item.paymentStatus || item.payment_status).toLowerCase() === "paid" ? "rgba(34,197,94,0.15)" : 
+                                              (item.paymentStatus || item.payment_status).toLowerCase() === "failed" ? "rgba(239,68,68,0.15)" : "rgba(255,204,0,0.15)",
+                                  color: (item.paymentStatus || item.payment_status).toLowerCase() === "paid" ? "#22c55e" : 
+                                         (item.paymentStatus || item.payment_status).toLowerCase() === "failed" ? "#ef4444" : "#ffcc00",
+                                  padding: "2px 6px", borderRadius: "4px", fontSize: "9px", fontWeight: "900", textTransform: "uppercase"
+                                }}>
+                                  PAY: {(item.paymentStatus || item.payment_status).replace('_', ' ')}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         )}
                         {activeTab === "users" && (

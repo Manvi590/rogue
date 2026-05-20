@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ArrowRight, ChevronRight, Loader2 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import { useState } from "react";
@@ -7,10 +7,11 @@ import { useAuth } from "../context/AuthContext";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [error, setError] = useState(location.state?.message || "");
 
   const handleSubmit = async (e) => {
     e.preventDefault();

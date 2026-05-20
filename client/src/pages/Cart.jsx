@@ -375,7 +375,18 @@ const Cart = () => {
                   </div>
                   <h3 style={{ fontSize: "28px", fontWeight: "950", textTransform: "uppercase", marginBottom: "16px" }}>PAYMENT SUCCESSFUL</h3>
                   <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "15px", lineHeight: "1.6", marginBottom: "32px" }}>
-                    Thank you! Your order has been processed securely. Your items and spectator passes will be activated shortly.
+                    {(() => {
+                      const hasPass = items.some(item => item.title.toLowerCase().includes("spectator pass"));
+                      const hasOtherItems = items.some(item => !item.title.toLowerCase().includes("spectator pass"));
+                      
+                      if (hasPass && !hasOtherItems) {
+                        return "Thank you! Your order has been processed securely. Your spectator passes will be activated shortly.";
+                      } else if (!hasPass && hasOtherItems) {
+                        return "Thank you! Your order has been processed securely. Your items will be processed and shipped shortly.";
+                      } else {
+                        return "Thank you! Your order has been processed securely. Your items will be shipped shortly and your spectator passes will be activated shortly.";
+                      }
+                    })()}
                   </p>
                   <button 
                     type="button"

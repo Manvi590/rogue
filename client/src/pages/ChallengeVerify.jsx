@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { apiCall } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 import { useEffect } from "react";
@@ -46,11 +46,20 @@ import {
 const ChallengeVerify = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const totalSteps = 5;
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/login', { state: { message: "You must be logged in or registered before submitting or challenging a record." } });
+    }
+  }, [user, navigate]);
+
+  if (!user) return null;
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -124,11 +133,12 @@ const ChallengeVerify = () => {
         value: formData.value,
         unit: formData.unit,
         evidenceUrl: formData.youtubeLink || "pending_upload",
-        thumbnailUrl: "pending_upload"
+        thumbnailUrl: "pending_upload",
+        paymentStatus: 'pending_payment'
       };
 
-      await apiCall('/records', 'POST', submissionData, user.token);
-      setIsSubmitted(true);
+      const response = await apiCall('/records', 'POST', submissionData, user.token);
+      navigate('/submission-checkout', { state: { submissionData: { ...submissionData, id: response?.id || 'TEMP' } } });
     } catch (err) {
       setError(err.message || "Failed to submit record");
     } finally {

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ArrowRight, 
@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import ScrollReveal from "../components/ScrollReveal";
 import { apiCall } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
@@ -141,11 +141,20 @@ const categoriesData = {
 
 const Verify = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const totalSteps = 6;
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/login', { state: { message: "You must be logged in or registered before submitting or challenging a record." } });
+    }
+  }, [user, navigate]);
+
+  if (!user) return null;
 
   const [formData, setFormData] = useState({
     // Section 1
@@ -242,11 +251,12 @@ const Verify = () => {
         value: formData.resultScore,
         unit: formData.unit,
         evidenceUrl: formData.youtubeLink || "pending_upload",
-        thumbnailUrl: "pending_upload"
+        thumbnailUrl: "pending_upload",
+        paymentStatus: 'pending_payment'
       };
 
-      await apiCall('/records', 'POST', submissionData, user.token);
-      setIsSubmitted(true);
+      const response = await apiCall('/records', 'POST', submissionData, user.token);
+      navigate('/submission-checkout', { state: { submissionData: { ...submissionData, id: response?.id || 'TEMP' } } });
     } catch (err) {
       setError(err.message || "Failed to submit record");
     } finally {

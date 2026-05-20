@@ -39,6 +39,7 @@ import GlobalRankings from './pages/GlobalRankings'
 import LoadingScreen from './components/LoadingScreen'
 import ScrollToTop from './components/ScrollToTop'
 import Admin from './pages/Admin'
+import SubmissionCheckout from './pages/SubmissionCheckout'
 import './App.css'
 
 function App() {
@@ -69,6 +70,7 @@ function App() {
             <Route path="/challenge" element={<Challenges />} />
             <Route path="/verify" element={<Verify />} />
             <Route path="/challenge-verify" element={<ChallengeVerify />} />
+            <Route path="/submission-checkout" element={<SubmissionCheckout />} />
             <Route path="/process" element={<VerificationProcess />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/events" element={<Events />} />
