@@ -244,6 +244,7 @@ const Verify = () => {
         category: formData.category,
         description: formData.explanation,
         athleteId: formData.username,
+        athleteName: formData.fullName || user.name,
         venueName: formData.venueName,
         city: formData.city,
         witnesses: formData.witnesses,
@@ -1456,7 +1457,9 @@ const Verify = () => {
                           {/* HUD BOTTOM LEFT */}
                           <div style={{ position: "absolute", bottom: "24px", left: "24px" }}>
                             <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "4px" }}>TRACKING IDENTITY</div>
-                            <div style={{ fontSize: "16px", fontWeight: "950", color: "white" }}>ELITE_ATHLETE_#124</div>
+                            <div style={{ fontSize: "16px", fontWeight: "950", color: "white" }}>
+                              {formData.fullName ? formData.fullName.toUpperCase().replace(/\s+/g, '_') : user ? user.name.toUpperCase().replace(/\s+/g, '_') : "ELITE_ATHLETE"}
+                            </div>
                           </div>
 
                           {/* HUD BOTTOM RIGHT */}
@@ -1558,18 +1561,18 @@ const Verify = () => {
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", marginBottom: "48px" }}>
                               <div>
                                 <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>ATHLETE NAME</div>
-                                <div style={{ fontSize: "24px", fontWeight: "950" }}>MARCUS THORNE</div>
+                                <div style={{ fontSize: "24px", fontWeight: "950" }}>{formData.fullName || user.name}</div>
                               </div>
                               <div>
-                                <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>CATEGORY</div>
-                                <div style={{ fontSize: "24px", fontWeight: "950" }}>MAX DEADLIFT</div>
+                                <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>RECORD CATEGORY</div>
+                                <div style={{ fontSize: "24px", fontWeight: "950" }}>{formData.recordTitle || "UNSPECIFIED"}</div>
                               </div>
                             </div>
 
                             <div style={{ marginBottom: "48px" }}>
                               <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "12px" }}>FINAL PERFORMANCE METRIC</div>
                               <div style={{ fontSize: "96px", fontWeight: "950", color: "#FF6A00", lineHeight: "1", letterSpacing: "-0.04em" }}>
-                                502.5 <span style={{ fontSize: "32px", color: "white", marginLeft: "12px" }}>KG</span>
+                                {formData.resultScore || "0"} <span style={{ fontSize: "32px", color: "white", marginLeft: "12px" }}>{formData.unit || "UNIT"}</span>
                               </div>
                             </div>
 
@@ -1578,10 +1581,12 @@ const Verify = () => {
                                 <img src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=200&q=80" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.5 }} />
                               </div>
                               <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: "13px", fontWeight: "900", marginBottom: "4px" }}>LIFT_VERIFICATION_V082.MOV</div>
+                                <div style={{ fontSize: "13px", fontWeight: "900", marginBottom: "4px" }}>
+                                  {uploadedFiles.video ? uploadedFiles.video.name : "LIFT_VERIFICATION_V082.MOV"}
+                                </div>
                                 <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", fontWeight: "700" }}>4K Resolution • GPS Logged • Biometric Verified</div>
                               </div>
-                              <button style={{ background: "none", border: "none", color: "#FF6A00", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                              <button onClick={() => setStep(4)} style={{ background: "none", border: "none", color: "#FF6A00", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                                 EDIT <Edit3 size={14} />
                               </button>
                             </div>

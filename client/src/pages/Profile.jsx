@@ -133,6 +133,18 @@ const Profile = () => {
     fetchSubmissions();
   }, [user, isOwnProfile]);
 
+  // Prevent background scroll when modal is open
+  useEffect(() => {
+    if (isEditModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [isEditModalOpen]);
+
   // Sync edit form with current user details
   const openEditModal = () => {
     if (user) {
@@ -1155,8 +1167,8 @@ const Profile = () => {
             </div>
 
             {/* Modal Body / Scrollable Form */}
-            <form onSubmit={handleEditSubmit} style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
-              <div style={{ padding: "32px", overflowY: "auto", maxHeight: "60vh", display: "flex", flexDirection: "column", gap: "20px" }}>
+            <form onSubmit={handleEditSubmit} style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+              <div style={{ padding: "32px", overflowY: "auto", maxHeight: "60vh", display: "flex", flexDirection: "column", gap: "20px", scrollBehavior: "smooth", WebkitOverflowScrolling: "touch" }}>
                 
                 {editError && (
                   <div style={{ background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.15)", borderRadius: "12px", color: "#f87171", padding: "12px 16px", fontSize: "12px", display: "flex", gap: "8px", alignItems: "center" }}>

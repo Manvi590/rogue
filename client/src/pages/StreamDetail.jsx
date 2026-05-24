@@ -6,6 +6,8 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
 
+import { apiCall } from "../utils/api";
+
 const CountdownBox = ({ value, label }) => (
   <div style={{ textAlign: "center" }}>
     <div style={{ 
@@ -111,16 +113,57 @@ const StreamDetail = () => {
     seconds: "12"
   });
 
-  // Dynamic ticket spectator passes
-  const [hasTicket, setHasTicket] = React.useState(() => {
-    return localStorage.getItem("rwr_spectator_ticket") === "true";
-  });
+  // Dynamic ticket spectator passes and stream access
+  const [hasTicket, setHasTicket] = React.useState(false);
+  const [canWatch, setCanWatch] = React.useState(false);
   const [showModal, setShowModal] = React.useState(false);
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [toast, setToast] = React.useState("");
+  const [event, setEvent] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [ticketPrice, setTicketPrice] = React.useState(49);
+  const [eventIsPaid, setEventIsPaid] = React.useState(false);
 
-  const currentEvent = eventsData.find(e => e.id === id) || eventsData[0];
-  const isLocked = !currentEvent.isFreeStream && !hasTicket;
+  // Fetch event and verify ticket access
+  useEffect(() => {
+    const fetchEventAndVerifyAccess = async () => {
+      setLoading(true);
+      try {
+        // Get event details
+        const eventData = await apiCall(`/events/${id}`, 'GET');
+        setEvent(eventData);
+        
+        // Set event type and price
+        if (eventData) {
+          setEventIsPaid(eventData.isPaid || false);
+          setTicketPrice(eventData.ticketPrice || 49);
+          
+          // If user is logged in, verify ticket
+          if (user) {
+            const ticketVerification = await apiCall(`/tickets/verify/${id}`, 'GET', null, user.token);
+            setCanWatch(ticketVerification.canWatch);
+            setHasTicket(ticketVerification.hasTicket);
+          } else {
+            // Not logged in - can only watch free events
+            setCanWatch(!eventData.isPaid);
+            setHasTicket(false);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch event details", error);
+        // Fallback to demo events
+        setCanWatch(true);
+        setHasTicket(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEventAndVerifyAccess();
+  }, [id, user]);
+
+  const currentEvent = event || eventsData.find(e => e.id === id) || eventsData[0];
+  const isLocked = !loading && currentEvent && eventIsPaid && !canWatch;
 
   const handleWatchClick = () => {
     if (isLocked) {
@@ -129,15 +172,38 @@ const StreamDetail = () => {
     }
     
     setIsPlaying(prev => !prev);
-    showToast(isPlaying ? "🔴 Stream paused." : currentEvent.status === "PAST" ? "▶️ Playing completed event playback!" : "🔴 Live HD Stream Loaded Successfully!");
+    if (!isPlaying) {
+      showToast(currentEvent.status === "PAST" ? "▶️ Playing completed event playback!" : "🔴 Live HD Stream Loaded Successfully!");
+    } else {
+      showToast(isPlaying ? "🔴 Stream paused." : "");
+    }
   };
 
-  const purchaseTicket = () => {
-    localStorage.setItem("rwr_spectator_ticket", "true");
-    setHasTicket(true);
-    setShowModal(false);
-    setIsPlaying(true);
-    showToast("🎟️ Pass Activated! Premium Stream Unlocked.");
+  const purchaseTicket = async () => {
+    if (!user) {
+      showToast("Please log in to purchase a ticket.");
+      // Redirect to login
+      window.location.href = '/login';
+      return;
+    }
+    try {
+      setLoading(true);
+      await apiCall('/tickets', 'POST', { eventId: id }, user.token);
+      
+      // Re-verify ticket access
+      const ticketVerification = await apiCall(`/tickets/verify/${id}`, 'GET', null, user.token);
+      setCanWatch(ticketVerification.canWatch);
+      setHasTicket(ticketVerification.hasTicket);
+      
+      setShowModal(false);
+      setIsPlaying(true);
+      showToast("🎟️ Pass Activated! Premium Stream Unlocked.");
+    } catch (error) {
+      showToast("Ticket purchase failed. Please try again.");
+      console.error("Ticket purchase error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const showToast = (msg) => {
@@ -262,7 +328,7 @@ const StreamDetail = () => {
 
               <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "20px", marginBottom: "36px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontSize: "12px", fontWeight: "800", color: "rgba(255,255,255,0.4)" }}>SINGLE PASS PRICE</span>
-                <span style={{ fontSize: "24px", fontWeight: "950", color: "#FF6A00" }}>$49.00 USD</span>
+                <span style={{ fontSize: "24px", fontWeight: "950", color: "#FF6A00" }}>${ticketPrice.toFixed(2)} USD</span>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>

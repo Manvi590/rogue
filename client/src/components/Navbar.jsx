@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ArrowRight, Menu, X, User, LogOut } from "lucide-react";
+import { ArrowRight, Menu, X, User, LogOut, ChevronDown, BarChart3, Users, FileText, Settings } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [adminDropdownOpen, setAdminDropdownOpen] = useState(false);
   const location = useLocation();
   const { user, logout } = useAuth();
 
@@ -18,9 +19,14 @@ const Navbar = () => {
     { label: "Shop", to: "/shop" },
   ];
 
-  if (user && user.isAdmin) {
-    navLinks.push({ label: "Admin", to: "/admin" });
-  }
+  const adminMenuItems = [
+    { label: "Dashboard", icon: <BarChart3 size={16} />, to: "/admin" },
+    { label: "Records & Submissions", icon: <FileText size={16} />, to: "/admin?tab=records" },
+    { label: "User Management", icon: <Users size={16} />, to: "/admin?tab=users" },
+    { label: "Events", icon: <Settings size={16} />, to: "/admin?tab=events" },
+    { label: "Products & Shop", icon: <Settings size={16} />, to: "/admin?tab=products" },
+    { label: "Tickets & Revenue", icon: <Settings size={16} />, to: "/admin?tab=tickets" },
+  ];
 
   const isActive = (path) => {
     if (path === "/leaderboard") {
@@ -69,6 +75,76 @@ const Navbar = () => {
               {l.label}
             </Link>
           ))}
+
+          {/* Admin Dropdown */}
+          {user && user.isAdmin && (
+            <div style={{ position: "relative" }}>
+              <button 
+                onClick={() => setAdminDropdownOpen(!adminDropdownOpen)}
+                style={{ 
+                  color: location.pathname === "/" ? "#111" : "white",
+                  fontWeight: isActive("/admin") ? "900" : "600",
+                  background: isActive("/admin") ? "#FF6A00" : "transparent",
+                  borderRadius: "100px",
+                  padding: "8px 16px",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontSize: "14px"
+                }}
+              >
+                Admin <ChevronDown size={16} style={{ transform: adminDropdownOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "0.2s" }} />
+              </button>
+
+              {/* Admin Dropdown Menu */}
+              {adminDropdownOpen && (
+                <div style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: "0",
+                  marginTop: "8px",
+                  background: "#161616",
+                  border: "1px solid rgba(255,106,0,0.3)",
+                  borderRadius: "12px",
+                  minWidth: "220px",
+                  zIndex: 1000,
+                  boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                  overflow: "hidden"
+                }}>
+                  {adminMenuItems.map((item, idx) => (
+                    <Link 
+                      key={idx}
+                      to={item.to}
+                      onClick={() => setAdminDropdownOpen(false)}
+                      style={{ textDecoration: "none" }}
+                    >
+                      <div style={{
+                        padding: "12px 16px",
+                        color: "#FF6A00",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        borderBottom: idx < adminMenuItems.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
+                        cursor: "pointer",
+                        transition: "background 0.2s",
+                        background: "transparent"
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,106,0,0.1)"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                      >
+                        {item.icon}
+                        {item.label}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Buttons - Right aligned */}
@@ -126,6 +202,30 @@ const Navbar = () => {
               {l.label}
             </Link>
           ))}
+
+          {/* Admin Mobile Menu */}
+          {user && user.isAdmin && (
+            <>
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "10px", marginTop: "10px" }}>
+                <div style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", padding: "10px 16px", letterSpacing: "0.5px", textTransform: "uppercase" }}>
+                  Admin Panel
+                </div>
+                {adminMenuItems.map((item, idx) => (
+                  <Link 
+                    key={idx}
+                    to={item.to}
+                    onClick={() => setMobileOpen(false)}
+                    className="mobile-nav-link"
+                    style={{ color: location.pathname === "/" ? "#111" : "white", paddingLeft: "32px", fontSize: "13px", display: "flex", alignItems: "center", gap: "8px" }}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
+
           <div className="mobile-menu-footer" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {user ? (
               <>

@@ -24,6 +24,9 @@ if (process.env.NODE_ENV === 'development') {
 // Static folder for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// MongoDB connection has been removed since the backend has been fully migrated to Supabase.
+
+
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/records', require('./routes/recordRoutes'));
@@ -31,6 +34,13 @@ app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/shop', require('./routes/shopRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/tickets', require('./routes/ticketRoutes'));
+app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+app.use('/api/memberships', require('./routes/membershipRoutes'));
+app.use('/api/categories', require('./routes/categoryRoutes'));
+app.use('/api/age-groups', require('./routes/ageGroupRoutes'));
+app.use('/api/records/meta', require('./routes/recordMetaRoutes'));
+app.use('/api/admin/videos', require('./routes/videoRoutes'));
 
 app.get('/', (req, res) => {
   res.send('ROGUE API is running...');

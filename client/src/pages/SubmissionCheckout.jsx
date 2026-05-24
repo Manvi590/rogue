@@ -106,7 +106,7 @@ const SubmissionCheckout = () => {
                   )}
                   
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "32px" }}>
-                    <input type="text" placeholder="CARDHOLDER NAME" defaultValue={submissionData.athleteId || submissionData.title} style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "16px", color: "white", outline: "none" }} />
+                    <input type="text" placeholder="CARDHOLDER NAME" defaultValue={submissionData.athleteName || submissionData.athleteId || (user ? user.name : "")} style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "16px", color: "white", outline: "none" }} />
                     <input type="text" placeholder="CARD NUMBER (0000 0000 0000 0000)" style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "16px", color: "white", outline: "none" }} />
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                       <input type="text" placeholder="MM/YY" style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "16px", color: "white", outline: "none" }} />
@@ -134,7 +134,7 @@ const SubmissionCheckout = () => {
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px", fontSize: "14px" }}>
                       <span style={{ color: "rgba(255,255,255,0.8)" }}>Applicant:</span>
-                      <span style={{ fontWeight: "700", textAlign: "right" }}>{submissionData.athleteId || "Applicant"}</span>
+                      <span style={{ fontWeight: "700", textAlign: "right" }}>{submissionData.athleteName || submissionData.athleteId || (user ? user.name : "Applicant")}</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px", fontSize: "14px" }}>
                       <span style={{ color: "rgba(255,255,255,0.8)" }}>Record Title:</span>
