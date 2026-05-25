@@ -708,26 +708,67 @@ const Admin = () => {
         return matchesSearch && matchesCategory && matchesStatus;
       });
     } else if (activeTab === "users") {
-      return users.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase()) || (u.username || "").toLowerCase().includes(searchQuery.toLowerCase()));
+      if (usersSubTab === "registry") {
+        return users.filter(user => 
+          user.name?.toLowerCase().includes(query) || 
+          user.email?.toLowerCase().includes(query)
+        );
+      } else {
+        return contacts.filter(c => c.name?.toLowerCase().includes(query) || c.email?.toLowerCase().includes(query) || c.subject?.toLowerCase().includes(query));
+      }
     } else if (activeTab === "events") {
-      return events.filter(ev => ev.title.toLowerCase().includes(searchQuery.toLowerCase()) || ev.location.toLowerCase().includes(searchQuery.toLowerCase()));
+      return events.filter(e => 
+        e.title?.toLowerCase().includes(query) || 
+        e.location?.toLowerCase().includes(query)
+      );
     } else if (activeTab === "products") {
-      return products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase()));
-    } else if (activeTab === "contacts") {
-      return contacts.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.subject.toLowerCase().includes(searchQuery.toLowerCase()));
-    } else if (activeTab === "memberships") {
-      return memberships.filter(m => {
-        const tierMatch = statusFilter === "all" || m.tier === statusFilter;
-        const statusMatch = categoryFilter === "all" || m.status === categoryFilter;
-        const searchMatch = (m.user?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          (m.user?.email || "").toLowerCase().includes(searchQuery.toLowerCase());
-        return tierMatch && statusMatch && searchMatch;
-      });
+      return products.filter(p => p.name?.toLowerCase().includes(query));
     }
     return [];
   };
 
   const filteredItems = getFilteredItems();
+
+  const handleKpiCardClick = (metricKey) => {
+    switch (metricKey) {
+      case 'users':
+        setSearchParams({ tab: 'users' });
+        setActiveTab('users');
+        break;
+      case 'records':
+        setSearchParams({ tab: 'records' });
+        setActiveTab('records');
+        setRecordsSubTab('submissions');
+        break;
+      case 'events':
+        setSearchParams({ tab: 'events' });
+        setActiveTab('events');
+        break;
+      case 'products':
+        setSearchParams({ tab: 'products' });
+        setActiveTab('products');
+        break;
+      case 'categories':
+        setSearchParams({ tab: 'records' });
+        setActiveTab('records');
+        setRecordsSubTab('categories');
+        break;
+      case 'age_groups':
+        setSearchParams({ tab: 'records' });
+        setActiveTab('records');
+        setRecordsSubTab('ageGroups');
+        break;
+      case 'memberships':
+        document.getElementById('memberships-table')?.scrollIntoView({ behavior: 'smooth' });
+        break;
+      case 'tickets':
+        document.getElementById('tickets-table')?.scrollIntoView({ behavior: 'smooth' });
+        break;
+      default:
+        // Optional default handler
+        break;
+    }
+  };
 
   return (
     <div style={{ 
@@ -1452,27 +1493,28 @@ const Admin = () => {
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px", marginBottom: "40px" }}>
                   {[
-                    { key: 'users', label: 'Total Athletes', icon: <User size={24} />, color: '#3b82f6' },
-                    { key: 'records', label: 'Global Records', icon: <Trophy size={24} />, color: '#eab308' },
-                    { key: 'events', label: 'Live Events', icon: <Calendar size={24} />, color: '#ef4444' },
-                    { key: 'products', label: 'Shop Products', icon: <ShoppingBag size={24} />, color: '#0ea5e9' },
-                    { key: 'videos', label: 'Uploaded Videos', icon: <Video size={24} />, color: '#8b5cf6' },
-                    { key: 'evidence', label: 'Evidence Files', icon: <Folder size={24} />, color: '#f97316' },
-                    { key: 'categories', label: 'Categories', icon: <Filter size={24} />, color: '#10b981' },
-                    { key: 'age_groups', label: 'Age Groups', icon: <Users size={24} />, color: '#f43f5e' },
-                    { key: 'memberships', label: 'Memberships', icon: <Sparkles size={24} />, color: '#d946ef' },
-                    { key: 'tickets', label: 'Tickets', icon: <Ticket size={24} />, color: '#22c55e' },
-                    { key: 'contact_messages', label: 'Contact Messages', icon: <Mail size={24} />, color: '#64748b' },
-                    { key: 'record_meta', label: 'Record Metadata', icon: <Layers size={24} />, color: '#84cc16' }
+                    { key: 'users', label: 'Total Athletes', icon: <User size={24} />, color: '#FF5500' },
+                    { key: 'records', label: 'Global Records', icon: <Trophy size={24} />, color: '#FF5500' },
+                    { key: 'events', label: 'Live Events', icon: <Calendar size={24} />, color: '#FF5500' },
+                    { key: 'products', label: 'Shop Products', icon: <ShoppingBag size={24} />, color: '#FF5500' },
+                    { key: 'videos', label: 'Uploaded Videos', icon: <Video size={24} />, color: '#FF5500' },
+                    { key: 'evidence', label: 'Evidence Files', icon: <Folder size={24} />, color: '#FF5500' },
+                    { key: 'categories', label: 'Categories', icon: <Filter size={24} />, color: '#FF5500' },
+                    { key: 'age_groups', label: 'Age Groups', icon: <Users size={24} />, color: '#FF5500' },
+                    { key: 'memberships', label: 'Memberships', icon: <Sparkles size={24} />, color: '#FF5500' },
+                    { key: 'tickets', label: 'Tickets', icon: <Ticket size={24} />, color: '#FF5500' },
+                    { key: 'contact_messages', label: 'Contact Messages', icon: <Mail size={24} />, color: '#FF5500' },
+                    { key: 'record_meta', label: 'Record Metadata', icon: <Layers size={24} />, color: '#FF5500' }
                   ].map((metric) => (
-                    <div key={metric.key} className="kpi-card-hover" style={{ 
+                    <div key={metric.key} className="kpi-card-hover" onClick={() => handleKpiCardClick(metric.key)} style={{ 
                       background: `rgba(13,13,16,0.5)`, 
-                      border: `1px solid rgba(255,255,255,0.05)`, 
+                      border: `1px solid rgba(255,85,0,0.15)`, 
                       borderRadius: "20px", 
                       padding: "24px",
                       position: "relative",
                       overflow: "hidden",
-                      transition: "all 0.3s ease"
+                      transition: "all 0.3s ease",
+                      cursor: "pointer"
                     }}>
                       <div style={{ position: "absolute", top: 0, left: 0, width: "4px", height: "100%", background: metric.color }}></div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
@@ -1555,7 +1597,7 @@ const Admin = () => {
                   </div>
 
                   {/* Athlete Subscription Memberships section */}
-                  <div style={{ marginBottom: "40px" }}>
+                  <div id="memberships-table" style={{ marginBottom: "40px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
                       <h3 style={{ fontSize: "18px", fontWeight: "900", color: "white", margin: 0 }}>💎 Athlete Memberships Directory</h3>
                       <button onClick={() => { setIsModalOpen(true); setModalType("add"); setMembershipForm({ userId: "", tier: "bronze", autoRenew: false, paymentAmount: 0 }); }} style={{ background: "rgba(255,85,0,0.1)", border: "1px solid rgba(255,85,0,0.3)", color: "#FF5500", padding: "8px 16px", borderRadius: "100px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
@@ -1636,7 +1678,7 @@ const Admin = () => {
                   </div>
 
                   {/* Spectator tickets transactions registry */}
-                  <div>
+                  <div id="tickets-table">
                     <h3 style={{ fontSize: "18px", fontWeight: "900", color: "white", marginBottom: "20px" }}>🎟️ Spectator Access Registry</h3>
                     {(!records || records.length === 0) ? (
                       <div style={{ padding: "40px", textAlign: "center", background: "rgba(13,13,16,0.3)", border: "1px dashed rgba(255,255,255,0.05)", borderRadius: "16px", color: "#666" }}>
