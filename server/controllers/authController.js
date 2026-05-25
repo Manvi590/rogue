@@ -77,10 +77,10 @@ const registerUser = async (req, res) => {
     username: username || '',
     phone: phone || '',
     gender: gender || '',
-    dob: dob || '',
-    weight: weight || '',
+    dob: dob || null,
+    weight: weight || null,
     weight_unit: weightUnit || 'kg',
-    height: height || '',
+    height: height || null,
     height_unit: heightUnit || 'cm',
     country: country || '',
     city: city || ''
