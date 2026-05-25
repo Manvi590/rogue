@@ -150,7 +150,7 @@ const Admin = () => {
       } else if (activeTab === "products") {
         const data = await apiCall("/admin/products", "GET", null, user.token);
         setProducts(data || []);
-      } else if (activeTab === "dashboard") {
+      } else if (activeTab === "dashboard" || activeTab === "revenue") {
         const [membData, statsData, tierData, dashData] = await Promise.all([
           apiCall("/memberships?page=1&limit=100", "GET", null, user.token).catch(() => ({ memberships: [] })),
           apiCall("/memberships/stats/overview", "GET", null, user.token).catch(() => null),
@@ -382,7 +382,7 @@ const Admin = () => {
       } else if (activeTab === "products") {
         endpoint = `/admin/products${modalType === "edit" && modalTarget ? `/${modalTarget.id}` : ""}`;
         payload = productForm;
-      } else if (activeTab === "dashboard") {
+      } else if (activeTab === "revenue") {
         if (modalType === "add") {
           endpoint = "/memberships";
           payload = membershipForm;
@@ -2057,7 +2057,7 @@ const Admin = () => {
                 )}
 
                 {/* 7. DASHBOARD/MEMBERSHIPS TAB FORM */}
-                {activeTab === "dashboard" && (
+                {activeTab === "revenue" && (
                   <>
                     <div>
                       <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>ATHLETE USER</label>
