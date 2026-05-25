@@ -40,8 +40,7 @@ const authUser = async (req, res) => {
       token: generateToken(user.id),
     });
   } else {
-    res.status(401);
-    throw new Error('Invalid email or password');
+    return res.status(401).json({ message: 'Invalid email or password' });
   }
 };
 
@@ -63,8 +62,7 @@ const registerUser = async (req, res) => {
     .single();
 
   if (userExists) {
-    res.status(400);
-    throw new Error('User already exists');
+    return res.status(400).json({ message: 'User already exists' });
   }
 
   const salt = await bcrypt.genSalt(10);
@@ -96,8 +94,7 @@ const registerUser = async (req, res) => {
 
   if (error) {
     console.error('Supabase signup error:', error);
-    res.status(400);
-    throw new Error(error.message || 'Invalid user data');
+    return res.status(400).json({ message: error.message || 'Invalid user data' });
   }
 
   if (user) {
@@ -120,8 +117,7 @@ const registerUser = async (req, res) => {
       token: generateToken(user.id),
     });
   } else {
-    res.status(400);
-    throw new Error('Invalid user data');
+    return res.status(400).json({ message: 'Invalid user data' });
   }
 };
 
@@ -158,8 +154,7 @@ const getUserProfile = async (req, res) => {
       city: user.city || '',
     });
   } else {
-    res.status(404);
-    throw new Error('User not found');
+    return res.status(404).json({ message: 'User not found' });
   }
 };
 
@@ -211,8 +206,7 @@ const updateUserProfile = async (req, res) => {
       .single();
 
     if (updateError) {
-      res.status(400);
-      throw new Error(updateError.message);
+      return res.status(400).json({ message: updateError.message });
     }
 
     res.json({
@@ -234,8 +228,7 @@ const updateUserProfile = async (req, res) => {
       token: generateToken(updatedUser.id)
     });
   } else {
-    res.status(404);
-    throw new Error('User not found');
+    return res.status(404).json({ message: 'User not found' });
   }
 };
 
