@@ -24,7 +24,13 @@ const Admin = () => {
   // Synchronize state with "?tab=..." search query parameter from URL
   useEffect(() => {
     const tabQuery = searchParams.get("tab");
-    if (tabQuery) {
+    if (tabQuery === "revenue" || tabQuery === "tickets") {
+      setActiveTab("dashboard");
+      // Wait for the DOM to render the dashboard before scrolling
+      setTimeout(() => {
+        document.getElementById('tickets-table')?.scrollIntoView({ behavior: 'smooth' });
+      }, 500);
+    } else if (tabQuery) {
       setActiveTab(tabQuery);
     } else {
       setActiveTab("dashboard");
