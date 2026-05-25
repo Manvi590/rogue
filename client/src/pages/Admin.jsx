@@ -1556,40 +1556,40 @@ const Admin = () => {
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px", marginBottom: "32px" }}>
                     
                     {/* Total platform revenue */}
-                    <div style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: "20px", padding: "24px" }}>
-                      <div style={{ fontSize: "11px", color: "#22c55e", fontWeight: "950", textTransform: "uppercase", letterSpacing: "1.0px", marginBottom: "10px" }}>Total Platform Revenue</div>
+                    <div style={{ background: "rgba(255,85,0,0.08)", border: "1px solid rgba(255,85,0,0.2)", borderRadius: "20px", padding: "24px" }}>
+                      <div style={{ fontSize: "11px", color: "#FF5500", fontWeight: "950", textTransform: "uppercase", letterSpacing: "1.0px", marginBottom: "10px" }}>Total Platform Revenue</div>
                       <div style={{ fontSize: "36px", fontWeight: "950", color: "white", display: "flex", alignItems: "baseline", gap: "2px" }}>
-                        <span style={{ fontSize: "20px", color: "#22c55e" }}>$</span>
+                        <span style={{ fontSize: "20px", color: "#FF5500" }}>$</span>
                         {dashboardStats ? (Number(dashboardStats.tickets?.revenue || 0) + Number(dashboardStats.orders?.revenue || 0) + Number(membershipStats?.totalRevenue || 0)).toFixed(2) : "0.00"}
                       </div>
                       <div style={{ fontSize: "11px", color: "#888", marginTop: "8px" }}>Calculated across tickets, shop, & memberships</div>
                     </div>
 
                     {/* Spectator live tickets revenue */}
-                    <div style={{ background: "rgba(255,106,0,0.08)", border: "1px solid rgba(255,106,0,0.2)", borderRadius: "20px", padding: "24px" }}>
-                      <div style={{ fontSize: "11px", color: "#FF6A00", fontWeight: "950", textTransform: "uppercase", letterSpacing: "1.0px", marginBottom: "10px" }}>Spectator Access Revenue</div>
+                    <div style={{ background: "rgba(255,85,0,0.08)", border: "1px solid rgba(255,85,0,0.2)", borderRadius: "20px", padding: "24px" }}>
+                      <div style={{ fontSize: "11px", color: "#FF5500", fontWeight: "950", textTransform: "uppercase", letterSpacing: "1.0px", marginBottom: "10px" }}>Spectator Access Revenue</div>
                       <div style={{ fontSize: "36px", fontWeight: "950", color: "white", display: "flex", alignItems: "baseline", gap: "2px" }}>
-                        <span style={{ fontSize: "20px", color: "#FF6A00" }}>$</span>
+                        <span style={{ fontSize: "20px", color: "#FF5500" }}>$</span>
                         {dashboardStats ? Number(dashboardStats.tickets?.revenue || 0).toFixed(2) : "0.00"}
                       </div>
                       <div style={{ fontSize: "11px", color: "#888", marginTop: "8px" }}>🎟️ {dashboardStats ? dashboardStats.tickets?.sold || 0 : 0} Spectator passes sold</div>
                     </div>
 
                     {/* Store Orders sales revenue */}
-                    <div style={{ background: "rgba(14,165,233,0.08)", border: "1px solid rgba(14,165,233,0.2)", borderRadius: "20px", padding: "24px" }}>
-                      <div style={{ fontSize: "11px", color: "#0ea5e9", fontWeight: "950", textTransform: "uppercase", letterSpacing: "1.0px", marginBottom: "10px" }}>Shop Sales Revenue</div>
+                    <div style={{ background: "rgba(255,85,0,0.08)", border: "1px solid rgba(255,85,0,0.2)", borderRadius: "20px", padding: "24px" }}>
+                      <div style={{ fontSize: "11px", color: "#FF5500", fontWeight: "950", textTransform: "uppercase", letterSpacing: "1.0px", marginBottom: "10px" }}>Shop Sales Revenue</div>
                       <div style={{ fontSize: "36px", fontWeight: "950", color: "white", display: "flex", alignItems: "baseline", gap: "2px" }}>
-                        <span style={{ fontSize: "20px", color: "#0ea5e9" }}>$</span>
+                        <span style={{ fontSize: "20px", color: "#FF5500" }}>$</span>
                         {dashboardStats ? Number(dashboardStats.orders?.revenue || 0).toFixed(2) : "0.00"}
                       </div>
                       <div style={{ fontSize: "11px", color: "#888", marginTop: "8px" }}>📦 {dashboardStats ? dashboardStats.orders?.total || 0 : 0} Store invoices processed</div>
                     </div>
 
                     {/* Memberships Revenue */}
-                    <div style={{ background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: "20px", padding: "24px" }}>
-                      <div style={{ fontSize: "11px", color: "#a855f7", fontWeight: "950", textTransform: "uppercase", letterSpacing: "1.0px", marginBottom: "10px" }}>Memberships Sales</div>
+                    <div style={{ background: "rgba(255,85,0,0.08)", border: "1px solid rgba(255,85,0,0.2)", borderRadius: "20px", padding: "24px" }}>
+                      <div style={{ fontSize: "11px", color: "#FF5500", fontWeight: "950", textTransform: "uppercase", letterSpacing: "1.0px", marginBottom: "10px" }}>Memberships Sales</div>
                       <div style={{ fontSize: "36px", fontWeight: "950", color: "white", display: "flex", alignItems: "baseline", gap: "2px" }}>
-                        <span style={{ fontSize: "20px", color: "#a855f7" }}>$</span>
+                        <span style={{ fontSize: "20px", color: "#FF5500" }}>$</span>
                         {membershipStats ? Number(membershipStats.totalRevenue || 0).toFixed(2) : "0.00"}
                       </div>
                       <div style={{ fontSize: "11px", color: "#888", marginTop: "8px" }}>💎 Active bronze, silver, & gold tier athletes</div>
