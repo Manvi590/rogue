@@ -58,10 +58,11 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-  });
-}
+// Always start the server - needed for Render and any traditional hosting.
+// module.exports = app is kept for Vercel serverless compatibility.
+app.listen(PORT, () => {
+  console.log(`🚀 ROGUE API running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
+});
 
 module.exports = app;
+
