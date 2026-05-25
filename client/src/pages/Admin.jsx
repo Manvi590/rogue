@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { 
   ShieldAlert, ShieldCheck, Trophy, Check, X, Eye, Calendar, 
-  MapPin, User, Search, RefreshCw, BarChart2, Activity, Filter, 
+  MapPin, User, Users, Search, RefreshCw, BarChart2, Activity, Filter, 
   AlertTriangle, CheckCircle, Video, FileText, ArrowRight, Loader2, 
-  Sparkles, Trash2, Edit3, Plus, ShoppingBag, Mail, HardDrive, DollarSign, Scale, Ruler
+  Sparkles, Trash2, Edit3, Plus, ShoppingBag, Mail, HardDrive, DollarSign, Scale, Ruler, Ticket, Layers, Folder
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -1432,6 +1432,65 @@ const Admin = () => {
           {/* ==================== 5. TICKETS & REVENUE FINANCIAL SUITE ==================== */}
           {activeTab === "dashboard" && (
             <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
+                <div>
+                  <h2 style={{ fontSize: "26px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-1.0px", margin: 0 }}>
+                    📊 Global Database Metrics
+                  </h2>
+                  <p style={{ color: "#666", fontSize: "12px", margin: "4px 0 0 0", fontWeight: "700", letterSpacing: "0.5px" }}>
+                    REAL-TIME STATISTICS ACROSS ALL SUPABASE TABLES
+                  </p>
+                </div>
+              </div>
+
+              {/* KPI Grid Cards */}
+              {loading ? (
+                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "80px 0", background: "rgba(13,13,16,0.3)", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.03)", marginBottom: "40px" }}>
+                  <Loader2 className="animate-spin" size={36} color="#FF5500" />
+                  <p style={{ color: "#666", marginTop: "16px", fontSize: "13px", letterSpacing: "1.5px" }}>COMPUTING KPI METRICS...</p>
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px", marginBottom: "40px" }}>
+                  {[
+                    { key: 'users', label: 'Total Athletes', icon: <User size={24} />, color: '#3b82f6' },
+                    { key: 'records', label: 'Global Records', icon: <Trophy size={24} />, color: '#eab308' },
+                    { key: 'events', label: 'Live Events', icon: <Calendar size={24} />, color: '#ef4444' },
+                    { key: 'products', label: 'Shop Products', icon: <ShoppingBag size={24} />, color: '#0ea5e9' },
+                    { key: 'videos', label: 'Uploaded Videos', icon: <Video size={24} />, color: '#8b5cf6' },
+                    { key: 'evidence', label: 'Evidence Files', icon: <Folder size={24} />, color: '#f97316' },
+                    { key: 'categories', label: 'Categories', icon: <Filter size={24} />, color: '#10b981' },
+                    { key: 'age_groups', label: 'Age Groups', icon: <Users size={24} />, color: '#f43f5e' },
+                    { key: 'memberships', label: 'Memberships', icon: <Sparkles size={24} />, color: '#d946ef' },
+                    { key: 'tickets', label: 'Tickets', icon: <Ticket size={24} />, color: '#22c55e' },
+                    { key: 'contact_messages', label: 'Contact Messages', icon: <Mail size={24} />, color: '#64748b' },
+                    { key: 'record_meta', label: 'Record Metadata', icon: <Layers size={24} />, color: '#84cc16' }
+                  ].map((metric) => (
+                    <div key={metric.key} className="kpi-card-hover" style={{ 
+                      background: `rgba(13,13,16,0.5)`, 
+                      border: `1px solid rgba(255,255,255,0.05)`, 
+                      borderRadius: "20px", 
+                      padding: "24px",
+                      position: "relative",
+                      overflow: "hidden",
+                      transition: "all 0.3s ease"
+                    }}>
+                      <div style={{ position: "absolute", top: 0, left: 0, width: "4px", height: "100%", background: metric.color }}></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+                        <div style={{ color: metric.color, background: `${metric.color}20`, padding: "10px", borderRadius: "12px" }}>
+                          {metric.icon}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: "32px", fontWeight: "950", color: "white", marginBottom: "4px", fontFamily: "monospace" }}>
+                        {dashboardStats?.counts?.[metric.key] || 0}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "#888", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px" }}>
+                        {metric.label}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
                 <div>
                   <h2 style={{ fontSize: "26px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-1.0px", margin: 0 }}>

@@ -4,99 +4,38 @@ const bcrypt = require('bcryptjs');
 // @access  Private/Admin
 const getDashboardStats = async (req, res) => {
   try {
-    console.log('getDashboardStats called');
+    const tables = [
+      'users', 'records', 'events', 'products', 'videos', 
+      'evidence', 'categories', 'age_groups', 'memberships', 
+      'tickets', 'contact_messages', 'record_meta'
+    ];
+
+    // Fetch counts for all tables in parallel
+    const countPromises = tables.map(table => 
+      supabase.from(table).select('*', { count: 'exact', head: true })
+    );
+
+    const countResults = await Promise.all(countPromises);
     
-    // Count total users
-    console.log('Querying users...');
-    const { data: users, error: usersError } = await supabase
-      .from('users')
-      .select('id, name, email, created_at, is_admin', { count: 'exact' });
+    // Map results to a key-value object
+    const counts = {};
+    tables.forEach((table, index) => {
+      counts[table] = countResults[index].count || 0;
+    });
 
-    console.log('Users query done:', users?.length, 'users');
-    if (usersError) {
-      console.error('Users error:', usersError);
-      throw usersError;
-    }
-    const totalUsers = users?.length || 0;
-
-    // Count total submissions
-    const { data: records, error: recordsError } = await supabase
-      .from('records')
-      .select('id, status, category, created_at', { count: 'exact' });
-
-    if (recordsError) throw recordsError;
-    const totalSubmissions = records?.length || 0;
-    const pendingReviews = records?.filter(r => r.status === 'pending')?.length || 0;
-    const approvedRecords = records?.filter(r => r.status === 'verified')?.length || 0;
-    const deniedRecords = records?.filter(r => r.status === 'rejected')?.length || 0;
-
-    // Get most active categories
-    const categoryStats = records?.reduce((acc, rec) => {
-      const existing = acc.find(c => c._id === rec.category);
-      if (existing) {
-        existing.count++;
-      } else {
-        acc.push({ _id: rec.category, count: 1 });
-      }
-      return acc;
-    }, [])?.sort((a, b) => b.count - a.count)?.slice(0, 10) || [];
-
-    // Get trending records (most recent approved)
-    const { data: trendingRecords, error: trendingError } = await supabase
-      .from('records')
-      .select('id, title, status, created_at, user_id')
-      .eq('status', 'verified')
-      .order('created_at', { ascending: false })
-      .limit(10);
-
-    if (trendingError) console.error('Trending error:', trendingError);
-
-    // Count total events
-    const { data: events, error: eventsError } = await supabase
-      .from('events')
-      .select('id, created_at', { count: 'exact' });
-
-    if (eventsError) console.error('Events error:', eventsError);
-    const totalEvents = events?.length || 0;
-
-    // Recent activity
-    const recentSubmissions = records
-      ?.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      ?.slice(0, 5) || [];
-
-    const recentUsers = users
-      ?.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      ?.slice(0, 5) || [];
+    // Also get recent records & users for the UI
+    const [
+      { data: recentSubmissions },
+      { data: recentUsers }
+    ] = await Promise.all([
+      supabase.from('records').select('id, title, status, created_at').order('created_at', { ascending: false }).limit(5),
+      supabase.from('users').select('id, name, email, created_at').order('created_at', { ascending: false }).limit(5)
+    ]);
 
     res.json({
-      users: {
-        total: totalUsers,
-        active: totalUsers,
-        suspended: 0,
-        banned: 0
-      },
-      submissions: {
-        total: totalSubmissions,
-        pending: pendingReviews,
-        approved: approvedRecords,
-        denied: deniedRecords
-      },
-      categories: categoryStats,
-      trendingRecords,
-      events: {
-        total: totalEvents,
-        live: 0
-      },
-      tickets: {
-        sold: 0,
-        revenue: 0
-      },
-      orders: {
-        total: 0,
-        revenue: 0
-      },
-      recentSubmissions,
-      recentUsers
+      counts,
+      recentSubmissions: recentSubmissions || [],
+      recentUsers: recentUsers || []
     });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching dashboard stats', error: error.message });
