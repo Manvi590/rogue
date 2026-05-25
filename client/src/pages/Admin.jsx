@@ -130,9 +130,7 @@ const Admin = () => {
     try {
       if (activeTab === "records") {
         const [recData, catData, ageData] = await Promise.all([
-          apiCall("/admin/records", "GET", null, user.token).catch(() => 
-            apiCall("/records/admin/submissions", "GET", null, user.token)
-          ),
+          apiCall("/records/admin/submissions", "GET", null, user.token),
           apiCall("/categories", "GET", null, user.token).catch(() => ({ flat: [] })),
           apiCall('/age-groups', 'GET', null, user.token).catch(() => ({ ageGroups: [] }))
         ]);
@@ -1539,7 +1537,7 @@ WHERE email = 'admin@rogue.com';`}
                       <div style={{ fontSize: "11px", color: "#22c55e", fontWeight: "950", textTransform: "uppercase", letterSpacing: "1.0px", marginBottom: "10px" }}>Total Platform Revenue</div>
                       <div style={{ fontSize: "36px", fontWeight: "950", color: "white", display: "flex", alignItems: "baseline", gap: "2px" }}>
                         <span style={{ fontSize: "20px", color: "#22c55e" }}>$</span>
-                        {dashboardStats ? ((dashboardStats.tickets?.revenue || 0) + (dashboardStats.orders?.revenue || 0) + (membershipStats?.totalRevenue || 0)).toFixed(2) : "0.00"}
+                        {dashboardStats ? (Number(dashboardStats.tickets?.revenue || 0) + Number(dashboardStats.orders?.revenue || 0) + Number(membershipStats?.totalRevenue || 0)).toFixed(2) : "0.00"}
                       </div>
                       <div style={{ fontSize: "11px", color: "#888", marginTop: "8px" }}>Calculated across tickets, shop, & memberships</div>
                     </div>
@@ -1549,7 +1547,7 @@ WHERE email = 'admin@rogue.com';`}
                       <div style={{ fontSize: "11px", color: "#FF6A00", fontWeight: "950", textTransform: "uppercase", letterSpacing: "1.0px", marginBottom: "10px" }}>Spectator Access Revenue</div>
                       <div style={{ fontSize: "36px", fontWeight: "950", color: "white", display: "flex", alignItems: "baseline", gap: "2px" }}>
                         <span style={{ fontSize: "20px", color: "#FF6A00" }}>$</span>
-                        {dashboardStats ? (dashboardStats.tickets?.revenue || 0).toFixed(2) : "0.00"}
+                        {dashboardStats ? Number(dashboardStats.tickets?.revenue || 0).toFixed(2) : "0.00"}
                       </div>
                       <div style={{ fontSize: "11px", color: "#888", marginTop: "8px" }}>🎟️ {dashboardStats ? dashboardStats.tickets?.sold || 0 : 0} Spectator passes sold</div>
                     </div>
@@ -1559,7 +1557,7 @@ WHERE email = 'admin@rogue.com';`}
                       <div style={{ fontSize: "11px", color: "#0ea5e9", fontWeight: "950", textTransform: "uppercase", letterSpacing: "1.0px", marginBottom: "10px" }}>Shop Sales Revenue</div>
                       <div style={{ fontSize: "36px", fontWeight: "950", color: "white", display: "flex", alignItems: "baseline", gap: "2px" }}>
                         <span style={{ fontSize: "20px", color: "#0ea5e9" }}>$</span>
-                        {dashboardStats ? (dashboardStats.orders?.revenue || 0).toFixed(2) : "0.00"}
+                        {dashboardStats ? Number(dashboardStats.orders?.revenue || 0).toFixed(2) : "0.00"}
                       </div>
                       <div style={{ fontSize: "11px", color: "#888", marginTop: "8px" }}>📦 {dashboardStats ? dashboardStats.orders?.total || 0 : 0} Store invoices processed</div>
                     </div>
@@ -1569,7 +1567,7 @@ WHERE email = 'admin@rogue.com';`}
                       <div style={{ fontSize: "11px", color: "#a855f7", fontWeight: "950", textTransform: "uppercase", letterSpacing: "1.0px", marginBottom: "10px" }}>Memberships Sales</div>
                       <div style={{ fontSize: "36px", fontWeight: "950", color: "white", display: "flex", alignItems: "baseline", gap: "2px" }}>
                         <span style={{ fontSize: "20px", color: "#a855f7" }}>$</span>
-                        {membershipStats ? (membershipStats.totalRevenue || 0).toFixed(2) : "0.00"}
+                        {membershipStats ? Number(membershipStats.totalRevenue || 0).toFixed(2) : "0.00"}
                       </div>
                       <div style={{ fontSize: "11px", color: "#888", marginTop: "8px" }}>💎 Active bronze, silver, & gold tier athletes</div>
                     </div>
@@ -2455,7 +2453,7 @@ WHERE email = 'admin@rogue.com';`}
                     <div style={{ fontWeight: "900", color: "white" }}>{p.type} • {p.status}</div>
                     <div style={{ fontSize: "12px", color: "#888" }}>{new Date(p.date).toLocaleString()}</div>
                   </div>
-                  <div style={{ fontWeight: "900", color: "#FF6A00" }}>${(p.amount || 0).toFixed(2)}</div>
+                  <div style={{ fontWeight: "900", color: "#FF6A00" }}>${Number(p.amount || 0).toFixed(2)}</div>
                 </div>
               )) : <div style={{ color: "#888" }}>No payment records found.</div>}
             </div>

@@ -22,7 +22,19 @@ export const apiCall = async (endpoint, method = 'GET', body = null, token = nul
 
   try {
     const response = await fetch(`${API_URL}${endpoint}`, config);
-    const data = await response.json();
+    
+    // Check if the response is JSON before trying to parse it
+    const contentType = response.headers.get("content-type");
+    let data;
+    if (contentType && contentType.includes("application/json")) {
+      data = await response.json();
+    } else {
+      // If it's not JSON (like a 404 HTML page), handle it gracefully
+      if (!response.ok) {
+        throw new Error(`API returned an error (${response.status}): Endpoint not found or invalid response`);
+      }
+      data = {}; // Fallback for non-JSON success responses
+    }
 
     if (!response.ok) {
       throw new Error(data.message || 'Something went wrong');
