@@ -25,7 +25,7 @@ const Navbar = () => {
     { label: "User Management", icon: <Users size={16} />, to: "/admin?tab=users" },
     { label: "Events", icon: <Settings size={16} />, to: "/admin?tab=events" },
     { label: "Products & Shop", icon: <Settings size={16} />, to: "/admin?tab=products" },
-    { label: "Tickets & Revenue", icon: <Settings size={16} />, to: "/admin?tab=tickets" },
+    { label: "Dashboard & Revenue", icon: <Settings size={16} />, to: "/admin?tab=dashboard" },
   ];
 
   const isActive = (path) => {

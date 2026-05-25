@@ -17,7 +17,7 @@ const Admin = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Active Admin View Tab: "records" | "users" | "events" | "products" | "tickets"
-  const [activeTab, setActiveTab] = useState("records");
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "dashboard");
   const [recordsSubTab, setRecordsSubTab] = useState("submissions"); // "submissions" | "categories" | "ageGroups"
   const [usersSubTab, setUsersSubTab] = useState("registry"); // "registry" | "inquiries"
 
@@ -753,11 +753,11 @@ const Admin = () => {
           {/* Navigation Control List */}
           <div style={{ background: "rgba(13,13,16,0.6)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "20px", padding: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
             {[
+              { val: "dashboard", label: "Overview & Revenue", icon: <BarChart2 size={16} /> },
               { val: "records", label: "Records & Submissions", icon: <FileText size={16} /> },
               { val: "users", label: "User Management", icon: <User size={16} /> },
               { val: "events", label: "Events", icon: <Calendar size={16} /> },
-              { val: "products", label: "Products & Shop", icon: <ShoppingBag size={16} /> },
-              { val: "dashboard", label: "Overview & Revenue", icon: <BarChart2 size={16} /> }
+              { val: "products", label: "Products & Shop", icon: <ShoppingBag size={16} /> }
             ].map(tab => (
               <button
                 key={tab.val}
