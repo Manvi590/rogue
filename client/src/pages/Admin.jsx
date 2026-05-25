@@ -700,6 +700,7 @@ const Admin = () => {
 
   // Filter lists based on search and drop-downs
   const getFilteredItems = () => {
+    const query = searchQuery ? searchQuery.toLowerCase() : "";
     if (activeTab === "records") {
       return records.filter(rec => {
         const matchesSearch = rec.title.toLowerCase().includes(searchQuery.toLowerCase()) || (rec.user?.name || "").toLowerCase().includes(searchQuery.toLowerCase());
