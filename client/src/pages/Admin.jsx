@@ -27,7 +27,7 @@ const Admin = () => {
     if (tabQuery) {
       setActiveTab(tabQuery);
     } else {
-      setActiveTab("records");
+      setActiveTab("dashboard");
     }
   }, [searchParams]);
 
@@ -150,7 +150,7 @@ const Admin = () => {
       } else if (activeTab === "products") {
         const data = await apiCall("/admin/products", "GET", null, user.token);
         setProducts(data || []);
-      } else if (activeTab === "tickets") {
+      } else if (activeTab === "dashboard") {
         const [membData, statsData, tierData, dashData] = await Promise.all([
           apiCall("/memberships?page=1&limit=100", "GET", null, user.token).catch(() => ({ memberships: [] })),
           apiCall("/memberships/stats/overview", "GET", null, user.token).catch(() => null),
@@ -382,6 +382,15 @@ const Admin = () => {
       } else if (activeTab === "products") {
         endpoint = `/admin/products${modalType === "edit" && modalTarget ? `/${modalTarget.id}` : ""}`;
         payload = productForm;
+      } else if (activeTab === "dashboard") {
+        if (modalType === "add") {
+          endpoint = "/memberships";
+          payload = membershipForm;
+        } else {
+          endpoint = `/memberships/${modalTarget.id || modalTarget._id}`;
+          payload = membershipForm;
+          method = "PUT";
+        }
       }
 
       if (!endpoint) throw new Error("Invalid endpoint");
@@ -748,7 +757,7 @@ const Admin = () => {
               { val: "users", label: "User Management", icon: <User size={16} /> },
               { val: "events", label: "Events", icon: <Calendar size={16} /> },
               { val: "products", label: "Products & Shop", icon: <ShoppingBag size={16} /> },
-              { val: "tickets", label: "Tickets & Revenue", icon: <DollarSign size={16} /> }
+              { val: "dashboard", label: "Overview & Revenue", icon: <BarChart2 size={16} /> }
             ].map(tab => (
               <button
                 key={tab.val}
@@ -1509,7 +1518,7 @@ WHERE email = 'admin@rogue.com';`}
           )}
 
           {/* ==================== 5. TICKETS & REVENUE FINANCIAL SUITE ==================== */}
-          {activeTab === "tickets" && (
+          {activeTab === "dashboard" && (
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
                 <div>
@@ -2020,6 +2029,35 @@ WHERE email = 'admin@rogue.com';`}
                     <div>
                       <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>PRODUCT DESCRIPTION</label>
                       <textarea value={productForm.description} onChange={(e) => setProductForm({ ...productForm, description: e.target.value })} required style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", minHeight: "80px", fontFamily: "inherit" }} />
+                    </div>
+                  </>
+                )}
+
+                {/* 7. DASHBOARD/MEMBERSHIPS TAB FORM */}
+                {activeTab === "dashboard" && (
+                  <>
+                    <div>
+                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>ATHLETE USER</label>
+                      <select value={membershipForm.userId} onChange={(e) => setMembershipForm({ ...membershipForm, userId: e.target.value })} required style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }}>
+                        <option value="">-- Select Athlete --</option>
+                        {users && users.map(u => <option key={u._id || u.id} value={u._id || u.id}>{u.name} ({u.email})</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>MEMBERSHIP TIER</label>
+                      <select value={membershipForm.tier} onChange={(e) => setMembershipForm({ ...membershipForm, tier: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }}>
+                        <option value="bronze">Bronze</option>
+                        <option value="silver">Silver</option>
+                        <option value="gold">Gold</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>INITIAL PAYMENT AMOUNT ($)</label>
+                      <input type="number" step="0.01" value={membershipForm.paymentAmount} onChange={(e) => setMembershipForm({ ...membershipForm, paymentAmount: e.target.value })} required style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }} />
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <input type="checkbox" checked={membershipForm.autoRenew} onChange={(e) => setMembershipForm({ ...membershipForm, autoRenew: e.target.checked })} />
+                      <span style={{ color: "#aaa", fontSize: "12px" }}>Auto-renew membership</span>
                     </div>
                   </>
                 )}
