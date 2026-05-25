@@ -738,97 +738,9 @@ const Admin = () => {
       <Navbar />
 
       {/* Main Layout Grid */}
-      <section className="container" style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: "40px", padding: "40px 0 80px 0" }}>
+      <section className="container" style={{ padding: "40px 0 80px 0", maxWidth: "1200px", margin: "0 auto" }}>
         
-        {/* Left Column: Cyber Dashboard Sidebar Controls */}
-        <div style={{ position: "sticky", top: "110px", height: "fit-content", display: "flex", flexDirection: "column", gap: "24px" }}>
-          
-          {/* Main Title Shield */}
-          <div style={{ background: "rgba(255,85,0,0.02)", border: "1px solid rgba(255, 85, 0, 0.2)", borderRadius: "20px", padding: "20px", textAlign: "center" }}>
-            <ShieldCheck size={28} color="#FF5500" style={{ margin: "0 auto 10px auto" }} />
-            <h3 style={{ fontSize: "14px", fontWeight: "950", letterSpacing: "1px", margin: 0, textTransform: "uppercase" }}>ADJUDICATOR SUITE</h3>
-            <span style={{ fontSize: "10px", color: "#666", fontWeight: "700" }}>VERSION 2.4 SECURE</span>
-          </div>
-
-          {/* Navigation Control List */}
-          <div style={{ background: "rgba(13,13,16,0.6)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "20px", padding: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
-            {[
-              { val: "dashboard", label: "Overview & Revenue", icon: <BarChart2 size={16} /> },
-              { val: "records", label: "Records & Submissions", icon: <FileText size={16} /> },
-              { val: "users", label: "User Management", icon: <User size={16} /> },
-              { val: "events", label: "Events", icon: <Calendar size={16} /> },
-              { val: "products", label: "Products & Shop", icon: <ShoppingBag size={16} /> }
-            ].map(tab => (
-              <button
-                key={tab.val}
-                onClick={() => { setSearchParams({ tab: tab.val }); setActiveTab(tab.val); setSearchQuery(""); }}
-                style={{
-                  background: activeTab === tab.val ? "linear-gradient(135deg, #FF5500 0%, #ff7700 100%)" : "transparent",
-                  border: "none",
-                  color: activeTab === tab.val ? "white" : "#888",
-                  padding: "14px 18px",
-                  borderRadius: "10px",
-                  fontSize: "12px",
-                  fontWeight: "900",
-                  letterSpacing: "0.5px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  textAlign: "left",
-                  transition: "all 0.25s"
-                }}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* SQL Activation Protocol Card */}
-          <div style={{ 
-            background: "rgba(255, 85, 0, 0.03)", 
-            border: "1px solid rgba(255, 85, 0, 0.12)", 
-            borderRadius: "20px", 
-            padding: "20px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px"
-          }}>
-            <h4 style={{ fontSize: "11px", fontWeight: "950", color: "#FF5500", letterSpacing: "1.0px", margin: 0, textTransform: "uppercase", display: "flex", alignItems: "center", gap: "6px" }}>
-              <ShieldCheck size={13} /> ROLE ELEVATION FLOW
-            </h4>
-            <p style={{ fontSize: "11px", color: "#888", margin: 0, lineHeight: "1.4" }}>
-              To elevate a registered staff member to Adjudicator, execute this script in Supabase:
-            </p>
-            <pre style={{ 
-              background: "#08080a", 
-              border: "1px solid rgba(255,255,255,0.04)", 
-              borderRadius: "8px", 
-              padding: "10px", 
-              fontSize: "10px", 
-              color: "#ffc8a0", 
-              margin: 0,
-              overflowX: "auto",
-              fontFamily: "monospace",
-              lineHeight: "1.3"
-            }}>
-{`-- DEDICATED ADMIN ROLE
-UPDATE users 
-SET is_admin = true 
-WHERE email = 'admin@rogue.com';`}
-            </pre>
-          </div>
-
-          {/* Database Control Status */}
-          <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "20px", padding: "16px 20px", fontSize: "11px", color: "#666" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}><span>Database Host</span><span style={{ color: "#22c55e", fontWeight: "900" }}>ONLINE</span></div>
-            <div style={{ display: "flex", justifyContent: "space-between" }}><span>Server Ping</span><span style={{ color: "#22c55e", fontWeight: "900" }}>14ms</span></div>
-          </div>
-
-        </div>
-
-        {/* Right Column: Premium Active Table View */}
+        {/* Right Column: Premium Active Table View (Now Full Width) */}
         <div>
           
           {/* ==================== 1. RECORDS & SUBMISSIONS OVERHAUL ==================== */}
