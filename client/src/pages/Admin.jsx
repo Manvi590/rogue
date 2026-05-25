@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { 
-  ShieldAlert, ShieldCheck, Trophy, Check, X, Eye, Calendar, 
-  MapPin, User, Users, Search, RefreshCw, BarChart2, Activity, Filter, 
-  AlertTriangle, CheckCircle, Video, FileText, ArrowRight, Loader2, 
-  Sparkles, Trash2, Edit3, Plus, ShoppingBag, Mail, HardDrive, DollarSign, Scale, Ruler, Ticket, Layers, Folder
+  ShieldAlert, Trophy, X, Eye, Calendar, 
+  User, Users, Search, Filter, 
+  AlertTriangle, CheckCircle, Video, FileText, Loader2, 
+  Sparkles, Trash2, Edit3, Plus, ShoppingBag, Mail, HardDrive, Ticket, Layers, Folder
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -13,7 +13,7 @@ import { apiCall } from "../utils/api";
 
 const Admin = () => {
   const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  // const navigate = useNavigate(); // Unused
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Active Admin View Tab: "records" | "users" | "events" | "products" | "tickets"
@@ -25,8 +25,10 @@ const Admin = () => {
   useEffect(() => {
     const tabQuery = searchParams.get("tab");
     if (tabQuery) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab(tabQuery);
     } else {
+       
       setActiveTab("dashboard");
     }
   }, [searchParams]);
@@ -42,11 +44,11 @@ const Admin = () => {
   const [dashboardStats, setDashboardStats] = useState(null);
   const [memberships, setMemberships] = useState([]);
   const [membershipStats, setMembershipStats] = useState(null);
-  const [tierConfigs, setTierConfigs] = useState({});
+  // const [tierConfigs, setTierConfigs] = useState({}); // Unused
 
   // UI States
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -151,15 +153,14 @@ const Admin = () => {
         const data = await apiCall("/admin/products", "GET", null, user.token);
         setProducts(data || []);
       } else if (activeTab === "dashboard" || activeTab === "revenue") {
-        const [membData, statsData, tierData, dashData] = await Promise.all([
+        const [membData, statsData, dashData] = await Promise.all([
           apiCall("/memberships?page=1&limit=100", "GET", null, user.token).catch(() => ({ memberships: [] })),
           apiCall("/memberships/stats/overview", "GET", null, user.token).catch(() => null),
-          apiCall("/memberships/tiers", "GET", null, user.token).catch(() => ({})),
           apiCall("/dashboard/dashboard", "GET", null, user.token).catch(() => null)
         ]);
         setMemberships(membData.memberships || []);
         setMembershipStats(statsData);
-        setTierConfigs(tierData || {});
+        // setTierConfigs(tierData || {}); // Unused
         setDashboardStats(dashData);
       }
     } catch (err) {
@@ -171,7 +172,9 @@ const Admin = () => {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, activeTab]);
 
   // Lock background scroll when any modal is open to prevent scroll chaining
@@ -395,7 +398,7 @@ const Admin = () => {
 
       if (!endpoint) throw new Error("Invalid endpoint");
 
-      const response = await apiCall(endpoint, method, payload, user.token);
+      await apiCall(endpoint, method, payload, user.token);
 
       // Reload dataset dynamically
       fetchData();
@@ -486,21 +489,6 @@ const Admin = () => {
   };
 
   // Membership action handlers
-  const handleCreateMembership = async () => {
-    if (!membershipForm.userId) {
-      alert("Please select a user");
-      return;
-    }
-    try {
-      await apiCall("/memberships", "POST", membershipForm, user.token);
-      fetchData();
-      setIsModalOpen(false);
-      setMembershipForm({ userId: "", tier: "bronze", autoRenew: false, paymentAmount: 0 });
-      alert("Membership created successfully");
-    } catch (err) {
-      alert(`Failed to create membership: ${err.message}`);
-    }
-  };
 
   const handleRenewMembership = async (membershipId, amount = 0) => {
     try {
@@ -552,29 +540,6 @@ const Admin = () => {
   };
 
   // Category handlers
-  const handleCreateCategory = async () => {
-    if (!categoryForm.name.trim()) return alert('Name is required');
-    try {
-      await apiCall('/categories', 'POST', categoryForm, user.token);
-      fetchData();
-      setIsModalOpen(false);
-      setCategoryForm({ name: '', description: '', parent: '', active: true });
-    } catch (err) {
-      alert(`Failed to create category: ${err.message}`);
-    }
-  };
-
-  const handleUpdateCategory = async (id) => {
-    try {
-      await apiCall(`/categories/${id}`, 'PUT', categoryForm, user.token);
-      fetchData();
-      setIsModalOpen(false);
-      setCategoryForm({ name: '', description: '', parent: '', active: true });
-    } catch (err) {
-      alert(`Failed to update category: ${err.message}`);
-    }
-  };
-
   const executeDeleteCategory = async (id) => {
     try {
       await apiCall(`/categories/${id}`, 'DELETE', {}, user.token);
@@ -612,29 +577,6 @@ const Admin = () => {
   };
 
   // Age group handlers
-  const handleCreateAgeGroup = async () => {
-    if (!ageGroupForm.name.trim() || ageGroupForm.minAge === "") return alert('Name and minAge required');
-    try {
-      await apiCall('/age-groups', 'POST', ageGroupForm, user.token);
-      fetchData();
-      setIsModalOpen(false);
-      setAgeGroupForm({ name: '', minAge: '', maxAge: '', description: '', active: true });
-    } catch (err) {
-      alert(`Failed to create age group: ${err.message}`);
-    }
-  };
-
-  const handleUpdateAgeGroup = async (id) => {
-    try {
-      await apiCall(`/age-groups/${id}`, 'PUT', ageGroupForm, user.token);
-      fetchData();
-      setIsModalOpen(false);
-      setAgeGroupForm({ name: '', minAge: '', maxAge: '', description: '', active: true });
-    } catch (err) {
-      alert(`Failed to update age group: ${err.message}`);
-    }
-  };
-
   const executeDeleteAgeGroup = async (id) => {
     try {
       await apiCall(`/age-groups/${id}`, 'DELETE', {}, user.token);
@@ -2227,7 +2169,7 @@ const Admin = () => {
                   photoFields.forEach(field => {
                     if (!field) return;
                     if (typeof field === "string" && field.startsWith("[")) {
-                      try { const parsed = JSON.parse(field); if (Array.isArray(parsed)) photos.push(...parsed); } catch (e) {}
+                      try { const parsed = JSON.parse(field); if (Array.isArray(parsed)) photos.push(...parsed); } catch { /* ignore error */ }
                     } else if (Array.isArray(field)) {
                       photos.push(...field.filter(Boolean));
                     } else if (typeof field === "string" && field.length > 0 && field !== "pending_upload") {
@@ -2269,7 +2211,7 @@ const Admin = () => {
                   let parsedWitnesses = [];
                   if (selectedRecordDetail.witnesses) {
                     if (typeof selectedRecordDetail.witnesses === "string") {
-                      try { parsedWitnesses = JSON.parse(selectedRecordDetail.witnesses); } catch (e) {}
+                      try { parsedWitnesses = JSON.parse(selectedRecordDetail.witnesses); } catch { /* ignore error */ }
                     } else if (Array.isArray(selectedRecordDetail.witnesses)) {
                       parsedWitnesses = selectedRecordDetail.witnesses;
                     }
