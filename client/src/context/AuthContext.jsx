@@ -8,7 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+    const userInfo = JSON.parse(sessionStorage.getItem('userInfo'));
     if (userInfo) {
       setUser(userInfo);
     }
@@ -18,26 +18,28 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const data = await apiCall('/auth/login', 'POST', { email, password });
     setUser(data);
-    localStorage.setItem('userInfo', JSON.stringify(data));
+    sessionStorage.setItem('userInfo', JSON.stringify(data));
     return data;
   };
 
   const signup = async (signupData) => {
     const data = await apiCall('/auth/register', 'POST', signupData);
     setUser(data);
-    localStorage.setItem('userInfo', JSON.stringify(data));
+    sessionStorage.setItem('userInfo', JSON.stringify(data));
     return data;
   };
 
   const updateProfile = async (profileData) => {
     const data = await apiCall('/auth/profile', 'PUT', profileData, user.token);
     setUser(data);
-    localStorage.setItem('userInfo', JSON.stringify(data));
+    sessionStorage.setItem('userInfo', JSON.stringify(data));
     return data;
   };
 
   const logout = () => {
     setUser(null);
+    sessionStorage.removeItem('userInfo');
+    // We also remove it from localStorage just in case it was stored there previously
     localStorage.removeItem('userInfo');
   };
 
