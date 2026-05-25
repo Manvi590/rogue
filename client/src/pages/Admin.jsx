@@ -24,13 +24,7 @@ const Admin = () => {
   // Synchronize state with "?tab=..." search query parameter from URL
   useEffect(() => {
     const tabQuery = searchParams.get("tab");
-    if (tabQuery === "revenue" || tabQuery === "tickets") {
-      setActiveTab("dashboard");
-      // Wait for the DOM to render the dashboard before scrolling
-      setTimeout(() => {
-        document.getElementById('tickets-table')?.scrollIntoView({ behavior: 'smooth' });
-      }, 500);
-    } else if (tabQuery) {
+    if (tabQuery) {
       setActiveTab(tabQuery);
     } else {
       setActiveTab("dashboard");
@@ -766,10 +760,14 @@ const Admin = () => {
         setRecordsSubTab('ageGroups');
         break;
       case 'memberships':
-        document.getElementById('memberships-table')?.scrollIntoView({ behavior: 'smooth' });
+        setSearchParams({ tab: 'revenue' });
+        setActiveTab('revenue');
+        setTimeout(() => document.getElementById('memberships-table')?.scrollIntoView({ behavior: 'smooth' }), 500);
         break;
       case 'tickets':
-        document.getElementById('tickets-table')?.scrollIntoView({ behavior: 'smooth' });
+        setSearchParams({ tab: 'revenue' });
+        setActiveTab('revenue');
+        setTimeout(() => document.getElementById('tickets-table')?.scrollIntoView({ behavior: 'smooth' }), 500);
         break;
       default:
         // Optional default handler
@@ -1539,11 +1537,16 @@ const Admin = () => {
                   ))}
                 </div>
               )}
+            </div>
+          )}
 
+          {/* ==================== 6. TICKETS & REVENUE FINANCIAL SUITE ==================== */}
+          {activeTab === "revenue" && (
+            <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
                 <div>
                   <h2 style={{ fontSize: "26px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-1.0px", margin: 0 }}>
-                    🎟️ Tickets & Revenue
+                     Tickets & Revenue
                   </h2>
                   <p style={{ color: "#666", fontSize: "12px", margin: "4px 0 0 0", fontWeight: "700", letterSpacing: "0.5px" }}>
                     MANAGE PLATFORM ACCESSIBILITY AND BIO-REVENUE METRICS
