@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Trophy, Calendar, MapPin, User, ShieldCheck, Share2, Play } from "lucide-react";
+import { ArrowLeft, Trophy, Calendar, MapPin, User, ShieldCheck, Share2, Play, ChevronLeft, ChevronRight } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -11,6 +11,14 @@ const RecordDetail = () => {
   const [selectedAttempt, setSelectedAttempt] = useState(null);
   const [isPlayingMain, setIsPlayingMain] = useState(false);
   const [showAllAttempts, setShowAllAttempts] = useState(false);
+  const scrollRef = useRef(null);
+
+  const scrollAttempts = (direction) => {
+    if (scrollRef.current) {
+      const scrollAmount = 300;
+      scrollRef.current.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   // Scroll to top on mount
   useEffect(() => {
@@ -253,19 +261,73 @@ const RecordDetail = () => {
                 </button>
               </div>
 
-              <div className="attempt-history-scroll" style={{ 
-                display: "flex", 
-                gap: "16px", 
-                overflowX: "auto", 
-                paddingBottom: "20px",
-                msOverflowStyle: "none", 
-                scrollbarWidth: "none"
-              }}>
-                <style>{`
-                  .attempt-history-scroll::-webkit-scrollbar {
-                    display: none;
-                  }
-                `}</style>
+              <div style={{ position: "relative", padding: "0 40px" }}>
+                <button 
+                  onClick={() => scrollAttempts('left')}
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "rgba(0,0,0,0.6)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    color: "white",
+                    borderRadius: "50%",
+                    width: "36px",
+                    height: "36px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    zIndex: 2,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.5)"
+                  }}
+                >
+                  <ChevronLeft size={20} />
+                </button>
+
+                <button 
+                  onClick={() => scrollAttempts('right')}
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "rgba(0,0,0,0.6)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    color: "white",
+                    borderRadius: "50%",
+                    width: "36px",
+                    height: "36px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    zIndex: 2,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.5)"
+                  }}
+                >
+                  <ChevronRight size={20} />
+                </button>
+
+                <div 
+                  ref={scrollRef}
+                  className="attempt-history-scroll" 
+                  style={{ 
+                    display: "flex", 
+                    gap: "16px", 
+                    overflowX: "auto", 
+                    paddingBottom: "20px",
+                    msOverflowStyle: "none", 
+                    scrollbarWidth: "none",
+                    scrollBehavior: "smooth"
+                  }}
+                >
+                  <style>{`
+                    .attempt-history-scroll::-webkit-scrollbar {
+                      display: none;
+                    }
+                  `}</style>
                 
                 {attempts.map(attempt => (
                   <div key={attempt.id} 
@@ -315,6 +377,7 @@ const RecordDetail = () => {
                     </div>
                   </div>
                 ))}
+                </div>
               </div>
             </div>
           </div>
