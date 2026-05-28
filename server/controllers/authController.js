@@ -37,6 +37,9 @@ const authUser = async (req, res) => {
       heightUnit: user.height_unit || 'cm',
       country: user.country || '',
       city: user.city || '',
+      role: user.role || 'athlete',
+      membershipType: user.membership_type || 'free_athlete',
+      accountStatus: user.account_status || 'active',
       token: generateToken(user.id),
     });
   } else {
@@ -83,7 +86,10 @@ const registerUser = async (req, res) => {
     height: height || null,
     height_unit: heightUnit || 'cm',
     country: country || '',
-    city: city || ''
+    city: city || '',
+    role: 'athlete',
+    membership_type: 'free_athlete',
+    account_status: 'active'
   };
 
   const { data: user, error } = await supabase
@@ -114,6 +120,9 @@ const registerUser = async (req, res) => {
       heightUnit: user.height_unit || 'cm',
       country: user.country || '',
       city: user.city || '',
+      role: user.role,
+      membershipType: user.membership_type,
+      accountStatus: user.account_status,
       token: generateToken(user.id),
     });
   } else {
@@ -127,7 +136,7 @@ const registerUser = async (req, res) => {
 const getUserProfile = async (req, res) => {
   const { data: user, error } = await supabase
     .from('users')
-    .select('id, name, email, is_admin, profile_image, username, phone, gender, dob, weight, weight_unit, height, height_unit, country, city')
+    .select('id, name, email, is_admin, role, membership_type, account_status, profile_image, username, phone, gender, dob, weight, weight_unit, height, height_unit, country, city')
     .eq('id', req.user.id)
     .single();
 
@@ -152,6 +161,9 @@ const getUserProfile = async (req, res) => {
       heightUnit: user.height_unit || 'cm',
       country: user.country || '',
       city: user.city || '',
+      role: user.role || 'athlete',
+      membershipType: user.membership_type || 'free_athlete',
+      accountStatus: user.account_status || 'active',
     });
   } else {
     return res.status(404).json({ message: 'User not found' });
@@ -225,6 +237,9 @@ const updateUserProfile = async (req, res) => {
       heightUnit: updatedUser.height_unit || 'cm',
       country: updatedUser.country || '',
       city: updatedUser.city || '',
+      role: updatedUser.role || 'athlete',
+      membershipType: updatedUser.membership_type || 'free_athlete',
+      accountStatus: updatedUser.account_status || 'active',
       token: generateToken(updatedUser.id)
     });
   } else {

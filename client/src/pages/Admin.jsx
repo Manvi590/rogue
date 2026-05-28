@@ -2339,7 +2339,12 @@ const Admin = () => {
                         <input type="text" value={userForm.username} onChange={(e) => setUserForm({ ...userForm, username: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }} />
                       </div>
                       <div>
-                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>USER ROLE & ACCESS LEVEL</label>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                          <label style={{ fontSize: "10px", fontWeight: "900", color: "#555" }}>USER ROLE</label>
+                          <span style={{ fontSize: "10px", fontWeight: "900", color: userForm.role === 'system_admin' ? '#FF5500' : '#22c55e' }}>
+                            ACCESS LEVEL: {userForm.role === 'system_admin' ? 'FULL ADMIN' : 'STANDARD'}
+                          </span>
+                        </div>
                         <select 
                           value={userForm.role} 
                           onChange={(e) => {
@@ -2377,6 +2382,9 @@ const Admin = () => {
                           <option value="vip_membership">VIP Membership</option>
                           <option value="lifetime_membership">Lifetime Membership</option>
                           <option value="sponsor_account">Sponsor Account</option>
+                          <option value="judge">Judge / Adjudicator</option>
+                          <option value="moderator">Moderator</option>
+                          <option value="system_admin">System Admin</option>
                         </select>
                       </div>
                       <div>
