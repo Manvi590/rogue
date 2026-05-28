@@ -67,9 +67,56 @@ const createRecord = async (req, res) => {
       .single();
 
     if (error) throw error;
+
+    // Create record_meta with pending payment status
+    await supabase.from('record_meta').insert([{
+      record_id: createdRecord.id,
+      admin_notes: 'payment_status:pending_payment',
+      submission_fee: 0.00
+    }]);
+
     res.status(201).json(createdRecord);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Process checkout payment for a record
+// @route   POST /api/records/:id/checkout
+// @access  Private
+const processCheckout = async (req, res) => {
+  try {
+    // Generate tracking number
+    const trackingNumber = `RWR-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+    // Update payment status in record_meta
+    const { data: updatedMeta, error: metaError } = await supabase
+      .from('record_meta')
+      .update({ 
+        admin_notes: 'payment_status:paid',
+        submission_fee: 3.50,
+        tracking_number: trackingNumber
+      })
+      .eq('record_id', req.params.id)
+      .select()
+      .single();
+
+    if (metaError) {
+      // If record_meta doesn't exist yet, insert it (fallback)
+      await supabase.from('record_meta').insert([{
+        record_id: req.params.id,
+        admin_notes: 'payment_status:paid',
+        submission_fee: 3.50,
+        tracking_number: trackingNumber
+      }]);
+    }
+
+    // Simulate sending email
+    console.log(`[Email System] Sending Payment Receipt & Confirmation to user for Record ID: ${req.params.id}. Tracking Number: ${trackingNumber}`);
+
+    res.status(200).json({ success: true, trackingNumber });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -115,7 +162,7 @@ const getAllSubmissionsForAdmin = async (req, res) => {
   try {
     const { data: records, error } = await supabase
       .from('records')
-      .select('*, user:users(name, email)')
+      .select('*, user:users(name, email), record_meta(*)')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -158,4 +205,5 @@ module.exports = {
   getMySubmissions,
   getAllSubmissionsForAdmin,
   adjudicateRecord,
+  processCheckout,
 };

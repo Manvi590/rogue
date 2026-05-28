@@ -44,7 +44,7 @@ import {
 } from "../components/ui/dropdown-menu";
 
 const ChallengeVerify = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
@@ -54,12 +54,12 @@ const ChallengeVerify = () => {
   const totalSteps = 5;
 
   useEffect(() => {
-    if (!user) {
+    if (!authLoading && !user) {
       navigate('/login', { state: { message: "You must be logged in or registered before submitting or challenging a record." } });
     }
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
-  if (!user) return null;
+  if (authLoading || !user) return null;
 
   const [formData, setFormData] = useState({
     fullName: "",

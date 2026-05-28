@@ -117,12 +117,14 @@ const RecordDetail = () => {
 
   const record = getRecordData(id);
 
-  const statusOrder = {
-    "CURRENT RECORD": 1,
-    "PENDING REVIEW": 2,
-    "APPROVED ATTEMPT": 3,
-    "BROKEN": 4,
-    "FAILED ATTEMPT": 5
+  const getStatusPriority = (status) => {
+    if (!status) return 99;
+    const s = status.toUpperCase();
+    if (s.includes("CURRENT")) return 1;
+    if (s.includes("PENDING")) return 2;
+    if (s.includes("APPROVED") || s.includes("BROKEN")) return 3;
+    if (s.includes("FAILED")) return 4;
+    return 99;
   };
 
   // Mock attempts history based on current record
@@ -134,7 +136,14 @@ const RecordDetail = () => {
     { id: 5, name: "James Walker", value: "Broken (Previous)", date: "May 10, 2024", status: "BROKEN", img: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=400&q=80", color: "#9CA3AF", bg: "rgba(156, 163, 175, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4" }
   ];
 
-  const attempts = mockAttempts.sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99));
+  const attempts = mockAttempts.sort((a, b) => {
+    const pA = getStatusPriority(a.status);
+    const pB = getStatusPriority(b.status);
+    if (pA !== pB) return pA - pB;
+    const dA = new Date(a.date).getTime() || 0;
+    const dB = new Date(b.date).getTime() || 0;
+    return dB - dA;
+  });
 
   return (
     <PageTransition>
@@ -237,7 +246,8 @@ const RecordDetail = () => {
                   <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.5)" }}>See how other members have attempted to break this record.</p>
                 </div>
                 <button 
-                  onClick={() => setShowAllAttempts(true)}
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowAllAttempts(true); }}
                   style={{ background: "none", border: "none", cursor: "pointer", color: "#FF6A00", fontSize: "12px", fontWeight: "800", textDecoration: "none", textTransform: "uppercase", letterSpacing: "0.1em", flexShrink: 0 }}>
                   VIEW ALL ATTEMPTS {">"}
                 </button>
@@ -259,7 +269,7 @@ const RecordDetail = () => {
                 
                 {attempts.map(attempt => (
                   <div key={attempt.id} 
-                  onClick={() => setSelectedAttempt(attempt)}
+                  onClick={(e) => { e.stopPropagation(); setSelectedAttempt(attempt); }}
                   style={{ 
                     flex: "0 0 240px", 
                     background: "#161616", 
@@ -406,7 +416,8 @@ const RecordDetail = () => {
           }}>
             <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
               <button 
-                onClick={() => setShowAllAttempts(false)} 
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowAllAttempts(false); }} 
                 style={{ display: "flex", alignItems: "center", gap: "8px", color: "#FF6A00", background: "none", border: "none", cursor: "pointer", fontSize: "14px", fontWeight: "800", textTransform: "uppercase", marginBottom: "40px" }}>
                 <ArrowLeft size={16} /> BACK TO RECORD DETAIL
               </button>
@@ -419,7 +430,7 @@ const RecordDetail = () => {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "32px" }}>
                 {attempts.map(attempt => (
                   <div key={attempt.id} 
-                    onClick={() => setSelectedAttempt(attempt)}
+                    onClick={(e) => { e.stopPropagation(); setSelectedAttempt(attempt); }}
                     style={{ 
                       background: "#161616", 
                       borderRadius: "16px", 
@@ -519,6 +530,7 @@ const RecordDetail = () => {
               <div style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
                 <div style={{ flex: "1.2", background: "black", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", height: "100%", overflow: "hidden" }}>
                   <video
+                    key={selectedAttempt.id}
                     src={selectedAttempt.videoUrl}
                     controls
                     autoPlay

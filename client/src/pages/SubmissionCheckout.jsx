@@ -26,28 +26,30 @@ const SubmissionCheckout = () => {
     );
   }
 
-  const handlePayment = () => {
+  const [trackingNumber, setTrackingNumber] = useState("");
+
+  const handlePayment = async () => {
     setLoading(true);
     setError("");
     
-    // Simulate payment processing delay
-    setTimeout(async () => {
-      try {
-        // Attempt to update record status to paid if ID exists
-        if (submissionData.id && submissionData.id !== 'TEMP' && user) {
-          await apiCall(`/records/admin/adjudicate/${submissionData.id}`, 'PUT', { paymentStatus: 'paid', payment_status: 'paid' }, user.token).catch(() => {});
-        }
-      } catch (e) {
-        console.warn("Payment status update simulation failed or not supported.");
+    try {
+      if (!submissionData.id || submissionData.id === 'TEMP') {
+        throw new Error("Invalid submission ID. Please try submitting again.");
       }
-
-      setLoading(false);
+      
+      const response = await apiCall(`/records/${submissionData.id}/checkout`, 'POST', {}, user?.token);
+      
+      setTrackingNumber(response.trackingNumber || `RWR-${Math.random().toString(36).substr(2, 9).toUpperCase()}`);
       setSuccess(true);
-    }, 2000);
+    } catch (e) {
+      console.error("Checkout failed:", e);
+      setError(e.message || "Payment processing failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (success) {
-    const trackingNumber = `RWR-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
     return (
       <PageTransition>
         <div style={{ background: "#0A0A0A", minHeight: "100vh", color: "white", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column" }}>

@@ -8,6 +8,7 @@ const {
   getMySubmissions,
   getAllSubmissionsForAdmin,
   adjudicateRecord,
+  processCheckout,
 } = require('../controllers/recordController');
 const { protect, admin } = require('../middleware/authMiddleware');
 
@@ -21,5 +22,6 @@ router.put('/admin/adjudicate/:id', protect, admin, adjudicateRecord);
 
 router.get('/:id', getRecordById);
 router.post('/', protect, createRecord);
+router.post('/:id/checkout', protect, processCheckout);
 
 module.exports = router;

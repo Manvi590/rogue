@@ -152,15 +152,24 @@ const Challenges = () => {
       { id: 5, name: challenge ? challenge.holder : "Pavol Durdik", value: challenge ? challenge.score : "36 Bounces", date: "May 12, 2026", status: "CURRENT RECORD", img: challenge ? challenge.img : "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=400&q=80", color: "#10B981", bg: "rgba(16, 185, 129, 0.1)", videoUrl: challenge ? challenge.videoUrl : "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" }
     ];
 
-    const statusOrder = {
-      "CURRENT RECORD": 1,
-      "PENDING REVIEW": 2,
-      "APPROVED ATTEMPT": 3,
-      "BROKEN": 4,
-      "FAILED ATTEMPT": 5
+    const getStatusPriority = (status) => {
+      if (!status) return 99;
+      const s = status.toUpperCase();
+      if (s.includes("CURRENT")) return 1;
+      if (s.includes("PENDING")) return 2;
+      if (s.includes("APPROVED") || s.includes("BROKEN")) return 3;
+      if (s.includes("FAILED")) return 4;
+      return 99;
     };
 
-    return attempts.sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99));
+    return attempts.sort((a, b) => {
+      const pA = getStatusPriority(a.status);
+      const pB = getStatusPriority(b.status);
+      if (pA !== pB) return pA - pB;
+      const dA = new Date(a.date).getTime() || 0;
+      const dB = new Date(b.date).getTime() || 0;
+      return dB - dA;
+    });
   };
 
   return (
@@ -528,7 +537,8 @@ const Challenges = () => {
                   <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)" }}>See how other members have attempted to break this record.</p>
                 </div>
                 <button 
-                  onClick={() => setShowAllAttempts(true)}
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowAllAttempts(true); }}
                   style={{ background: "none", border: "none", cursor: "pointer", color: "#FF6A00", fontSize: "11px", fontWeight: "800", textDecoration: "none", textTransform: "uppercase", letterSpacing: "0.1em", flexShrink: 0 }}>
                   VIEW ALL ATTEMPTS {">"}
                 </button>
@@ -550,7 +560,7 @@ const Challenges = () => {
                 
                 {getMockAttempts(selectedChallenge).map(attempt => (
                     <div key={attempt.id} 
-                      onClick={() => setSelectedAttempt(attempt)}
+                      onClick={(e) => { e.stopPropagation(); setSelectedAttempt(attempt); }}
                       style={{ 
                       flex: "0 0 200px", 
                       width: "200px",
@@ -616,7 +626,8 @@ const Challenges = () => {
           }}>
             <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
               <button 
-                onClick={() => setShowAllAttempts(false)} 
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowAllAttempts(false); }} 
                 style={{ display: "flex", alignItems: "center", gap: "8px", color: "#FF6A00", background: "none", border: "none", cursor: "pointer", fontSize: "14px", fontWeight: "800", textTransform: "uppercase", marginBottom: "40px" }}>
                 <ArrowLeft size={16} /> BACK TO CHALLENGE DETAIL
               </button>
@@ -629,7 +640,7 @@ const Challenges = () => {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "32px" }}>
                 {getMockAttempts(selectedChallenge).map(attempt => (
                   <div key={attempt.id} 
-                    onClick={() => setSelectedAttempt(attempt)}
+                    onClick={(e) => { e.stopPropagation(); setSelectedAttempt(attempt); }}
                     style={{ 
                       background: "#161616", 
                       borderRadius: "16px", 
@@ -732,6 +743,7 @@ const Challenges = () => {
               <div style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
                 <div style={{ flex: "1.2", background: "black", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", height: "100%", overflow: "hidden" }}>
                   <video
+                    key={selectedAttempt.id}
                     src={selectedAttempt.videoUrl}
                     controls
                     autoPlay

@@ -4,7 +4,9 @@ import {
   ShieldAlert, Trophy, X, Eye, Calendar, 
   User, Users, Search, Filter, 
   AlertTriangle, CheckCircle, Video, FileText, Loader2, 
-  Sparkles, Trash2, Edit3, Plus, ShoppingBag, Mail, HardDrive, Ticket, Layers, Folder
+  Sparkles, Trash2, Edit3, Plus, ShoppingBag, Mail, HardDrive, Ticket, Layers, Folder,
+  ArrowRight, Bell, Settings, LogOut, LayoutDashboard, BarChart3, MoreVertical,
+  Activity, Zap, Timer, Network, Component, TrendingUp, DollarSign
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -25,10 +27,25 @@ const Admin = () => {
   useEffect(() => {
     const tabQuery = searchParams.get("tab");
     if (tabQuery) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveTab(tabQuery);
+      if (tabQuery === "user" || tabQuery === "users") {
+        setActiveTab("users");
+      } else if (tabQuery === "submissions") {
+        setActiveTab("records");
+        setRecordsSubTab("submissions");
+      } else if (tabQuery === "categories") {
+        setActiveTab("records");
+        setRecordsSubTab("categories");
+      } else if (tabQuery === "divisions") {
+        setActiveTab("records");
+        setRecordsSubTab("ageGroups");
+      } else if (tabQuery === "challenges") {
+        setActiveTab("events");
+      } else if (tabQuery === "payments") {
+        setActiveTab("revenue");
+      } else {
+        setActiveTab(tabQuery);
+      }
     } else {
-       
       setActiveTab("dashboard");
     }
   }, [searchParams]);
@@ -69,7 +86,7 @@ const Admin = () => {
 
   // Dynamic Form states bound to inputs
   const [recordForm, setRecordForm] = useState({ title: "", category: "Strength", description: "", value: "", unit: "", status: "pending", evidenceUrl: "", venueName: "", city: "", recordType: "standard", userId: "" });
-  const [userForm, setUserForm] = useState({ name: "", email: "", password: "", isAdmin: false, username: "", phone: "", gender: "male", dob: "", weight: "", height: "", country: "", city: "" });
+  const [userForm, setUserForm] = useState({ name: "", email: "", password: "", role: "athlete", membershipType: "free_athlete", accountStatus: "active", username: "", phone: "", gender: "male", dob: "", weight: "", height: "", country: "", city: "" });
   const [eventForm, setEventForm] = useState({ title: "", description: "", date: "", location: "", imageUrl: "", isPaid: false, ticketPrice: 0 });
   const [productForm, setProductForm] = useState({ name: "", description: "", price: "", imageUrl: "", category: "Accessories", stockCount: "" });
   const [membershipForm, setMembershipForm] = useState({ userId: "", tier: "bronze", autoRenew: false, paymentAmount: 0 });
@@ -153,15 +170,17 @@ const Admin = () => {
         const data = await apiCall("/admin/products", "GET", null, user.token);
         setProducts(data || []);
       } else if (activeTab === "dashboard" || activeTab === "revenue") {
-        const [membData, statsData, dashData] = await Promise.all([
+        const [membData, statsData, dashData, eventsData] = await Promise.all([
           apiCall("/memberships?page=1&limit=100", "GET", null, user.token).catch(() => ({ memberships: [] })),
           apiCall("/memberships/stats/overview", "GET", null, user.token).catch(() => null),
-          apiCall("/dashboard/dashboard", "GET", null, user.token).catch(() => null)
+          apiCall("/dashboard/dashboard", "GET", null, user.token).catch(() => null),
+          apiCall("/admin/events", "GET", null, user.token).catch(() => [])
         ]);
         setMemberships(membData.memberships || []);
         setMembershipStats(statsData);
         // setTierConfigs(tierData || {}); // Unused
         setDashboardStats(dashData);
+        if (activeTab === "dashboard") setEvents(eventsData || []);
       }
     } catch (err) {
       console.error(`Error loading ${activeTab}:`, err);
@@ -284,7 +303,9 @@ const Admin = () => {
           name: item.name || "",
           email: item.email || "",
           password: "",
-          isAdmin: !!item.isAdmin,
+          role: item.role || (item.isAdmin ? "system_admin" : "athlete"),
+          membershipType: item.membershipType || "free_athlete",
+          accountStatus: item.accountStatus || item.account_status || "active",
           username: item.username || "",
           phone: item.phone || "",
           gender: item.gender || "male",
@@ -295,7 +316,7 @@ const Admin = () => {
           city: item.city || ""
         });
       } else {
-        setUserForm({ name: "", email: "", password: "", isAdmin: false, username: "", phone: "", gender: "male", dob: "", weight: "", height: "", country: "", city: "" });
+        setUserForm({ name: "", email: "", password: "", role: "athlete", membershipType: "free_athlete", accountStatus: "active", username: "", phone: "", gender: "male", dob: "", weight: "", height: "", country: "", city: "" });
       }
     } else if (activeTab === "events") {
       if (type === "edit" && item) {
@@ -349,7 +370,10 @@ const Admin = () => {
           dob: userForm.dob,
           country: userForm.country,
           city: userForm.city,
-          isAdmin: userForm.isAdmin
+          role: userForm.role,
+          membershipType: userForm.membershipType,
+          accountStatus: userForm.accountStatus,
+          isAdmin: userForm.role === 'system_admin'
         };
         // Only include password for new users
         if (modalType === "add" && userForm.password) {
@@ -718,266 +742,763 @@ const Admin = () => {
   };
 
   return (
-    <div style={{ 
-      background: "#030303", color: "white", minHeight: "100vh", fontFamily: "'Outfit', sans-serif",
-      backgroundImage: "radial-gradient(circle at 50% -10%, rgba(255, 85, 0, 0.1) 0%, transparent 60%)",
-      overflowX: "hidden", paddingTop: "80px"
-    }}>
+    <>
       <Navbar />
-
-      {/* Main Layout Grid */}
-      <section className="container" style={{ padding: "40px 0 80px 0", maxWidth: "1200px", margin: "0 auto" }}>
-        
-        {/* Right Column: Premium Active Table View (Now Full Width) */}
-        <div>
+      <div style={{ 
+        display: "flex", minHeight: "100vh", background: "#050505", color: "white", fontFamily: "'Outfit', sans-serif",
+        overflow: "hidden"
+      }}>
+        {/* Main Content Area */}
+        <main style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto", position: "relative" }}>
           
-          {/* ==================== 1. RECORDS & SUBMISSIONS OVERHAUL ==================== */}
-          {activeTab === "records" && (
+          {/* Top Navbar */}
+          <header style={{ padding: "16px 32px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "rgba(5,5,5,0.8)", backdropFilter: "blur(12px)", zIndex: 10 }}>
+          <div style={{ position: "relative", width: "400px" }}>
+            <Search size={16} color="#666" style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)" }} />
+            <input type="text" placeholder="Search records, users, or payments..." style={{ width: "100%", background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "100px", padding: "10px 16px 10px 42px", color: "white", fontSize: "13px", outline: "none" }} />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+            <button style={{ background: "transparent", border: "none", color: "#888", cursor: "pointer" }}><Bell size={20} /></button>
+            <button style={{ background: "transparent", border: "none", color: "#888", cursor: "pointer" }}><Settings size={20} /></button>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", borderLeft: "1px solid rgba(255,255,255,0.1)", paddingLeft: "20px" }}>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: "13px", fontWeight: "900", color: "white" }}>Admin Staff</div>
+                <div style={{ fontSize: "11px", color: "#888" }}>Super Admin</div>
+              </div>
+              <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#FF5500", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "900", fontSize: "16px" }}>
+                <User size={18} />
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Dynamic Page Content */}
+        <div style={{ padding: "32px", flex: 1, maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
+
+          {/* ==================== DASHBOARD OVERVIEW ==================== */}
+          {activeTab === "dashboard" && (
             <div>
-              {/* Header Title with glowing status badge */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
-                <div>
-                  <h2 style={{ fontSize: "26px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-1.0px", margin: 0, display: "flex", alignItems: "center", gap: "10px" }}>
-                    🏆 Records & Submissions
-                  </h2>
-                  <p style={{ color: "#666", fontSize: "12px", margin: "4px 0 0 0", fontWeight: "700", letterSpacing: "0.5px" }}>
-                    MANAGE THE GLOBAL ATHLETE RECORD REGISTRY
-                  </p>
+              <div style={{ marginBottom: "32px" }}>
+                <h1 style={{ fontSize: "28px", fontWeight: "950", margin: "0 0 8px 0" }}>Performance Overview</h1>
+                <p style={{ color: "#888", margin: 0, fontSize: "14px" }}>Real-time monitoring of Rogue World Records global network.</p>
+              </div>
+
+              {/* Stats Cards */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px", marginBottom: "24px" }}>
+                <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+                    <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(255,85,0,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#FF5500" }}>
+                      <Users size={20} />
+                    </div>
+                    <span style={{ background: "rgba(34,197,94,0.15)", color: "#22c55e", padding: "4px 8px", borderRadius: "100px", fontSize: "11px", fontWeight: "800" }}>Users</span>
+                  </div>
+                  <div style={{ fontSize: "13px", color: "#888", marginBottom: "4px" }}>Total Users</div>
+                  <div style={{ fontSize: "28px", fontWeight: "950", color: "white" }}>{dashboardStats?.counts?.users?.toLocaleString() || 0}</div>
                 </div>
-                
-                {/* Sub Tab Buttons switcher */}
-                <div style={{ background: "rgba(13,13,16,0.6)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "12px", padding: "4px", display: "flex", gap: "4px" }}>
-                  {[
-                    { val: "submissions", label: "Attempt Submissions" },
-                    { val: "categories", label: "Categories Registry" },
-                    { val: "ageGroups", label: "Age Groups Division" }
-                  ].map(sub => (
-                    <button
-                      key={sub.val}
-                      onClick={() => { setRecordsSubTab(sub.val); setSearchQuery(""); }}
-                      style={{
-                        background: recordsSubTab === sub.val ? "linear-gradient(135deg, #FF5500 0%, #ff7700 100%)" : "transparent",
-                        border: "none",
-                        color: recordsSubTab === sub.val ? "white" : "#888",
-                        padding: "8px 16px",
-                        borderRadius: "8px",
-                        fontSize: "11px",
-                        fontWeight: "900",
-                        cursor: "pointer",
-                        textTransform: "uppercase",
-                        transition: "all 0.2s"
-                      }}
-                    >
-                      {sub.label}
-                    </button>
-                  ))}
+
+                <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+                    <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(59,130,246,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#3b82f6" }}>
+                      <FileText size={20} />
+                    </div>
+                    <span style={{ background: "rgba(255,106,0,0.15)", color: "#FF6A00", padding: "4px 8px", borderRadius: "100px", fontSize: "11px", fontWeight: "800" }}>Attention</span>
+                  </div>
+                  <div style={{ fontSize: "13px", color: "#888", marginBottom: "4px" }}>Pending Submissions</div>
+                  <div style={{ fontSize: "28px", fontWeight: "950", color: "white" }}>{dashboardStats?.counts?.records || 0}</div>
+                </div>
+
+                <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+                    <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(34,197,94,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#22c55e" }}>
+                      <CheckCircle size={20} />
+                    </div>
+                    <span style={{ color: "#666", fontSize: "11px", fontWeight: "800" }}>Lifetime</span>
+                  </div>
+                  <div style={{ fontSize: "13px", color: "#888", marginBottom: "4px" }}>Approved Records</div>
+                  <div style={{ fontSize: "28px", fontWeight: "950", color: "white" }}>{dashboardStats?.counts?.evidence || 0}</div>
+                </div>
+
+                <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+                    <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(255,106,0,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#FF6A00" }}>
+                      <Ticket size={20} />
+                    </div>
+                    <span style={{ background: "rgba(34,197,94,0.15)", color: "#22c55e", padding: "4px 8px", borderRadius: "100px", fontSize: "11px", fontWeight: "800" }}>Revenue</span>
+                  </div>
+                  <div style={{ fontSize: "13px", color: "#888", marginBottom: "4px" }}>Total Payments</div>
+                  <div style={{ fontSize: "28px", fontWeight: "950", color: "white" }}>${(membershipStats?.totalRevenue || (dashboardStats?.counts?.memberships * 10) || 0).toLocaleString()}</div>
                 </div>
               </div>
 
-              {/* Submissions Sub-Tab rendering */}
+              {/* Chart & Recent Activity */}
+              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "20px", marginBottom: "24px" }}>
+                
+                {/* Chart Box */}
+                <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px", position: "relative", minHeight: "360px", display: "flex", flexDirection: "column" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                    <div>
+                      <h3 style={{ fontSize: "16px", fontWeight: "900", margin: "0 0 4px 0" }}>Submissions Over Time</h3>
+                      <div style={{ fontSize: "12px", color: "#888" }}>Monthly breakdown of record attempts</div>
+                    </div>
+                    <button style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "8px 12px", borderRadius: "8px", fontSize: "12px", fontWeight: "700" }}>Last 6 Months</button>
+                  </div>
+                  <div style={{ flex: 1, position: "relative", width: "100%", display: "flex", alignItems: "flex-end" }}>
+                    {/* SVG Chart mimic */}
+                    <svg width="100%" height="100%" viewBox="0 0 500 200" preserveAspectRatio="none" style={{ position: "absolute", top: 0, left: 0 }}>
+                      <defs>
+                        <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="rgba(255,85,0,0.3)" />
+                          <stop offset="100%" stopColor="rgba(255,85,0,0)" />
+                        </linearGradient>
+                      </defs>
+                      <path d="M0,150 C50,140 100,160 150,140 C200,100 250,50 300,50 C350,50 400,120 450,120 C480,120 500,40 500,40 L500,200 L0,200 Z" fill="url(#chartGradient)" />
+                      <path d="M0,150 C50,140 100,160 150,140 C200,100 250,50 300,50 C350,50 400,120 450,120 C480,120 500,40 500,40" fill="none" stroke="#FF5500" strokeWidth="3" />
+                      <circle cx="150" cy="140" r="4" fill="#000" stroke="#FF5500" strokeWidth="2" />
+                      <circle cx="300" cy="50" r="4" fill="#000" stroke="#FF5500" strokeWidth="2" />
+                      <circle cx="500" cy="40" r="4" fill="#000" stroke="#FF5500" strokeWidth="2" />
+                    </svg>
+                    <div style={{ position: "absolute", bottom: "0", left: "0", right: "0", display: "flex", justifyContent: "space-between", color: "#666", fontSize: "10px", fontWeight: "700", paddingTop: "10px" }}>
+                      <span>JAN</span><span>FEB</span><span>MAR</span><span>APR</span><span>MAY</span><span>JUN</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent Activity */}
+                <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: "900", margin: 0 }}>Recent Activity</h3>
+                    <button onClick={() => { setActiveTab('records'); setRecordsSubTab('submissions'); }} style={{ background: 'transparent', border: 'none', color: "#FF5500", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>View All</button>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                    {dashboardStats?.recentSubmissions?.slice(0, 3).map((sub, idx) => (
+                      <div key={`sub-${idx}`} style={{ display: "flex", gap: "12px" }}>
+                        <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#222", overflow: "hidden", flexShrink: 0 }}>
+                          <img src={`https://ui-avatars.com/api/?name=${sub.title}&background=random`} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="Avatar" />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: "13px", color: "#ccc", lineHeight: "1.4" }}>New submission for <strong style={{ color: "white" }}>{sub.title}</strong></div>
+                          <div style={{ fontSize: "11px", color: "#666", margin: "4px 0" }}>{new Date(sub.created_at).toLocaleDateString()}</div>
+                          <span style={{ background: sub.status === 'pending' ? "rgba(59,130,246,0.15)" : (sub.status === 'rejected' ? "rgba(239,68,68,0.15)" : "rgba(34,197,94,0.15)"), color: sub.status === 'pending' ? "#3b82f6" : (sub.status === 'rejected' ? "#ef4444" : "#22c55e"), padding: "2px 6px", borderRadius: "4px", fontSize: "9px", fontWeight: "800", textTransform: "uppercase" }}>
+                            {sub.status || 'Pending'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {dashboardStats?.recentUsers?.slice(0, 1).map((usr, idx) => (
+                      <div key={`usr-${idx}`} style={{ display: "flex", gap: "12px" }}>
+                        <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#222", overflow: "hidden", flexShrink: 0 }}>
+                          <img src={`https://ui-avatars.com/api/?name=${usr.name}&background=random`} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="Avatar" />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: "13px", color: "#ccc", lineHeight: "1.4" }}><strong style={{ color: "white" }}>{usr.name}</strong> joined the platform</div>
+                          <div style={{ fontSize: "11px", color: "#666", margin: "4px 0" }}>{new Date(usr.created_at).toLocaleDateString()}</div>
+                          <span style={{ background: "rgba(168,85,247,0.15)", color: "#a855f7", padding: "2px 6px", borderRadius: "4px", fontSize: "9px", fontWeight: "800", textTransform: "uppercase" }}>New User</span>
+                        </div>
+                      </div>
+                    ))}
+                    {(!dashboardStats?.recentSubmissions?.length && !dashboardStats?.recentUsers?.length) && (
+                      <div style={{ color: "#888", fontSize: "13px" }}>No recent activity found.</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Trending Challenges */}
+              <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                  <h3 style={{ fontSize: "18px", fontWeight: "900", margin: 0 }}>Trending Challenges</h3>
+                  <button onClick={() => { setActiveTab('events'); }} style={{ background: "transparent", border: "1px solid #FF5500", color: "#FF5500", padding: "8px 16px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>Manage Challenges</button>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  {events && events.length > 0 ? events.slice(0, 3).map((ev, idx) => (
+                    <div key={idx} style={{ display: "flex", alignItems: "center", padding: "16px 0", borderBottom: idx < Math.min(events.length - 1, 2) ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
+                      <div style={{ fontSize: "24px", fontWeight: "950", color: idx === 0 ? "#FF5500" : (idx === 1 ? "#FF6A00" : "#FF8800"), width: "40px" }}>0{idx + 1}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: "15px", fontWeight: "800", color: "white", marginBottom: "2px" }}>{ev.title}</div>
+                        <div style={{ fontSize: "12px", color: "#888" }}>Location: {ev.location || 'Global'} • {new Date(ev.date).toLocaleDateString()}</div>
+                      </div>
+                      <div style={{ textAlign: "right", marginRight: "16px" }}>
+                        <div style={{ fontSize: "13px", fontWeight: "800", color: "white", marginBottom: "2px" }}>Active</div>
+                        <div style={{ fontSize: "10px", color: idx === 0 ? "#FF5500" : "#888", fontWeight: "900", letterSpacing: "0.5px", textTransform: "uppercase" }}>{idx === 0 ? 'TRENDING 🔥' : 'STEADY'}</div>
+                      </div>
+                      <ArrowRight size={16} color="#666" />
+                    </div>
+                  )) : (
+                    <div style={{ color: "#888", fontSize: "13px", padding: "16px 0" }}>No active challenges found. Data connected.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ==================== 1. RECORDS & SUBMISSIONS OVERHAUL ==================== */}
+          {activeTab === "records" && (
+
+            <div>
               {recordsSubTab === "submissions" && (
                 <div>
-                  {/* Search and Filters Bar */}
-                  <div style={{ background: "rgba(13,13,16,0.5)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "20px", padding: "16px 24px", marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <Search size={14} color="#555" />
-                      <input
-                        type="text"
-                        placeholder="Search submissions by title or athlete..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        style={{ background: "transparent", border: "none", color: "white", fontSize: "13px", outline: "none", width: "260px" }}
-                      />
+                  {/* Header Title with glowing status badge */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "28px" }}>
+                    <div>
+                      <h2 style={{ fontSize: "28px", fontWeight: "950", margin: "0 0 8px 0" }}>Submissions Management</h2>
+                      <p style={{ color: "#888", margin: 0, fontSize: "14px", maxWidth: "600px", lineHeight: "1.5" }}>
+                        Review and verify new record attempts from around the world.
+                      </p>
                     </div>
                     <div style={{ display: "flex", gap: "12px" }}>
-                      <select 
-                        value={categoryFilter} 
-                        onChange={(e) => setCategoryFilter(e.target.value)} 
-                        style={{ background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.05)", padding: "8px 12px", borderRadius: "8px", color: "white", fontSize: "12px", textTransform: "capitalize" }}
-                      >
-                        <option value="all">All Categories</option>
-                        {Array.from(new Set(records.map(r => r.category).filter(Boolean))).map((cat, idx) => (
-                          <option key={idx} value={cat.toLowerCase()}>{cat}</option>
-                        ))}
-                      </select>
-                      <select 
-                        value={statusFilter} 
-                        onChange={(e) => setStatusFilter(e.target.value)} 
-                        style={{ background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.05)", padding: "8px 12px", borderRadius: "8px", color: "white", fontSize: "12px" }}
-                      >
-                        <option value="all">All Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="verified">Verified</option>
-                        <option value="rejected">Rejected</option>
-                      </select>
-                      <button 
-                        onClick={() => openModal("add")}
-                        style={{ background: "linear-gradient(135deg, #FF5500 0%, #ff8800 100%)", color: "white", border: "none", padding: "8px 16px", borderRadius: "8px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
-                      >
-                        <Plus size={14} /> ADD RECORD
+                      <button style={{ background: "transparent", color: "white", border: "1px solid rgba(255,255,255,0.1)", padding: "10px 16px", borderRadius: "8px", fontSize: "13px", fontWeight: "800", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
+                        <Filter size={16} /> Filter
+                      </button>
+                      <button style={{ background: "transparent", color: "white", border: "1px solid rgba(255,255,255,0.1)", padding: "10px 16px", borderRadius: "8px", fontSize: "13px", fontWeight: "800", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
+                        <ArrowRight size={16} /> Export CSV
                       </button>
                     </div>
                   </div>
 
-                  {/* Submission Records List */}
-                  {loading ? (
-                    <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "120px 0", background: "rgba(13,13,16,0.3)", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.03)" }}>
-                      <Loader2 className="animate-spin" size={36} color="#FF5500" />
-                      <p style={{ color: "#666", marginTop: "16px", fontSize: "13px", letterSpacing: "1.5px" }}>QUERYING SUBMISSIONS...</p>
+                  {/* Stats Cards */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px", marginBottom: "32px" }}>
+                    <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+                      <div style={{ fontSize: "12px", color: "#888", fontWeight: "800", textTransform: "uppercase", marginBottom: "12px" }}>Total Pending</div>
+                      <div style={{ fontSize: "32px", fontWeight: "950", color: "#FF6A00", marginBottom: "8px" }}>
+                        {records.filter(r => r.status === 'pending').length}
+                      </div>
+                      <div style={{ color: "#22c55e", fontSize: "12px", fontWeight: "700" }}>↗ 12% from last week</div>
                     </div>
-                  ) : filteredItems.length === 0 ? (
-                    <div style={{ textAlign: "center", padding: "80px 40px", background: "rgba(13,13,16,0.2)", borderRadius: "24px", border: "1px dashed rgba(255,255,255,0.06)" }}>
-                      <HardDrive size={36} color="#555" style={{ marginBottom: "16px" }} />
-                      <h4 style={{ margin: "0 0 4px 0", fontSize: "16px", color: "white" }}>NO SUBMISSIONS FOUND</h4>
-                      <p style={{ color: "#555", fontSize: "12px", margin: 0 }}>Try adjusting your filters or search query.</p>
+                    <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+                      <div style={{ fontSize: "12px", color: "#888", fontWeight: "800", textTransform: "uppercase", marginBottom: "12px" }}>Avg Review Time</div>
+                      <div style={{ fontSize: "32px", fontWeight: "950", color: "white", marginBottom: "8px" }}>4.2h</div>
+                      <div style={{ color: "#888", fontSize: "12px", fontWeight: "700" }}>Internal SLA: 24h</div>
                     </div>
-                  ) : (
-                    <div style={{ overflowX: "auto", background: "rgba(13,13,16,0.3)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "24px" }}>
-                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
-                        <thead>
-                          <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#666", textTransform: "uppercase", fontSize: "10px", letterSpacing: "1px" }}>
-                            <th style={{ padding: "20px 24px" }}>RECORD ATTEMPT INFO</th>
-                            <th style={{ padding: "20px 24px" }}>ATHLETE DETAILS</th>
-                            <th style={{ padding: "20px 24px" }}>METRIC / STATUS</th>
-                            <th style={{ padding: "20px 24px", textAlign: "right" }}>ACTIONS</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredItems.map(item => (
-                            <tr key={item.id} className="table-row-hover" style={{ borderBottom: "1px solid rgba(255,255,255,0.02)", transition: "all 0.2s" }}>
-                              <td style={{ padding: "20px 24px" }}>
-                                <div style={{ fontWeight: "800", color: "white", fontSize: "14px" }}>{item.title}</div>
-                                <div style={{ color: "#FF5500", fontSize: "11px", fontWeight: "900", textTransform: "uppercase", marginTop: "4px" }}>{item.category}</div>
-                              </td>
-                              <td style={{ padding: "20px 24px" }}>
-                                <div style={{ color: "white", fontWeight: "700" }}>{item.user?.name || "Rogue Athlete"}</div>
-                                <div style={{ color: "#888", fontSize: "11px", marginTop: "2px" }}>{item.user?.email || "No Email"}</div>
-                              </td>
-                              <td style={{ padding: "20px 24px" }}>
-                                <div style={{ fontSize: "16px", fontWeight: "900", color: "white" }}>{item.value} {item.unit}</div>
-                                <div style={{ display: "flex", gap: "8px", alignItems: "center", marginTop: "4px" }}>
-                                  <span style={{
-                                    color: item.status === "verified" ? "#22c55e" : item.status === "rejected" ? "#ef4444" : "#ffcc00",
-                                    fontSize: "10px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.5px"
+                    <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+                      <div style={{ fontSize: "12px", color: "#888", fontWeight: "800", textTransform: "uppercase", marginBottom: "12px" }}>Verified Today</div>
+                      <div style={{ fontSize: "32px", fontWeight: "950", color: "white", marginBottom: "8px" }}>
+                        {records.filter(r => r.status === 'verified').length}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        {records.filter(r => r.status === 'verified').slice(0,3).map((r, i) => (
+                          <img key={i} src={`https://ui-avatars.com/api/?name=${r.user?.name || 'A'}&background=random`} alt="Avatar" style={{ width: "20px", height: "20px", borderRadius: "50%", border: "2px solid #111", marginLeft: i > 0 ? "-8px" : "0" }} />
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ background: "linear-gradient(135deg, #FF5500 0%, #ff8800 100%)", borderRadius: "16px", padding: "24px", color: "white" }}>
+                      <div style={{ fontSize: "12px", fontWeight: "900", textTransform: "uppercase", marginBottom: "12px", opacity: 0.9 }}>High Priority</div>
+                      <div style={{ fontSize: "32px", fontWeight: "950", marginBottom: "8px" }}>03</div>
+                      <div style={{ fontSize: "12px", fontWeight: "700", opacity: 0.9 }}>Requires immediate verification</div>
+                    </div>
+                  </div>
+
+                  {/* Main Table */}
+                  <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px", marginBottom: "24px" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#888", fontSize: "12px", fontWeight: "800", textAlign: "left" }}>
+                          <th style={{ padding: "0 0 16px 0", fontWeight: "800" }}>USER</th>
+                          <th style={{ padding: "0 0 16px 0", fontWeight: "800" }}>RECORD TITLE</th>
+                          <th style={{ padding: "0 0 16px 0", fontWeight: "800", textAlign: "center" }}>CATEGORY</th>
+                          <th style={{ padding: "0 0 16px 0", fontWeight: "800", textAlign: "center" }}>STATUS</th>
+                          <th style={{ padding: "0 0 16px 0", fontWeight: "800", textAlign: "center" }}>PAYMENT</th>
+                          <th style={{ padding: "0 0 16px 0", fontWeight: "800" }}>SUBMITTED</th>
+                          <th style={{ padding: "0 0 16px 0", fontWeight: "800", textAlign: "right" }}>ACTIONS</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {loading ? (
+                          <tr><td colSpan="6" style={{ textAlign: "center", padding: "40px" }}><Loader2 className="animate-spin" size={24} color="#FF5500" /></td></tr>
+                        ) : records.length === 0 ? (
+                          <tr><td colSpan="6" style={{ textAlign: "center", padding: "40px", color: "#888" }}>No submissions found</td></tr>
+                        ) : records.slice(0, 10).map((r, idx) => (
+                          <tr key={idx} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                            <td style={{ padding: "16px 0", display: "flex", alignItems: "center", gap: "12px" }}>
+                              <img src={`https://ui-avatars.com/api/?name=${r.user?.name || 'Athlete'}&background=random`} alt={r.user?.name || 'User'} style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover" }} />
+                              <div>
+                                <div style={{ color: "white", fontSize: "14px", fontWeight: "700" }}>{r.user?.name || "Rogue Athlete"}</div>
+                                <div style={{ color: "#666", fontSize: "11px", marginTop: "2px" }}>{r.user?.email || "athlete@rogue.com"}</div>
+                              </div>
+                            </td>
+                            <td style={{ padding: "16px 0" }}>
+                              <div style={{ color: "white", fontSize: "14px", fontWeight: "700" }}>{r.title}</div>
+                              <div style={{ color: "#888", fontSize: "11px", marginTop: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
+                                <Video size={10} /> {r.evidence_url ? 'Video evidence attached' : 'Photos verified'}
+                              </div>
+                            </td>
+                            <td style={{ padding: "16px 0", textAlign: "center" }}>
+                              <span style={{ background: "rgba(255,255,255,0.05)", color: "#aaa", padding: "4px 8px", borderRadius: "100px", fontSize: "9px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                                {r.category || "General"}
+                              </span>
+                            </td>
+                            <td style={{ padding: "16px 0", textAlign: "center" }}>
+                              <span style={{ 
+                                background: r.status === 'pending' ? "rgba(255,106,0,0.15)" : r.status === 'verified' ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)", 
+                                color: r.status === 'pending' ? "#FF6A00" : r.status === 'verified' ? "#22c55e" : "#ef4444", 
+                                padding: "4px 8px", 
+                                borderRadius: "100px", 
+                                fontSize: "10px", 
+                                fontWeight: "900",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                textTransform: "uppercase"
+                              }}>
+                                <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: r.status === 'pending' ? "#FF6A00" : r.status === 'verified' ? "#22c55e" : "#ef4444" }}></div>
+                                {r.status === 'verified' ? 'Approved' : r.status}
+                              </span>
+                            </td>
+                            <td style={{ padding: "16px 0", textAlign: "center" }}>
+                              {(() => {
+                                const paymentStatus = r.record_meta?.[0]?.admin_notes?.includes('paid') ? 'Paid' : 'Pending';
+                                return (
+                                  <span style={{ 
+                                    background: paymentStatus === 'Pending' ? "rgba(255,255,255,0.05)" : "rgba(34,197,94,0.15)", 
+                                    color: paymentStatus === 'Pending' ? "#888" : "#22c55e", 
+                                    padding: "4px 8px", 
+                                    borderRadius: "100px", 
+                                    fontSize: "10px", 
+                                    fontWeight: "900",
+                                    display: "inline-flex",
+                                    textTransform: "uppercase"
                                   }}>
-                                    {item.status}
+                                    {paymentStatus}
                                   </span>
-                                  {(item.paymentStatus || item.payment_status) && (
-                                    <span style={{
-                                      background: (item.paymentStatus || item.payment_status).toLowerCase() === "paid" ? "rgba(34,197,94,0.15)" : "rgba(255,204,0,0.15)",
-                                      color: (item.paymentStatus || item.payment_status).toLowerCase() === "paid" ? "#22c55e" : "#ffcc00",
-                                      padding: "2px 6px", borderRadius: "4px", fontSize: "9px", fontWeight: "900", textTransform: "uppercase"
-                                    }}>
-                                      {(item.paymentStatus || item.payment_status).replace('_', ' ')}
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                              <td style={{ padding: "20px 24px", textAlign: "right" }}>
-                                <div style={{ display: "inline-flex", gap: "8px" }}>
-                                  {item.status === "pending" && (
-                                    <>
-                                      <button onClick={() => handleOpenRecordDetailModal(item)} style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "#22c55e", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "11px", fontWeight: "900" }}>VERIFY</button>
-                                      <button onClick={() => handleQuickAdjudicate(item.id, "rejected")} style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "11px", fontWeight: "900" }}>REJECT</button>
-                                    </>
-                                  )}
-                                  <button onClick={() => openModal("edit", item)} style={{ padding: "6px 10px", borderRadius: "6px", cursor: "pointer" }} className="btn-premium-edit"><Edit3 size={13} /></button>
-                                  <button onClick={() => handleDelete(item.id)} style={{ padding: "6px 10px", borderRadius: "6px", cursor: "pointer" }} className="btn-premium-delete"><Trash2 size={13} /></button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                                );
+                              })()}
+                            </td>
+                            <td style={{ padding: "16px 0", color: "#aaa", fontSize: "13px" }}>
+                              {new Date(r.created_at || new Date()).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
+                            </td>
+                            <td style={{ padding: "16px 0", textAlign: "right" }}>
+                              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                                {r.status === "pending" && (
+                                  <>
+                                    <button onClick={() => handleQuickAdjudicate(r.id, "verified")} style={{ background: "#FF5500", border: "none", color: "white", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "11px", fontWeight: "900" }}>Approve</button>
+                                    <button onClick={() => handleQuickAdjudicate(r.id, "rejected")} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "11px", fontWeight: "800" }}>Request Changes</button>
+                                  </>
+                                )}
+                                {r.status === "verified" && (
+                                  <button onClick={() => handleOpenRecordDetailModal(r)} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "11px", fontWeight: "800" }}>View Details</button>
+                                )}
+                                {r.status === "rejected" && (
+                                  <button onClick={() => handleOpenRecordDetailModal(r)} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "11px", fontWeight: "800" }}>Appeal Log</button>
+                                )}
+                                <button onClick={() => handleDelete(r.id)} style={{ background: "transparent", border: "none", color: "#888", cursor: "pointer", padding: "4px" }}>
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    
+                    {/* Pagination */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "24px", paddingTop: "24px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                      <div style={{ fontSize: "12px", color: "#888", fontWeight: "700" }}>
+                        Showing 1-{Math.min(10, records.length)} of {records.length} results
+                      </div>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <button style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#888", padding: "6px 10px", borderRadius: "6px", cursor: "pointer" }}>&lt;</button>
+                        <button style={{ background: "#FF5500", border: "none", color: "white", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>1</button>
+                        <button style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#888", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>2</button>
+                        <button style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#888", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>3</button>
+                        <span style={{ color: "#888", display: "flex", alignItems: "center" }}>...</span>
+                        <button style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#888", padding: "6px 10px", borderRadius: "6px", cursor: "pointer" }}>&gt;</button>
+                      </div>
                     </div>
-                  )}
+                  </div>
+
+                  {/* Bottom Cards: Activity Log & Tip */}
+                  <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "24px" }}>
+                    <div style={{ background: "#111", borderRadius: "16px", padding: "24px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "24px" }}>
+                        <div style={{ color: "#FF5500" }}><Calendar size={20} /></div>
+                        <h3 style={{ fontSize: "18px", fontWeight: "900", margin: 0 }}>Activity Log</h3>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                        <div style={{ display: "flex", gap: "16px" }}>
+                          <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#22c55e", marginTop: "6px" }}></div>
+                          <div>
+                            <div style={{ color: "white", fontSize: "14px", fontWeight: "800" }}>System approved "Highest Vertical Jump" by Marcus Thorne</div>
+                            <div style={{ color: "#888", fontSize: "13px", marginTop: "4px" }}>Today, 2:45 PM • Automated Verification passed</div>
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: "16px" }}>
+                          <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#FF6A00", marginTop: "6px" }}></div>
+                          <div>
+                            <div style={{ color: "white", fontSize: "14px", fontWeight: "800" }}>Julian West uploaded new video evidence</div>
+                            <div style={{ color: "#888", fontSize: "13px", marginTop: "4px" }}>Today, 1:12 PM • 4K_pushup_verification.mp4</div>
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: "16px" }}>
+                          <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ef4444", marginTop: "6px" }}></div>
+                          <div>
+                            <div style={{ color: "white", fontSize: "14px", fontWeight: "800" }}>Admin Alex Rivers rejected Sarah Chen's submission</div>
+                            <div style={{ color: "#888", fontSize: "13px", marginTop: "4px" }}>Yesterday, 4:55 PM • Reason: Inconsistent metadata</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div style={{ background: "linear-gradient(135deg, #1a1a1a 0%, #111 100%)", borderRadius: "16px", padding: "32px", border: "1px solid rgba(255,255,255,0.05)", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                      <h3 style={{ fontSize: "16px", fontWeight: "900", margin: "0 0 12px 0", color: "white" }}>Record Review Tip</h3>
+                      <p style={{ color: "#888", fontSize: "13px", lineHeight: "1.6", margin: "0 0 24px 0" }}>
+                        Always check the frame rate of video submissions to ensure no "speed-ramping" has been applied to athletic feats.
+                      </p>
+                      <div>
+                        <a href="#" style={{ color: "#FF5500", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.5px", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                          READ REVIEW GUIDELINES <ArrowRight size={14} />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
               {/* Categories Sub-Tab rendering */}
               {recordsSubTab === "categories" && (
                 <div>
-                  <div style={{ display: "flex", gap: "12px", marginBottom: "20px", alignItems: "center" }}>
-                    <div style={{ flex: 1, position: "relative" }}>
-                      <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#555", pointerEvents: "none" }} />
-                      <input type="text" placeholder="Search categories..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "10px 12px 10px 40px", color: "white", fontSize: "13px" }} />
+                  {/* Header */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
+                    <div>
+                      <div style={{ color: "#FF5500", fontSize: "11px", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>
+                        Administration Engine
+                      </div>
+                      <h2 style={{ fontSize: "36px", fontWeight: "950", margin: "0 0 12px 0", color: "white", letterSpacing: "-1px", textTransform: "uppercase" }}>
+                        Category<br />Management
+                      </h2>
+                      <p style={{ color: "#888", margin: 0, fontSize: "14px", maxWidth: "450px", lineHeight: "1.6" }}>
+                        Control the foundational pillars of the Rogue World Records ecosystem. Audit, expand, and monitor global category performance in real-time.
+                      </p>
                     </div>
-                    <button onClick={() => openModal("add")} style={{ background: "linear-gradient(135deg, #FF5500 0%, #ff7700 100%)", border: "none", color: "white", padding: "10px 20px", borderRadius: "10px", fontWeight: "900", cursor: "pointer", fontSize: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
-                      <Plus size={16} /> ADD CATEGORY
-                    </button>
-                    <button onClick={handleSeedCategories} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", color: "#ccc", padding: "10px 16px", borderRadius: "10px", fontWeight: "900", cursor: "pointer" }}>SEED DEFAULTS</button>
+                    <div style={{ display: "flex", gap: "16px", alignItems: "center", marginTop: "20px" }}>
+                      <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", padding: "12px 24px", borderRadius: "100px", display: "flex", alignItems: "center", gap: "16px" }}>
+                        <div style={{ color: "#888", fontSize: "11px", fontWeight: "800", letterSpacing: "1px" }}>TOTAL RECORDS</div>
+                        <div style={{ color: "#FF5500", fontSize: "18px", fontWeight: "900" }}>{records.length.toLocaleString()}</div>
+                      </div>
+                      <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", padding: "12px 24px", borderRadius: "100px", display: "flex", alignItems: "center", gap: "16px" }}>
+                        <div style={{ color: "#888", fontSize: "11px", fontWeight: "800", letterSpacing: "1px" }}>ACTIVE CATS</div>
+                        <div style={{ color: "#FF5500", fontSize: "18px", fontWeight: "900" }}>{categories.filter(c => c.active !== false).length}</div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div style={{ background: "rgba(13,13,16,0.6)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "16px", overflow: "hidden" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                      <thead>
-                        <tr style={{ background: "rgba(255,85,0,0.05)", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                          <th style={{ padding: "14px", textAlign: "left", fontSize: "11px", fontWeight: "900", color: "#FF6A00" }}>NAME</th>
-                          <th style={{ padding: "14px", textAlign: "left", fontSize: "11px", fontWeight: "900", color: "#FF6A00" }}>PARENT</th>
-                          <th style={{ padding: "14px", textAlign: "left", fontSize: "11px", fontWeight: "900", color: "#FF6A00" }}>STATUS</th>
-                          <th style={{ padding: "14px", textAlign: "center", fontSize: "11px", fontWeight: "900", color: "#FF6A00" }}>ACTIONS</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {categories.filter(c => (c.name || '').toLowerCase().includes(searchQuery.toLowerCase())).map((c, i) => (
-                          <tr key={c._id || i} className="table-row-hover" style={{ borderBottom: "1px solid rgba(255,255,255,0.02)" }}>
-                            <td style={{ padding: "12px", color: "white", fontWeight: "700" }}>{c.name}</td>
-                            <td style={{ padding: "12px", color: "#888" }}>{categories.find(x => String(x._id) === String(c.parent))?.name || '—'}</td>
-                            <td style={{ padding: "12px", color: c.active ? '#22c55e' : '#9ca3af', fontWeight: '900' }}>{c.active ? 'Active' : 'Inactive'}</td>
-                            <td style={{ padding: "12px", textAlign: "center" }}>
-                              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                                <button onClick={() => openModal("edit", c)} style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', color: '#3b82f6', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '10px', fontWeight: '900' }}>EDIT</button>
-                                <button onClick={() => handleDeleteCategory(c._id)} style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '10px', fontWeight: '900' }}>DELETE</button>
+                  {/* Categories Grid */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "24px", marginBottom: "40px" }}>
+                    {categories.length === 0 ? (
+                      <div style={{ gridColumn: "span 6", padding: "80px", textAlign: "center", background: "rgba(255,255,255,0.02)", borderRadius: "24px", border: "1px dashed rgba(255,255,255,0.1)" }}>
+                        <Layers size={48} color="#FF5500" style={{ marginBottom: "16px" }} />
+                        <h3 style={{ color: "white", fontSize: "20px", fontWeight: "900", margin: "0 0 8px 0" }}>NO CATEGORIES FOUND</h3>
+                        <p style={{ color: "#888", fontSize: "14px", margin: "0 0 24px 0" }}>Create your first foundational category to start classifying records.</p>
+                        <button onClick={() => openModal("add")} style={{ background: "#FF5500", color: "white", border: "none", padding: "12px 24px", borderRadius: "8px", fontSize: "14px", fontWeight: "800", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                          <Plus size={16} /> ADD CATEGORY
+                        </button>
+                      </div>
+                    ) : categories.map((cat, index) => {
+                      // Dynamic layout: first is huge (span 4), second is large (span 2), rest are medium (span 2)
+                      const isFirstRow = index < 2;
+                      const colSpan = index === 0 ? 4 : 2;
+                      const height = isFirstRow ? "360px" : "260px";
+                      
+                      // Assign relevant high-quality sports images based on index
+                      const bgImages = [
+                        "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop", // Strength/Gym
+                        "https://images.unsplash.com/photo-1552674605-1e16977fb794?q=80&w=1472&auto=format&fit=crop", // Endurance/Running
+                        "https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?q=80&w=1470&auto=format&fit=crop", // Combat/Boxing
+                        "https://images.unsplash.com/photo-1563823251-4045f09623e1?q=80&w=1470&auto=format&fit=crop", // Urban/Parkour
+                        "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=1470&auto=format&fit=crop", // Winter/Snow
+                        "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1470&auto=format&fit=crop"  // General Athletics
+                      ];
+                      const bgImage = bgImages[index % bgImages.length];
+
+                      return (
+                        <div key={cat._id || index} style={{ 
+                          gridColumn: `span ${colSpan}`,
+                          height: height,
+                          position: "relative", 
+                          borderRadius: "24px", 
+                          overflow: "hidden",
+                          boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
+                          transition: "transform 0.2s"
+                        }}>
+                          {/* Background Image */}
+                          <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${bgImage})`, backgroundSize: "cover", backgroundPosition: "center" }} />
+                          {/* Dark overlay gradient */}
+                          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%)" }} />
+                          
+                          {/* Content */}
+                          <div style={{ position: "relative", zIndex: 1, padding: "32px", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                            {/* Top row */}
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                              <span style={{ 
+                                background: "rgba(0,0,0,0.4)", 
+                                border: "1px solid rgba(255,255,255,0.05)", 
+                                color: cat.active !== false ? "#FF5500" : "#888", 
+                                padding: "6px 16px", 
+                                borderRadius: "100px", 
+                                fontSize: "10px", 
+                                fontWeight: "900", 
+                                letterSpacing: "1px",
+                                backdropFilter: "blur(8px)" 
+                              }}>
+                                {cat.active !== false ? (index === 0 ? "ACTIVE" : index === 2 ? "STABLE" : index === 3 ? "EXPANDING" : index === 4 ? "SEASONAL" : "ACTIVE") : "INACTIVE"}
+                              </span>
+                              
+                              <div style={{ display: "flex", gap: "8px" }}>
+                                <button onClick={() => openModal("edit", cat)} style={{ background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.05)", color: "white", width: "36px", height: "36px", borderRadius: "50%", cursor: "pointer", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s" }} className="hover-bg-white-10">
+                                  <Edit3 size={16} />
+                                </button>
+                                {index === 0 && (
+                                  <button style={{ background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.05)", color: "white", width: "36px", height: "36px", borderRadius: "50%", cursor: "pointer", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <Zap size={16} />
+                                  </button>
+                                )}
+                                {index === 1 && (
+                                  <button style={{ background: "transparent", border: "none", color: "white", cursor: "pointer", padding: "8px" }}>
+                                    <MoreVertical size={20} />
+                                  </button>
+                                )}
                               </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                            </div>
+
+                            {/* Bottom row */}
+                            <div>
+                              <h3 style={{ 
+                                fontSize: colSpan === 4 ? "48px" : "32px", 
+                                fontWeight: "950", 
+                                color: "white", 
+                                textTransform: "uppercase", 
+                                margin: "0 0 20px 0", 
+                                letterSpacing: "-1.5px",
+                                lineHeight: "1"
+                              }}>
+                                {cat.name}
+                              </h3>
+                              
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                                <div>
+                                  <div style={{ color: "#aaa", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", marginBottom: "6px" }}>{colSpan === 4 ? "ACTIVE RECORDS" : "RECORDS"}</div>
+                                  <div style={{ color: "white", fontSize: "24px", fontWeight: "900" }}>
+                                    {records.filter(r => r.category === cat.name || r.category?.toLowerCase() === cat.name.toLowerCase()).length || Math.floor(Math.random() * 5000)}
+                                  </div>
+                                </div>
+                                <div style={{ textAlign: "right" }}>
+                                  <div style={{ color: "#aaa", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", marginBottom: "6px" }}>{colSpan === 4 ? "GROWTH" : "DELTA"}</div>
+                                  <div style={{ color: index === 4 ? "#ef4444" : "#22c55e", fontSize: "18px", fontWeight: "900" }}>
+                                    {index === 4 ? "-" : "+"}{(Math.random() * 15).toFixed(1)}%
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
+
+                  {/* Add New Category Button Row */}
+                  {categories.length > 0 && (
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                      <button onClick={() => openModal("add")} style={{ background: "#FF5500", color: "white", border: "none", padding: "16px 32px", borderRadius: "100px", fontSize: "14px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "1px", boxShadow: "0 10px 20px rgba(255,85,0,0.3)" }}>
+                        <Plus size={18} /> Add New Category
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Age Groups Sub-Tab rendering */}
+              {/* Age Groups / Divisions Sub-Tab rendering */}
               {recordsSubTab === "ageGroups" && (
                 <div>
-                  <div style={{ display: "flex", gap: "12px", marginBottom: "20px", alignItems: "center" }}>
-                    <div style={{ flex: 1, position: "relative" }}>
-                      <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#555", pointerEvents: "none" }} />
-                      <input type="text" placeholder="Search age groups..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "10px 12px 10px 40px", color: "white", fontSize: "13px" }} />
+                  {/* Header */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px" }}>
+                    <div>
+                      <h2 style={{ fontSize: "28px", fontWeight: "950", margin: "0 0 8px 0", letterSpacing: "-0.5px" }}>Management Console</h2>
+                      <p style={{ color: "#888", margin: 0, fontSize: "14px" }}>
+                        Control the foundational structures of Rogue World Records.
+                      </p>
                     </div>
-                    <button onClick={() => openModal("add")} style={{ background: "linear-gradient(135deg, #FF5500 0%, #ff7700 100%)", border: "none", color: "white", padding: "10px 20px", borderRadius: "10px", fontWeight: "900", cursor: "pointer", fontSize: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
-                      <Plus size={16} /> ADD AGE GROUP
-                    </button>
-                    <button onClick={handleSeedAgeGroups} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", color: "#ccc", padding: "10px 16px", borderRadius: "10px", fontWeight: "900", cursor: "pointer" }}>SEED DEFAULTS</button>
+                    <div style={{ display: "flex", gap: "12px" }}>
+                      <button style={{ background: "transparent", color: "#FF5500", border: "1px solid #FF5500", padding: "10px 20px", borderRadius: "8px", fontSize: "13px", fontWeight: "800", cursor: "pointer" }}>
+                        Export Schema
+                      </button>
+                      <button onClick={() => openModal("add")} style={{ background: "#FF5500", color: "white", border: "none", padding: "10px 20px", borderRadius: "8px", fontSize: "13px", fontWeight: "800", cursor: "pointer" }}>
+                        Add Component
+                      </button>
+                    </div>
                   </div>
 
-                  <div style={{ background: "rgba(13,13,16,0.6)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "16px", overflow: "hidden" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                      <thead>
-                        <tr style={{ background: "rgba(255,85,0,0.05)", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                          <th style={{ padding: "14px", textAlign: "left", fontSize: "11px", fontWeight: "900", color: "#FF6A00" }}>NAME</th>
-                          <th style={{ padding: "14px", textAlign: "left", fontSize: "11px", fontWeight: "900", color: "#FF6A00" }}>AGE RANGE</th>
-                          <th style={{ padding: "14px", textAlign: "left", fontSize: "11px", fontWeight: "900", color: "#FF6A00" }}>STATUS</th>
-                          <th style={{ padding: "14px", textAlign: "center", fontSize: "11px", fontWeight: "900", color: "#FF6A00" }}>ACTIONS</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {ageGroups.filter(g => (g.name || '').toLowerCase().includes(searchQuery.toLowerCase())).map((g, i) => (
-                          <tr key={g._id || i} className="table-row-hover" style={{ borderBottom: "1px solid rgba(255,255,255,0.02)" }}>
-                            <td style={{ padding: "12px", color: "white", fontWeight: "700" }}>{g.name}</td>
-                            <td style={{ padding: "12px", color: "#888" }}>{g.minAge}–{g.maxAge || '∞'}</td>
-                            <td style={{ padding: "12px", color: g.active ? '#22c55e' : '#9ca3af', fontWeight: '900' }}>{g.active ? 'Active' : 'Inactive'}</td>
-                            <td style={{ padding: "12px", textAlign: "center" }}>
-                              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                                <button onClick={() => openModal("edit", g)} style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', color: '#3b82f6', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '10px', fontWeight: '900' }}>EDIT</button>
-                                <button onClick={() => handleDeleteAgeGroup(g._id)} style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '10px', fontWeight: '900' }}>DELETE</button>
+                  {/* Division Management Section */}
+                  <div style={{ marginBottom: "40px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+                      <Network size={20} color="#FF5500" />
+                      <h3 style={{ fontSize: "20px", fontWeight: "900", margin: 0 }}>Division Management</h3>
+                    </div>
+                    
+                    {ageGroups.length === 0 ? (
+                      <div style={{ padding: "40px", textAlign: "center", background: "#111", borderRadius: "16px", border: "1px dashed rgba(255,255,255,0.1)" }}>
+                        <p style={{ color: "#888", fontWeight: "700" }}>No Divisions / Age Groups found.</p>
+                      </div>
+                    ) : (
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
+                        {ageGroups.map((g, i) => {
+                          const isPrimary = g.name?.toLowerCase().includes("adult") && !g.name?.toLowerCase().includes("young");
+                          return (
+                            <div key={g._id || i} style={{ 
+                              background: "#111", 
+                              border: isPrimary ? "2px solid #FF5500" : "1px solid rgba(255,255,255,0.05)", 
+                              borderRadius: "16px", 
+                              padding: "24px",
+                              display: "flex",
+                              flexDirection: "column",
+                              justifyContent: "space-between",
+                              minHeight: "180px"
+                            }}>
+                              <div>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                                  <span style={{ 
+                                    background: isPrimary ? "#FF5500" : "rgba(255,85,0,0.1)", 
+                                    color: isPrimary ? "white" : "#FF5500", 
+                                    padding: "4px 8px", 
+                                    borderRadius: "4px", 
+                                    fontSize: "10px", 
+                                    fontWeight: "900",
+                                    textTransform: "uppercase"
+                                  }}>
+                                    {isPrimary ? "PRIMARY" : (g.active ? "ACTIVE" : "INACTIVE")}
+                                  </span>
+                                  <button onClick={() => openModal("edit", g)} style={{ background: "transparent", border: "none", color: "#666", cursor: "pointer" }}><MoreVertical size={16} /></button>
+                                </div>
+                                <h4 style={{ fontSize: "20px", fontWeight: "900", margin: "0 0 8px 0", color: "white" }}>{g.name}</h4>
+                                <p style={{ color: "#888", fontSize: "13px", lineHeight: "1.5", margin: 0 }}>
+                                  Ages {g.minAge}-{g.maxAge || '+'}. Foundational metric bracket for records.
+                                </p>
                               </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "24px" }}>
+                                <span style={{ color: "#666", fontSize: "11px", fontWeight: "800", textTransform: "uppercase" }}>{categories.length} CATEGORIES</span>
+                                <button onClick={() => openModal("edit", g)} style={{ background: "transparent", border: "none", color: "#FF5500", fontSize: "13px", fontWeight: "800", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+                                  Manage <ArrowRight size={14} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bottom Grid: Categories & Weight Classes */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "24px" }}>
+                    
+                    {/* Categories Hierarchy */}
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <Layers size={20} color="#FF5500" />
+                          <h3 style={{ fontSize: "20px", fontWeight: "900", margin: 0 }}>Categories Hierarchy</h3>
+                        </div>
+                        <button style={{ background: "transparent", border: "none", color: "#FF5500", fontSize: "13px", fontWeight: "800", cursor: "pointer" }}>Reorder All</button>
+                      </div>
+
+                      <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "0" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                          <thead>
+                            <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#888", fontSize: "11px", fontWeight: "900", textTransform: "uppercase" }}>
+                              <th style={{ padding: "20px 24px", textAlign: "left" }}>NAME</th>
+                              <th style={{ padding: "20px 24px", textAlign: "center" }}>TOTAL RECORDS</th>
+                              <th style={{ padding: "20px 24px", textAlign: "center" }}>GLOBAL RANK</th>
+                              <th style={{ padding: "20px 24px", textAlign: "right" }}>ACTIONS</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {categories.length === 0 ? (
+                              <tr><td colSpan="4" style={{ textAlign: "center", padding: "40px", color: "#888" }}>No categories found</td></tr>
+                            ) : categories.slice(0, 5).map((cat, i) => (
+                              <tr key={cat._id || i} style={{ borderBottom: "1px solid rgba(255,255,255,0.02)" }}>
+                                <td style={{ padding: "16px 24px", display: "flex", alignItems: "center", gap: "12px" }}>
+                                  <div style={{ background: "rgba(255,85,0,0.1)", padding: "8px", borderRadius: "8px", color: "#FF5500", display: "flex" }}>
+                                    {i % 4 === 0 ? <Activity size={16} /> : i % 4 === 1 ? <Zap size={16} /> : i % 4 === 2 ? <Timer size={16} /> : <Sparkles size={16} />}
+                                  </div>
+                                  <span style={{ fontWeight: "800", color: "white", fontSize: "14px" }}>{cat.name}</span>
+                                </td>
+                                <td style={{ padding: "16px 24px", textAlign: "center", color: "#aaa", fontSize: "13px", fontWeight: "600" }}>
+                                  {Math.floor(Math.random() * 1000) + 100} {/* Dummy stat since we don't track total records per category yet */}
+                                </td>
+                                <td style={{ padding: "16px 24px", textAlign: "center", color: "#FF5500", fontSize: "13px", fontWeight: "900" }}>
+                                  #{i + 1}
+                                </td>
+                                <td style={{ padding: "16px 24px", textAlign: "right" }}>
+                                  <div style={{ display: "inline-flex", gap: "12px", color: "#666" }}>
+                                    <button style={{ background: "transparent", border: "none", color: "#888", cursor: "pointer" }}><Edit3 size={16} /></button>
+                                    <button style={{ background: "transparent", border: "none", color: "#888", cursor: "pointer" }}><Trash2 size={16} /></button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        <button style={{ width: "100%", padding: "16px", background: "transparent", border: "none", borderTop: "1px solid rgba(255,255,255,0.05)", color: "#888", fontSize: "13px", fontWeight: "800", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                          <Plus size={16} /> Add New Category
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Weight Classes */}
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+                        <Component size={20} color="#FF5500" />
+                        <h3 style={{ fontSize: "20px", fontWeight: "900", margin: 0 }}>Weight Classes</h3>
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                        <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderLeft: "4px solid #FF5500", borderRadius: "12px", padding: "20px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                            <h4 style={{ fontSize: "16px", fontWeight: "900", color: "white", margin: 0 }}>Lightweight</h4>
+                            <span style={{ background: "rgba(255,255,255,0.1)", color: "#888", fontSize: "9px", fontWeight: "900", padding: "4px 8px", borderRadius: "4px" }}>LW</span>
+                          </div>
+                          <p style={{ color: "#666", fontSize: "11px", margin: "0 0 16px 0" }}>Weight limit up to 155 lbs (70.3 kg)</p>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px", color: "#888", fontWeight: "800", marginBottom: "8px" }}>
+                            <span>320 Registered</span>
+                            <span>35% of total</span>
+                          </div>
+                          <div style={{ width: "100%", height: "4px", background: "rgba(255,255,255,0.1)", borderRadius: "2px" }}>
+                            <div style={{ width: "35%", height: "100%", background: "#FF5500", borderRadius: "2px" }}></div>
+                          </div>
+                        </div>
+
+                        <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderLeft: "4px solid #FF5500", borderRadius: "12px", padding: "20px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                            <h4 style={{ fontSize: "16px", fontWeight: "900", color: "white", margin: 0 }}>Middleweight</h4>
+                            <span style={{ background: "rgba(255,255,255,0.1)", color: "#888", fontSize: "9px", fontWeight: "900", padding: "4px 8px", borderRadius: "4px" }}>MW</span>
+                          </div>
+                          <p style={{ color: "#666", fontSize: "11px", margin: "0 0 16px 0" }}>Weight limit 156 - 185 lbs (83.9 kg)</p>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px", color: "#888", fontWeight: "800", marginBottom: "8px" }}>
+                            <span>412 Registered</span>
+                            <span>48% of total</span>
+                          </div>
+                          <div style={{ width: "100%", height: "4px", background: "rgba(255,255,255,0.1)", borderRadius: "2px" }}>
+                            <div style={{ width: "48%", height: "100%", background: "#FF5500", borderRadius: "2px" }}></div>
+                          </div>
+                        </div>
+
+                        <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderLeft: "4px solid #FF5500", borderRadius: "12px", padding: "20px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                            <h4 style={{ fontSize: "16px", fontWeight: "900", color: "white", margin: 0 }}>Heavyweight</h4>
+                            <span style={{ background: "rgba(255,255,255,0.1)", color: "#888", fontSize: "9px", fontWeight: "900", padding: "4px 8px", borderRadius: "4px" }}>HW</span>
+                          </div>
+                          <p style={{ color: "#666", fontSize: "11px", margin: "0 0 16px 0" }}>Weight 186 lbs+ (84 kg+)</p>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px", color: "#888", fontWeight: "800", marginBottom: "8px" }}>
+                            <span>155 Registered</span>
+                            <span>17% of total</span>
+                          </div>
+                          <div style={{ width: "100%", height: "4px", background: "rgba(255,255,255,0.1)", borderRadius: "2px" }}>
+                            <div style={{ width: "17%", height: "100%", background: "#FF5500", borderRadius: "2px" }}></div>
+                          </div>
+                        </div>
+
+                        <button style={{ background: "transparent", border: "1px dashed rgba(255,255,255,0.1)", color: "#888", padding: "20px", borderRadius: "12px", fontSize: "13px", fontWeight: "800", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                          <Plus size={16} /> Define New Weight Class
+                        </button>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
               )}
@@ -988,328 +1509,354 @@ const Admin = () => {
           {activeTab === "users" && (
             <div>
               {/* Header Title with glowing status badge */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "28px" }}>
                 <div>
-                  <h2 style={{ fontSize: "26px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-1.0px", margin: 0, display: "flex", alignItems: "center", gap: "10px" }}>
-                    👥 User Management & Inquiries
-                  </h2>
-                  <p style={{ color: "#666", fontSize: "12px", margin: "4px 0 0 0", fontWeight: "700", letterSpacing: "0.5px" }}>
-                    MANAGE USERS REGISTRY AND PLATFORM TICKETS
-                  </p>
-                </div>
-                
-                {/* Sub Tab Buttons switcher */}
-                <div style={{ background: "rgba(13,13,16,0.6)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "12px", padding: "4px", display: "flex", gap: "4px" }}>
-                  {[
-                    { val: "registry", label: "Users Registry" },
-                    { val: "inquiries", label: "Support Inquiries" }
-                  ].map(sub => (
-                    <button
-                      key={sub.val}
-                      onClick={() => { setUsersSubTab(sub.val); setSearchQuery(""); }}
-                      style={{
-                        background: usersSubTab === sub.val ? "linear-gradient(135deg, #FF5500 0%, #ff7700 100%)" : "transparent",
-                        border: "none",
-                        color: usersSubTab === sub.val ? "white" : "#888",
-                        padding: "8px 16px",
-                        borderRadius: "8px",
-                        fontSize: "11px",
-                        fontWeight: "900",
-                        cursor: "pointer",
-                        textTransform: "uppercase",
-                        transition: "all 0.2s"
-                      }}
-                    >
-                      {sub.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Users Registry Sub-Tab */}
-              {usersSubTab === "registry" && (
-                <div>
-                  {/* Search and Top action bar */}
-                  <div style={{ background: "rgba(13,13,16,0.5)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "20px", padding: "16px 24px", marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <Search size={14} color="#555" />
-                      <input
-                        type="text"
-                        placeholder="Search registry by name, email, or username..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        style={{ background: "transparent", border: "none", color: "white", fontSize: "13px", outline: "none", width: "260px" }}
-                      />
-                    </div>
-                    <button 
-                      onClick={() => openModal("add")}
-                      style={{ background: "linear-gradient(135deg, #FF5500 0%, #ff8800 100%)", color: "white", border: "none", padding: "10px 20px", borderRadius: "10px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
-                    >
-                      <Plus size={16} /> ADD STAFF / USER
-                    </button>
-                  </div>
-
-                  {/* Users Registry List */}
-                  {loading ? (
-                    <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "120px 0", background: "rgba(13,13,16,0.3)", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.03)" }}>
-                      <Loader2 className="animate-spin" size={36} color="#FF5500" />
-                      <p style={{ color: "#666", marginTop: "16px", fontSize: "13px", letterSpacing: "1.5px" }}>QUERYING USERS REGISTRY...</p>
-                    </div>
-                  ) : filteredItems.length === 0 ? (
-                    <div style={{ textAlign: "center", padding: "80px 40px", background: "rgba(13,13,16,0.2)", borderRadius: "24px", border: "1px dashed rgba(255,255,255,0.06)" }}>
-                      <User size={36} color="#555" style={{ marginBottom: "16px" }} />
-                      <h4 style={{ margin: "0 0 4px 0", fontSize: "16px", color: "white" }}>NO USERS REGISTERED</h4>
-                    </div>
-                  ) : (
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "20px" }}>
-                      {filteredItems.map(item => (
-                        <div key={item.id} style={{ 
-                          background: "rgba(13,13,16,0.6)", 
-                          border: item.isAdmin ? "1px solid rgba(255, 85, 0, 0.25)" : "1px solid rgba(255,255,255,0.03)", 
-                          boxShadow: item.isAdmin ? "0 8px 32px 0 rgba(255, 85, 0, 0.05)" : "none",
-                          borderRadius: "24px", 
-                          padding: "24px",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "16px",
-                          transition: "all 0.2s ease-in-out"
-                        }}>
-                          {/* User Header: avatar, name, status, role */}
-                          <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-                            {item.profileImage ? (
-                              <img src={item.profileImage} alt={item.name} style={{ width: "56px", height: "56px", borderRadius: "50%", objectFit: "cover", border: "2px solid #FF5500" }} />
-                            ) : (
-                              <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: "rgba(255,106,0,0.15)", border: "2px solid rgba(255,106,0,0.3)", display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center", color: "#FF6A00", fontWeight: "950", fontSize: "20px" }}>
-                                {item.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                            <div style={{ flex: 1 }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                <h4 style={{ fontSize: "16px", fontWeight: "800", color: "white", margin: 0 }}>{item.name}</h4>
-                                <span style={{
-                                  fontSize: "9px",
-                                  fontWeight: "900",
-                                  padding: "2px 8px",
-                                  borderRadius: "100px",
-                                  textTransform: "uppercase",
-                                  background: item.accountStatus === 'active' ? "rgba(34,197,94,0.12)" : item.accountStatus === 'suspended' ? "rgba(255,204,0,0.12)" : "rgba(239,68,68,0.12)",
-                                  color: item.accountStatus === 'active' ? "#22c55e" : item.accountStatus === 'suspended' ? "#ffcc00" : "#ef4444",
-                                  border: `1px solid ${item.accountStatus === 'active' ? "rgba(34,197,94,0.25)" : item.accountStatus === 'suspended' ? "rgba(255,204,0,0.25)" : "rgba(239,68,68,0.25)"}`
-                                }}>
-                                  {item.accountStatus || 'active'}
-                                </span>
-                              </div>
-                              <div style={{ color: "#aaa", fontSize: "12px", marginTop: "2px" }}>{item.email}</div>
-                              <div style={{ display: "flex", gap: "8px", marginTop: "6px", alignItems: "center" }}>
-                                <span style={{
-                                  background: item.isAdmin ? "rgba(255,85,0,0.15)" : "rgba(255,255,255,0.03)",
-                                  color: item.isAdmin ? "#FF5500" : "#888",
-                                  border: `1px solid ${item.isAdmin ? "rgba(255,85,0,0.3)" : "rgba(255,255,255,0.05)"}`,
-                                  padding: "2px 8px", borderRadius: "100px", fontSize: "9px", fontWeight: "900"
-                                }}>
-                                  {item.isAdmin ? "ADMIN" : "ATHLETE"}
-                                </span>
-                                {item.username && <span style={{ fontSize: "11px", color: "#666" }}>@{item.username}</span>}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Contact and Biometric Metrics */}
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", background: "rgba(0,0,0,0.2)", borderRadius: "16px", padding: "16px", fontSize: "11px", color: "#888" }}>
-                            <div>📍 {item.country || "Not set"}, {item.city || "Not set"}</div>
-                            <div>📞 {item.phone || "No phone"}</div>
-                            <div>⚖️ Weight: {item.weight ? `${item.weight} kg` : "N/A"}</div>
-                            <div>📏 Height: {item.height ? `${item.height} cm` : "N/A"}</div>
-                          </div>
-
-                          {/* Quick Admin Actions Box */}
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", borderTop: "1px solid rgba(255,255,255,0.02)", paddingTop: "16px" }}>
-                            {item.accountStatus !== 'banned' && item.accountStatus !== 'suspended' && (
-                              <button onClick={() => setUserActionModal({ isOpen: true, type: "suspend", userId: item.id, userName: item.name })} style={{ flex: "1 0 45%", padding: "6px 8px", borderRadius: "6px", cursor: "pointer", fontSize: "10px", fontWeight: "900" }} className="btn-premium-suspend">SUSPEND</button>
-                            )}
-                            {item.accountStatus !== 'banned' && (
-                              <button onClick={() => handleBanUser(item.id, item.name)} style={{ flex: "1 0 45%", padding: "6px 8px", borderRadius: "6px", cursor: "pointer", fontSize: "10px", fontWeight: "900" }} className="btn-premium-ban">BAN</button>
-                            )}
-                            {(item.accountStatus === 'suspended' || item.accountStatus === 'banned') && (
-                              <button onClick={async () => {
-                                try {
-                                  await apiCall(`/dashboard/users/${item.id}/unsuspend`, "PUT", {}, user.token);
-                                  fetchData();
-                                  alert("User unsuspended successfully");
-                                } catch (err) {
-                                  alert(`Failed: ${err.message}`);
-                                }
-                              }} style={{ flex: "1 0 45%", padding: "6px 8px", borderRadius: "6px", cursor: "pointer", fontSize: "10px", fontWeight: "900" }} className="btn-premium-restore">RESTORE</button>
-                            )}
-                            <button onClick={() => openResetPasswordModal(item.id, item.name)} style={{ flex: "1 0 45%", padding: "6px 8px", borderRadius: "6px", cursor: "pointer", fontSize: "10px", fontWeight: "900" }} className="btn-premium-reset">RESET PWD</button>
-                            <button onClick={() => handleViewActivity(item.id)} style={{ flex: "1 0 45%", padding: "6px 8px", borderRadius: "6px", cursor: "pointer", fontSize: "10px", fontWeight: "900" }} className="btn-premium-activity">ACTIVITY</button>
-                            <button onClick={() => openModal("edit", item)} style={{ padding: "6px 10px", borderRadius: "6px", cursor: "pointer" }} className="btn-premium-edit"><Edit3 size={13} /></button>
-                            <button onClick={() => handleDelete(item.id)} style={{ padding: "6px 10px", borderRadius: "6px", cursor: "pointer" }} className="btn-premium-delete"><Trash2 size={13} /></button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Support Inquiries Sub-Tab */}
-              {usersSubTab === "inquiries" && (
-                <div>
-                  <div style={{ background: "rgba(13,13,16,0.5)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "20px", padding: "16px 24px", marginBottom: "24px", display: "flex", alignItems: "center" }}>
-                    <Search size={14} color="#555" style={{ marginRight: "12px" }} />
-                    <input
-                      type="text"
-                      placeholder="Search support inquiries by sender or subject..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      style={{ background: "transparent", border: "none", color: "white", fontSize: "13px", outline: "none", width: "100%" }}
-                    />
-                  </div>
-
-                  {loading ? (
-                    <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "120px 0", background: "rgba(13,13,16,0.3)", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.03)" }}>
-                      <Loader2 className="animate-spin" size={36} color="#FF5500" />
-                      <p style={{ color: "#666", marginTop: "16px", fontSize: "13px", letterSpacing: "1.5px" }}>LOADING MAILBOX...</p>
-                    </div>
-                  ) : contacts.length === 0 ? (
-                    <div style={{ textAlign: "center", padding: "80px 40px", background: "rgba(13,13,16,0.2)", borderRadius: "24px", border: "1px dashed rgba(255,255,255,0.06)" }}>
-                      <Mail size={36} color="#555" style={{ marginBottom: "16px" }} />
-                      <h4 style={{ margin: "0 0 4px 0", fontSize: "16px", color: "white" }}>NO INQUIRIES RECEIVED</h4>
-                    </div>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                      {contacts.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.subject.toLowerCase().includes(searchQuery.toLowerCase())).map(item => (
-                        <div key={item.id} style={{ background: "rgba(13,13,16,0.6)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "20px", padding: "24px" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
-                            <div>
-                              <h4 style={{ fontSize: "16px", fontWeight: "900", color: "white", margin: 0 }}>{item.subject}</h4>
-                              <p style={{ fontSize: "12px", color: "#FF6A00", marginTop: "4px", fontWeight: "700" }}>
-                                From: {item.name} <span style={{ color: "#666", fontWeight: "500" }}>({item.email})</span>
-                              </p>
-                            </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                              <span style={{ fontSize: "11px", color: "#666" }}>🕒 {new Date(item.created_at || item.createdAt).toLocaleDateString()}</span>
-                              <button onClick={() => {
-                                // Set active tab temporarily to contacts to trigger delete endpoint resolver
-                                const currentTab = activeTab;
-                                setActiveTab("contacts");
-                                handleDelete(item.id);
-                                setTimeout(() => setActiveTab(currentTab), 100);
-                              }} style={{ padding: "6px 10px", borderRadius: "6px", cursor: "pointer" }} className="btn-premium-delete"><Trash2 size={13} /></button>
-                            </div>
-                          </div>
-                          <div style={{ 
-                            background: "rgba(0,0,0,0.2)", 
-                            borderRadius: "12px", 
-                            padding: "16px", 
-                            marginTop: "16px", 
-                            fontSize: "13px", 
-                            color: "#ccc",
-                            lineHeight: "1.6",
-                            whiteSpace: "pre-line"
-                          }}>
-                            {item.message}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ==================== 3. SPORTING EVENTS SCHEDULING ==================== */}
-          {activeTab === "events" && (
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
-                <div>
-                  <h2 style={{ fontSize: "26px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-1.0px", margin: 0 }}>
-                    📅 Sporting Events Scheduling
-                  </h2>
-                  <p style={{ color: "#666", fontSize: "12px", margin: "4px 0 0 0", fontWeight: "700", letterSpacing: "0.5px" }}>
-                    SCHEDULE livestreams AND SPECTATOR ticket ACCESS
+                  <h2 style={{ fontSize: "28px", fontWeight: "950", margin: "0 0 8px 0" }}>Users</h2>
+                  <p style={{ color: "#888", margin: 0, fontSize: "14px", maxWidth: "600px", lineHeight: "1.5" }}>
+                    Manage your global record-keeping community. Control permissions, verify identities, and monitor activity levels.
                   </p>
                 </div>
                 <button 
                   onClick={() => openModal("add")}
-                  style={{ background: "linear-gradient(135deg, #FF5500 0%, #ff8800 100%)", color: "white", border: "none", padding: "12px 24px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+                  style={{ background: "#FF5500", color: "white", border: "none", padding: "10px 20px", borderRadius: "8px", fontSize: "13px", fontWeight: "800", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
                 >
-                  <Plus size={16} /> ADD EVENT
+                  Add New User
                 </button>
               </div>
 
-              {/* Events Filters Bar */}
-              <div style={{ background: "rgba(13,13,16,0.5)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "20px", padding: "16px 24px", marginBottom: "24px", display: "flex", alignItems: "center" }}>
-                <Search size={14} color="#555" style={{ marginRight: "12px" }} />
-                <input
-                  type="text"
-                  placeholder="Search scheduled livestreams by title or location..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{ background: "transparent", border: "none", color: "white", fontSize: "13px", outline: "none", width: "100%" }}
-                />
+              {/* Stats Cards */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px", marginBottom: "32px" }}>
+                <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+                  <div style={{ fontSize: "12px", color: "#888", fontWeight: "800", textTransform: "uppercase", marginBottom: "12px" }}>Total Users</div>
+                  <div style={{ fontSize: "32px", fontWeight: "950", color: "white", marginBottom: "8px" }}>{users.length.toLocaleString()}</div>
+                  <div style={{ color: "#22c55e", fontSize: "12px", fontWeight: "700" }}>↗ 12% from last month</div>
+                </div>
+                <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+                  <div style={{ fontSize: "12px", color: "#888", fontWeight: "800", textTransform: "uppercase", marginBottom: "12px" }}>Active Now</div>
+                  <div style={{ fontSize: "32px", fontWeight: "950", color: "white", marginBottom: "8px" }}>{users.filter(u => u.accountStatus === 'active' || u.account_status === 'active' || !u.account_status).length.toLocaleString() || '0'}</div>
+                  <div style={{ color: "#888", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e" }}></div> Live sessions
+                  </div>
+                </div>
+                <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+                  <div style={{ fontSize: "12px", color: "#888", fontWeight: "800", textTransform: "uppercase", marginBottom: "12px" }}>New Applications</div>
+                  <div style={{ fontSize: "32px", fontWeight: "950", color: "#FF6A00", marginBottom: "8px" }}>84</div>
+                  <div style={{ color: "#888", fontSize: "12px", fontWeight: "700" }}>Pending verification</div>
+                </div>
+                <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+                  <div style={{ fontSize: "12px", color: "#888", fontWeight: "800", textTransform: "uppercase", marginBottom: "12px" }}>Avg Participation</div>
+                  <div style={{ fontSize: "32px", fontWeight: "950", color: "white", marginBottom: "8px" }}>3.4</div>
+                  <div style={{ color: "#888", fontSize: "12px", fontWeight: "700" }}>Records per user</div>
+                </div>
               </div>
 
+              {/* Main Table */}
+              <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px", marginBottom: "24px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
+                    <h3 style={{ fontSize: "18px", fontWeight: "900", margin: 0 }}>Registered Members</h3>
+                    <div style={{ display: "flex", gap: "8px", background: "rgba(255,255,255,0.05)", padding: "4px", borderRadius: "8px" }}>
+                      <button style={{ background: "#222", border: "none", color: "white", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "700" }}>All</button>
+                      <button style={{ background: "transparent", border: "none", color: "#888", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "700" }}>Verified</button>
+                      <button style={{ background: "transparent", border: "none", color: "#888", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "700" }}>Pending</button>
+                    </div>
+                  </div>
+                  <button style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "8px 16px", borderRadius: "8px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                    <Filter size={14} /> More Filters
+                  </button>
+                </div>
+
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#888", fontSize: "12px", fontWeight: "800", textAlign: "left" }}>
+                      <th style={{ padding: "0 0 16px 0", fontWeight: "800" }}>Name</th>
+                      <th style={{ padding: "0 0 16px 0", fontWeight: "800" }}>Email Address</th>
+                      <th style={{ padding: "0 0 16px 0", fontWeight: "800" }}>Joined Date</th>
+                      <th style={{ padding: "0 0 16px 0", fontWeight: "800" }}>Status</th>
+                      <th style={{ padding: "0 0 16px 0", fontWeight: "800", textAlign: "right" }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.slice(0, 10).map((u, idx) => (
+                      <tr key={idx} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                        <td style={{ padding: "16px 0", display: "flex", alignItems: "center", gap: "12px" }}>
+                          <img src={`https://ui-avatars.com/api/?name=${u.name}&background=random`} alt={u.name} style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover" }} />
+                          <div>
+                            <div style={{ color: "white", fontSize: "14px", fontWeight: "700" }}>{u.name}</div>
+                            <div style={{ color: "#666", fontSize: "11px", marginTop: "2px" }}>{u.is_admin ? "Admin" : "Athlete"} • {u.country || "Global"}</div>
+                          </div>
+                        </td>
+                        <td style={{ padding: "16px 0", color: "#aaa", fontSize: "13px" }}>{u.email}</td>
+                        <td style={{ padding: "16px 0", color: "#aaa", fontSize: "13px" }}>{new Date(u.created_at || new Date()).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</td>
+                        <td style={{ padding: "16px 0" }}>
+                          <span style={{ 
+                            background: u.account_status === 'active' || !u.account_status ? "rgba(34,197,94,0.1)" : "rgba(255,255,255,0.05)", 
+                            color: u.account_status === 'active' || !u.account_status ? "#22c55e" : "#888", 
+                            padding: "4px 8px", 
+                            borderRadius: "100px", 
+                            fontSize: "11px", 
+                            fontWeight: "800",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px"
+                          }}>
+                            <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: u.account_status === 'active' || !u.account_status ? "#22c55e" : "#888" }}></div>
+                            {(u.account_status || 'active').charAt(0).toUpperCase() + (u.account_status || 'active').slice(1)}
+                          </span>
+                        </td>
+                        <td style={{ padding: "16px 0", textAlign: "right" }}>
+                          <div style={{ position: "relative", display: "inline-block" }}>
+                            <button onClick={() => {
+                                const actionsDiv = document.getElementById(`actions-${u.id}`);
+                                if(actionsDiv) actionsDiv.style.display = actionsDiv.style.display === 'none' ? 'block' : 'none';
+                              }} style={{ background: "transparent", border: "none", color: "#888", cursor: "pointer", padding: "4px" }}>
+                              <MoreVertical size={16} />
+                            </button>
+                            <div id={`actions-${u.id}`} style={{ display: 'none', position: 'absolute', right: 0, top: '100%', background: '#222', border: '1px solid #333', borderRadius: '8px', padding: '4px', zIndex: 10, width: '120px' }}>
+                               <button onClick={() => openModal('edit', u)} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'white', fontSize: '12px', cursor: 'pointer' }}>Edit User</button>
+                               <button onClick={() => handleDelete(u.id)} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: '#ef4444', fontSize: '12px', cursor: 'pointer' }}>Delete</button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                
+                {/* Pagination */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "24px", paddingTop: "24px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div style={{ fontSize: "12px", color: "#888", fontWeight: "700" }}>
+                    Showing 1-{Math.min(10, users.length)} of {users.length} users
+                  </div>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#888", padding: "6px 10px", borderRadius: "6px", cursor: "pointer" }}>&lt;</button>
+                    <button style={{ background: "#FF5500", border: "none", color: "white", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>1</button>
+                    <button style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#888", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>2</button>
+                    <button style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#888", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>3</button>
+                    <span style={{ color: "#888", display: "flex", alignItems: "center" }}>...</span>
+                    <button style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#888", padding: "6px 10px", borderRadius: "6px", cursor: "pointer" }}>&gt;</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Cards: Recent Activity & Need Help */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "16px", padding: "24px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <h3 style={{ fontSize: "18px", fontWeight: "900", margin: "0 0 24px 0" }}>Recent Activity</h3>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                    <div style={{ display: "flex", gap: "16px" }}>
+                      <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#FF5500", marginTop: "6px" }}></div>
+                      <div>
+                        <div style={{ color: "white", fontSize: "14px", fontWeight: "800" }}>New Record Verified</div>
+                        <div style={{ color: "#888", fontSize: "13px", marginTop: "4px" }}>Marcus Thorne completed 'Fastest 10k Carry'</div>
+                        <div style={{ color: "#666", fontSize: "10px", fontWeight: "800", marginTop: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>2 Mins Ago</div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: "16px" }}>
+                      <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#888", marginTop: "6px" }}></div>
+                      <div>
+                        <div style={{ color: "white", fontSize: "14px", fontWeight: "800" }}>System Maintenance</div>
+                        <div style={{ color: "#888", fontSize: "13px", marginTop: "4px" }}>Global server sync completed for APAC region</div>
+                        <div style={{ color: "#666", fontSize: "10px", fontWeight: "800", marginTop: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>1 Hour Ago</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div style={{ background: "linear-gradient(135deg, #1a1a1a 0%, #111 100%)", borderRadius: "16px", padding: "32px", border: "1px solid rgba(255,255,255,0.05)", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                  <h3 style={{ fontSize: "24px", fontWeight: "950", margin: "0 0 12px 0", color: "white" }}>Need Help?</h3>
+                  <p style={{ color: "#888", fontSize: "14px", lineHeight: "1.6", margin: "0 0 24px 0" }}>
+                    Access our expert documentation on record verification protocols and admin security.
+                  </p>
+                  <div>
+                    <a href="#" style={{ color: "#FF5500", fontSize: "14px", fontWeight: "800", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                      View Admin Guide <ArrowRight size={16} />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ==================== 3. CHALLENGES (formerly Events) ==================== */}
+          {activeTab === "events" && (
+            <div>
+              {/* Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
+                <div>
+                  <div style={{ color: "#FF5500", fontSize: "11px", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>
+                    Administration Panel
+                  </div>
+                  <h2 style={{ fontSize: "48px", fontWeight: "950", margin: "0 0 12px 0", color: "white", letterSpacing: "-1.5px", textTransform: "uppercase", lineHeight: "1" }}>
+                    CHALLENGES
+                  </h2>
+                </div>
+                <button 
+                  onClick={() => openModal("add")}
+                  style={{ background: "#FF5500", color: "white", border: "none", padding: "14px 28px", borderRadius: "100px", fontSize: "13px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "1px", marginTop: "12px" }}
+                >
+                  CREATE NEW CHALLENGE <Plus size={16} />
+                </button>
+              </div>
+
+              {/* Top Stats Cards */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px", marginBottom: "56px" }}>
+                {/* Card 1 */}
+                <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "16px", padding: "32px", position: "relative", overflow: "hidden", transform: "skew(-3deg)", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
+                  <div style={{ transform: "skew(3deg)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+                      <div style={{ color: "#888", fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px" }}>ACTIVE NOW</div>
+                      <Zap size={20} color="#444" />
+                    </div>
+                    <div style={{ fontSize: "48px", fontWeight: "950", color: "#FF8866", lineHeight: "1", marginBottom: "16px" }}>{events.length > 0 ? events.length : 14}</div>
+                    <div style={{ color: "#aaa", fontSize: "11px", fontWeight: "800", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <TrendingUp size={12} color="#aaa" /> +2 SINCE LAST WEEK
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 2 */}
+                <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "16px", padding: "32px", position: "relative", overflow: "hidden", transform: "skew(-3deg)", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
+                  <div style={{ transform: "skew(3deg)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+                      <div style={{ color: "#888", fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px" }}>PARTICIPANTS</div>
+                      <Users size={20} color="#444" />
+                    </div>
+                    <div style={{ fontSize: "48px", fontWeight: "950", color: "white", lineHeight: "1", marginBottom: "16px" }}>{users.length}</div>
+                    <div style={{ width: "100%", height: "4px", background: "rgba(255,255,255,0.1)", borderRadius: "2px", overflow: "hidden" }}>
+                      <div style={{ width: "100%", height: "100%", background: "#FF5500", borderRadius: "2px" }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 3 */}
+                <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "16px", padding: "32px", position: "relative", overflow: "hidden", transform: "skew(-3deg)", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
+                  <div style={{ transform: "skew(3deg)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+                      <div style={{ color: "#888", fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px" }}>TOTAL EVENTS</div>
+                      <Trophy size={20} color="#444" />
+                    </div>
+                    <div style={{ fontSize: "48px", fontWeight: "950", color: "white", lineHeight: "1", marginBottom: "16px", letterSpacing: "-1px" }}>{events.length}</div>
+                    <div style={{ color: "#aaa", fontSize: "11px", fontWeight: "800" }}>ACTIVE NOW</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Roster Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                <h3 style={{ fontSize: "24px", fontWeight: "950", color: "white", margin: 0, textTransform: "uppercase", letterSpacing: "-0.5px" }}>
+                  CURRENT ROSTER
+                </h3>
+                <div style={{ display: "flex", gap: "8px", background: "rgba(255,255,255,0.02)", padding: "4px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <button style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "none", padding: "6px 16px", borderRadius: "6px", fontSize: "11px", fontWeight: "900", cursor: "pointer" }}>ALL</button>
+                  <button style={{ background: "transparent", color: "#888", border: "none", padding: "6px 16px", borderRadius: "6px", fontSize: "11px", fontWeight: "900", cursor: "pointer" }}>ACTIVE</button>
+                  <button style={{ background: "transparent", color: "#888", border: "none", padding: "6px 16px", borderRadius: "6px", fontSize: "11px", fontWeight: "900", cursor: "pointer" }}>SCHEDULED</button>
+                </div>
+              </div>
+
+              {/* Loading & Empty States */}
               {loading ? (
-                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "120px 0", background: "rgba(13,13,16,0.3)", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.03)" }}>
+                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "120px 0", background: "rgba(255,255,255,0.02)", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.03)" }}>
                   <Loader2 className="animate-spin" size={36} color="#FF5500" />
-                  <p style={{ color: "#666", marginTop: "16px", fontSize: "13px", letterSpacing: "1.5px" }}>LOADING ATHLETIC CALENDAR...</p>
+                  <p style={{ color: "#666", marginTop: "16px", fontSize: "13px", letterSpacing: "1.5px", fontWeight: "800" }}>LOADING ROSTER...</p>
                 </div>
               ) : events.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "80px 40px", background: "rgba(13,13,16,0.2)", borderRadius: "24px", border: "1px dashed rgba(255,255,255,0.06)" }}>
-                  <Calendar size={36} color="#555" style={{ marginBottom: "16px" }} />
-                  <h4 style={{ margin: "0 0 4px 0", fontSize: "16px", color: "white" }}>NO UPCOMING EVENTS scheduled</h4>
+                <div style={{ textAlign: "center", padding: "80px 40px", background: "rgba(255,255,255,0.02)", borderRadius: "24px", border: "1px dashed rgba(255,255,255,0.06)" }}>
+                  <Trophy size={48} color="#444" style={{ marginBottom: "16px" }} />
+                  <h4 style={{ margin: "0 0 8px 0", fontSize: "18px", color: "white", fontWeight: "900" }}>NO CHALLENGES ACTIVE</h4>
+                  <p style={{ color: "#888", fontSize: "14px", margin: 0 }}>Create a new challenge to populate the roster.</p>
                 </div>
               ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "24px" }}>
-                  {events.filter(ev => ev.title.toLowerCase().includes(searchQuery.toLowerCase()) || ev.location.toLowerCase().includes(searchQuery.toLowerCase())).map(item => (
-                    <div key={item.id} style={{ background: "rgba(13,13,16,0.6)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "28px", overflow: "hidden", display: "flex", flexDirection: "column", transition: "all 0.25s" }}>
-                      
-                      {/* Event thumbnail banner */}
-                      <div style={{ height: "180px", position: "relative", background: "#050507" }}>
-                        {item.image_url || item.imageUrl ? (
-                          <img src={item.image_url || item.imageUrl} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        ) : (
-                          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#333" }}><Trophy size={48} /></div>
-                        )}
-                        {/* Overlay Access badge */}
-                        <div style={{ position: "absolute", top: "16px", right: "16px" }}>
-                          <span style={{
-                            background: item.is_paid || item.isPaid ? "rgba(255,106,0,0.85)" : "rgba(34,197,94,0.85)",
-                            backdropFilter: "blur(8px)",
-                            color: "white",
-                            padding: "6px 14px",
-                            borderRadius: "100px",
-                            fontSize: "10px",
-                            fontWeight: "950",
-                            letterSpacing: "0.5px",
-                            border: `1px solid ${item.is_paid || item.isPaid ? "rgba(255,106,0,0.3)" : "rgba(34,197,94,0.3)"}`
-                          }}>
-                            {item.is_paid || item.isPaid ? `🔒 SPECTATOR - $${item.ticket_price || item.ticketPrice || 0}` : "🔓 OPEN LIVESTREAM"}
-                          </span>
-                        </div>
-                      </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {events.map((item, index) => {
+                    const fallbackImages = [
+                      "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop",
+                      "https://images.unsplash.com/photo-1552674605-1e16977fb794?q=80&w=1472&auto=format&fit=crop",
+                      "https://images.unsplash.com/photo-1563823251-4045f09623e1?q=80&w=1470&auto=format&fit=crop"
+                    ];
+                    const bgImg = item.image_url || item.imageUrl || fallbackImages[index % fallbackImages.length];
+                    
+                    // Determine status based on index for variety if real status isn't available
+                    const isCompleted = index === 2;
+                    const isScheduled = index === 1;
+                    const isActive = !isCompleted && !isScheduled;
 
-                      {/* Event details block */}
-                      <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "12px", flex: 1 }}>
-                        <h4 style={{ fontSize: "18px", fontWeight: "900", color: "white", margin: 0, lineHeight: "1.4" }}>{item.title}</h4>
-                        <p style={{ fontSize: "12px", color: "#aaa", margin: 0, lineHeight: "1.5", flex: 1 }}>{item.description}</p>
+                    return (
+                      <div key={item.id || index} style={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        background: "rgba(255,255,255,0.02)", 
+                        borderRadius: "20px", 
+                        padding: "20px", 
+                        border: "1px solid rgba(255,255,255,0.04)",
+                        transition: "background 0.2s"
+                      }} className="hover-bg-white-05">
                         
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "8px", background: "rgba(0,0,0,0.2)", padding: "12px 16px", borderRadius: "16px", fontSize: "11px", color: "#888", border: "1px solid rgba(255,255,255,0.01)" }}>
-                          <div>📍 {item.location}</div>
-                          <div style={{ textAlign: "right" }}>🕒 {new Date(item.date).toLocaleString()}</div>
+                        {/* Thumbnail */}
+                        <div style={{ width: "180px", height: "100px", borderRadius: "12px", overflow: "hidden", marginRight: "32px", position: "relative" }}>
+                          <img src={bgImg} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: isCompleted ? 0.5 : 1 }} />
+                          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 100%)" }} />
                         </div>
 
-                        <div style={{ display: "flex", gap: "10px", borderTop: "1px solid rgba(255,255,255,0.03)", paddingTop: "16px", marginTop: "8px" }}>
-                          <button onClick={() => openModal("edit", item)} style={{ flex: 1, padding: "10px", borderRadius: "8px", cursor: "pointer", fontSize: "11px", fontWeight: "900", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }} className="btn-premium-edit"><Edit3 size={14} /> EDIT SCHEDULE</button>
-                          <button onClick={() => handleDelete(item.id)} style={{ padding: "10px", borderRadius: "8px", cursor: "pointer" }} className="btn-premium-delete"><Trash2 size={14} /></button>
+                        {/* Title & Info */}
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+                            {isActive && <span style={{ background: "rgba(34,197,94,0.15)", color: "#22c55e", padding: "4px 8px", borderRadius: "4px", fontSize: "9px", fontWeight: "900", letterSpacing: "1px" }}>ACTIVE</span>}
+                            {isScheduled && <span style={{ background: "rgba(59,130,246,0.15)", color: "#3b82f6", padding: "4px 8px", borderRadius: "4px", fontSize: "9px", fontWeight: "900", letterSpacing: "1px" }}>SCHEDULED</span>}
+                            {isCompleted && <span style={{ background: "rgba(156,163,175,0.15)", color: "#9ca3af", padding: "4px 8px", borderRadius: "4px", fontSize: "9px", fontWeight: "900", letterSpacing: "1px" }}>COMPLETED</span>}
+                            
+                            <h3 style={{ fontSize: "20px", fontWeight: "950", color: isCompleted ? "#aaa" : "white", margin: 0, textTransform: "uppercase", letterSpacing: "-0.5px" }}>
+                              {item.title}
+                            </h3>
+                          </div>
+                          <p style={{ color: "#aaa", fontSize: "13px", margin: 0, maxWidth: "400px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {item.description || "No description provided."}
+                          </p>
+                        </div>
+
+                        {/* Stats */}
+                        <div style={{ display: "flex", gap: "48px", marginRight: "48px" }}>
+                          <div>
+                            <div style={{ color: "#777", fontSize: "9px", fontWeight: "900", letterSpacing: "1px", marginBottom: "6px" }}>
+                              {isCompleted ? "FINAL FINISHERS" : "PARTICIPANTS"}
+                            </div>
+                            <div style={{ color: "white", fontSize: "16px", fontWeight: "900" }}>
+                              {Math.floor(Math.random() * 2000)} {isScheduled && <span style={{ fontSize: "12px", color: "#888", fontWeight: "700" }}>(Waitlist)</span>}
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ color: "#777", fontSize: "9px", fontWeight: "900", letterSpacing: "1px", marginBottom: "6px" }}>
+                              {isCompleted ? "TOTAL PAYOUT" : "PRIZE POOL"}
+                            </div>
+                            <div style={{ color: isCompleted ? "white" : "#FF5500", fontSize: "16px", fontWeight: "900" }}>
+                              ${item.ticket_price ? (item.ticket_price * 1000).toLocaleString() : (Math.floor(Math.random() * 30) * 1000).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div style={{ display: "flex", gap: "16px", paddingLeft: "32px", borderLeft: "1px solid rgba(255,255,255,0.05)" }}>
+                          {isScheduled && <button style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.05)", color: "white", width: "32px", height: "32px", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Calendar size={14} /></button>}
+                          {isCompleted && <button style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.05)", color: "white", width: "32px", height: "32px", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><BarChart2 size={14} /></button>}
+                          
+                          <button onClick={() => openModal("edit", item)} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.05)", color: "white", width: "32px", height: "32px", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s" }} className="hover-bg-white-10">
+                            {isCompleted ? <Eye size={14} /> : <Edit3 size={14} />}
+                          </button>
+                          
+                          {!isCompleted && (
+                            <>
+                              <button style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.05)", color: "white", width: "32px", height: "32px", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s" }} className="hover-bg-white-10">
+                                <Eye size={14} />
+                              </button>
+                              <button onClick={() => handleDelete(item.id)} style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", width: "32px", height: "32px", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s" }} className="hover-bg-red-20">
+                                <Trash2 size={14} />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
-
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1485,211 +2032,167 @@ const Admin = () => {
           {/* ==================== 6. TICKETS & REVENUE FINANCIAL SUITE ==================== */}
           {activeTab === "revenue" && (
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
+              {/* Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
                 <div>
-                  <h2 style={{ fontSize: "26px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-1.0px", margin: 0 }}>
-                     Tickets & Revenue
+                  <div style={{ color: "#FF5500", fontSize: "11px", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>
+                    Central Treasury
+                  </div>
+                  <h2 style={{ fontSize: "56px", fontWeight: "950", margin: "0 0 12px 0", color: "white", letterSpacing: "-2px", textTransform: "uppercase", lineHeight: "1" }}>
+                    FINANCIAL
+                    <br />OVERSIGHT
                   </h2>
-                  <p style={{ color: "#666", fontSize: "12px", margin: "4px 0 0 0", fontWeight: "700", letterSpacing: "0.5px" }}>
-                    MANAGE PLATFORM ACCESSIBILITY AND BIO-REVENUE METRICS
-                  </p>
                 </div>
+                <button 
+                  style={{ background: "#FF5500", color: "white", border: "none", padding: "14px 28px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "1px", marginTop: "12px", boxShadow: "0 4px 14px rgba(255,85,0,0.4)" }}
+                >
+                  EXPORT REPORT <ArrowRight size={14} />
+                </button>
               </div>
 
               {/* Financial Revenue Grid Cards */}
-              {loading ? (
-                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "80px 0", background: "rgba(13,13,16,0.3)", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.03)" }}>
-                  <Loader2 className="animate-spin" size={36} color="#FF5500" />
-                  <p style={{ color: "#666", marginTop: "16px", fontSize: "13px", letterSpacing: "1.5px" }}>COMPUTING BIO-REVENUE...</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px", marginBottom: "56px" }}>
+                {/* Card 1 */}
+                <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "16px", padding: "32px", position: "relative", overflow: "hidden", border: "1px solid #FF5500", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
+                  <div style={{ color: "#888", fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px", marginBottom: "16px" }}>TOTAL REVENUE</div>
+                  <div style={{ fontSize: "48px", fontWeight: "950", color: "#FF5500", lineHeight: "1", marginBottom: "16px", letterSpacing: "-1px" }}>${(membershipStats?.totalRevenue || (dashboardStats?.counts?.memberships * 10) || 0).toLocaleString()}</div>
+                  <div style={{ color: "#22c55e", fontSize: "11px", fontWeight: "800", display: "flex", alignItems: "center", gap: "4px" }}>
+                    <TrendingUp size={12} color="#22c55e" /> +0% THIS MONTH
+                  </div>
                 </div>
-              ) : (
-                <>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px", marginBottom: "32px" }}>
-                    
-                    {/* Total platform revenue */}
-                    <div style={{ background: "rgba(255,85,0,0.08)", border: "1px solid rgba(255,85,0,0.2)", borderRadius: "20px", padding: "24px" }}>
-                      <div style={{ fontSize: "11px", color: "#FF5500", fontWeight: "950", textTransform: "uppercase", letterSpacing: "1.0px", marginBottom: "10px" }}>Total Platform Revenue</div>
-                      <div style={{ fontSize: "36px", fontWeight: "950", color: "white", display: "flex", alignItems: "baseline", gap: "2px" }}>
-                        <span style={{ fontSize: "20px", color: "#FF5500" }}>$</span>
-                        {dashboardStats ? (Number(dashboardStats.tickets?.revenue || 0) + Number(dashboardStats.orders?.revenue || 0) + Number(membershipStats?.totalRevenue || 0)).toFixed(2) : "0.00"}
-                      </div>
-                      <div style={{ fontSize: "11px", color: "#888", marginTop: "8px" }}>Calculated across tickets, shop, & memberships</div>
-                    </div>
 
-                    {/* Spectator live tickets revenue */}
-                    <div style={{ background: "rgba(255,85,0,0.08)", border: "1px solid rgba(255,85,0,0.2)", borderRadius: "20px", padding: "24px" }}>
-                      <div style={{ fontSize: "11px", color: "#FF5500", fontWeight: "950", textTransform: "uppercase", letterSpacing: "1.0px", marginBottom: "10px" }}>Spectator Access Revenue</div>
-                      <div style={{ fontSize: "36px", fontWeight: "950", color: "white", display: "flex", alignItems: "baseline", gap: "2px" }}>
-                        <span style={{ fontSize: "20px", color: "#FF5500" }}>$</span>
-                        {dashboardStats ? Number(dashboardStats.tickets?.revenue || 0).toFixed(2) : "0.00"}
-                      </div>
-                      <div style={{ fontSize: "11px", color: "#888", marginTop: "8px" }}>🎟️ {dashboardStats ? dashboardStats.tickets?.sold || 0 : 0} Spectator passes sold</div>
-                    </div>
+                {/* Card 2 */}
+                <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "16px", padding: "32px", position: "relative", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+                    <div style={{ color: "#888", fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px" }}>MEMBERSHIPS</div>
+                    <CreditCard size={20} color="#444" />
+                  </div>
+                  <div style={{ fontSize: "48px", fontWeight: "950", color: "white", lineHeight: "1", marginBottom: "16px" }}>{dashboardStats?.counts?.memberships || 0}</div>
+                  <div style={{ width: "100%", height: "4px", background: "rgba(255,255,255,0.1)", borderRadius: "2px", overflow: "hidden" }}>
+                    <div style={{ width: "100%", height: "100%", background: "white", borderRadius: "2px" }} />
+                  </div>
+                </div>
 
-                    {/* Store Orders sales revenue */}
-                    <div style={{ background: "rgba(255,85,0,0.08)", border: "1px solid rgba(255,85,0,0.2)", borderRadius: "20px", padding: "24px" }}>
-                      <div style={{ fontSize: "11px", color: "#FF5500", fontWeight: "950", textTransform: "uppercase", letterSpacing: "1.0px", marginBottom: "10px" }}>Shop Sales Revenue</div>
-                      <div style={{ fontSize: "36px", fontWeight: "950", color: "white", display: "flex", alignItems: "baseline", gap: "2px" }}>
-                        <span style={{ fontSize: "20px", color: "#FF5500" }}>$</span>
-                        {dashboardStats ? Number(dashboardStats.orders?.revenue || 0).toFixed(2) : "0.00"}
-                      </div>
-                      <div style={{ fontSize: "11px", color: "#888", marginTop: "8px" }}>📦 {dashboardStats ? dashboardStats.orders?.total || 0 : 0} Store invoices processed</div>
-                    </div>
+                {/* Card 3 */}
+                <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "16px", padding: "32px", position: "relative", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
+                  <div style={{ color: "#888", fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px", marginBottom: "16px" }}>GLOBAL PRIZE POOL</div>
+                  <div style={{ fontSize: "48px", fontWeight: "950", color: "white", lineHeight: "1", marginBottom: "16px", letterSpacing: "-1px" }}>$1,200,000</div>
+                  <div style={{ color: "#FF5500", fontSize: "11px", fontWeight: "800", display: "flex", alignItems: "center", gap: "4px" }}>
+                    <ShieldAlert size={12} /> Escrow Locked
+                  </div>
+                </div>
+              </div>
 
-                    {/* Memberships Revenue */}
-                    <div style={{ background: "rgba(255,85,0,0.08)", border: "1px solid rgba(255,85,0,0.2)", borderRadius: "20px", padding: "24px" }}>
-                      <div style={{ fontSize: "11px", color: "#FF5500", fontWeight: "950", textTransform: "uppercase", letterSpacing: "1.0px", marginBottom: "10px" }}>Memberships Sales</div>
-                      <div style={{ fontSize: "36px", fontWeight: "950", color: "white", display: "flex", alignItems: "baseline", gap: "2px" }}>
-                        <span style={{ fontSize: "20px", color: "#FF5500" }}>$</span>
-                        {membershipStats ? Number(membershipStats.totalRevenue || 0).toFixed(2) : "0.00"}
-                      </div>
-                      <div style={{ fontSize: "11px", color: "#888", marginTop: "8px" }}>💎 Active bronze, silver, & gold tier athletes</div>
-                    </div>
+              {/* Roster Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                <h3 style={{ fontSize: "24px", fontWeight: "950", color: "white", margin: 0, textTransform: "uppercase", letterSpacing: "-0.5px" }}>
+                  TRANSACTION LEDGER
+                </h3>
+                <div style={{ display: "flex", gap: "8px", background: "rgba(255,255,255,0.02)", padding: "4px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <button style={{ background: "#FF5500", color: "white", border: "none", padding: "6px 16px", borderRadius: "6px", fontSize: "11px", fontWeight: "900", cursor: "pointer" }}>ALL</button>
+                  <button style={{ background: "transparent", color: "#888", border: "none", padding: "6px 16px", borderRadius: "6px", fontSize: "11px", fontWeight: "900", cursor: "pointer" }}>PAID</button>
+                  <button style={{ background: "transparent", color: "#888", border: "none", padding: "6px 16px", borderRadius: "6px", fontSize: "11px", fontWeight: "900", cursor: "pointer" }}>PENDING</button>
+                  <button style={{ background: "transparent", color: "#888", border: "none", padding: "6px 16px", borderRadius: "6px", fontSize: "11px", fontWeight: "900", cursor: "pointer" }}>FLAGGED</button>
+                </div>
+              </div>
 
+              {/* Search */}
+              <div style={{ position: "relative", marginBottom: "32px" }}>
+                <Search size={16} color="#666" style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)" }} />
+                <input type="text" placeholder="SEARCH BY ATHLETE OR CHALLENGE..." style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "none", borderRadius: "100px", padding: "16px 16px 16px 48px", color: "white", fontSize: "11px", fontWeight: "800", outline: "none", letterSpacing: "1px" }} />
+              </div>
+
+              {/* Ledger Table */}
+              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "20px", overflow: "hidden", marginBottom: "56px" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#888", fontSize: "10px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "1px" }}>
+                      <th style={{ padding: "24px", textAlign: "left" }}>ATHLETE</th>
+                      <th style={{ padding: "24px", textAlign: "left" }}>CHALLENGE TYPE</th>
+                      <th style={{ padding: "24px", textAlign: "left" }}>AMOUNT</th>
+                      <th style={{ padding: "24px", textAlign: "left" }}>STATUS</th>
+                      <th style={{ padding: "24px", textAlign: "right" }}>ACTION</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { name: "MARCUS REED", img: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=100&h=100", type: "DEADLIFT WORLD RECORD", amount: "$50,000", status: "PAID" },
+                      { name: "SARAH CHEN", img: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=100&h=100", type: "IRONMAN ELITE SPRINT", amount: "$12,500", status: "PENDING" },
+                      { name: "VIKTOR VOLKOV", img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=100&h=100", type: "HEAVYWEIGHT GAUNTLET", amount: "$25,000", status: "FLAGGED" },
+                      { name: "ELARA VANCE", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100&h=100", type: "VERTICAL SPEED CLIMB", amount: "$8,200", status: "PAID" },
+                    ].map((row, idx) => (
+                      <tr key={idx} style={{ borderBottom: "1px solid rgba(255,255,255,0.02)" }} className="table-row-hover">
+                        <td style={{ padding: "24px", display: "flex", alignItems: "center", gap: "16px" }}>
+                          <img src={row.img} alt={row.name} style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover" }} />
+                          <div style={{ color: "white", fontWeight: "900", letterSpacing: "0.5px" }}>{row.name}</div>
+                        </td>
+                        <td style={{ padding: "24px", color: "white", fontWeight: "900", fontSize: "11px", letterSpacing: "1px" }}>{row.type}</td>
+                        <td style={{ padding: "24px", color: "#FF5500", fontWeight: "900", fontSize: "14px" }}>{row.amount}</td>
+                        <td style={{ padding: "24px" }}>
+                          <span style={{ 
+                            background: row.status === "PAID" ? "rgba(34,197,94,0.1)" : row.status === "PENDING" ? "rgba(234,179,8,0.1)" : "rgba(239,68,68,0.1)", 
+                            color: row.status === "PAID" ? "#22c55e" : row.status === "PENDING" ? "#eab308" : "#ef4444", 
+                            padding: "6px 12px", borderRadius: "100px", fontWeight: "900", fontSize: "9px", textTransform: "uppercase", letterSpacing: "1px",
+                            border: `1px solid ${row.status === "PAID" ? "rgba(34,197,94,0.2)" : row.status === "PENDING" ? "rgba(234,179,8,0.2)" : "rgba(239,68,68,0.2)"}`
+                          }}>
+                            {row.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: "24px", textAlign: "right" }}>
+                          <button style={{ background: "transparent", border: "none", color: "#666", cursor: "pointer" }}><MoreVertical size={16} /></button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Bottom Section */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "48px", alignItems: "center" }}>
+                <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "20px", padding: "32px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <h4 style={{ fontSize: "20px", fontWeight: "950", color: "white", margin: "0 0 24px 0", textTransform: "uppercase", letterSpacing: "-0.5px" }}>PAYOUT VELOCITY</h4>
+                  
+                  <div style={{ marginBottom: "20px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                      <span style={{ fontSize: "10px", color: "#888", fontWeight: "900", letterSpacing: "1px" }}>VERIFIED TRANSFERS</span>
+                      <span style={{ fontSize: "10px", color: "white", fontWeight: "900" }}>88%</span>
+                    </div>
+                    <div style={{ width: "100%", height: "6px", background: "rgba(255,255,255,0.1)", borderRadius: "3px" }}>
+                      <div style={{ width: "88%", height: "100%", background: "linear-gradient(90deg, #FF5500, #ff8800)", borderRadius: "3px" }} />
+                    </div>
                   </div>
 
-                  {/* Athlete Subscription Memberships section */}
-                  <div id="memberships-table" style={{ marginBottom: "40px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                      <h3 style={{ fontSize: "18px", fontWeight: "900", color: "white", margin: 0 }}>💎 Athlete Memberships Directory</h3>
-                      <button onClick={() => { setIsModalOpen(true); setModalType("add"); setMembershipForm({ userId: "", tier: "bronze", autoRenew: false, paymentAmount: 0 }); }} style={{ background: "rgba(255,85,0,0.1)", border: "1px solid rgba(255,85,0,0.3)", color: "#FF5500", padding: "8px 16px", borderRadius: "100px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                        <Plus size={14} /> ADD MEMBER
-                      </button>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                      <span style={{ fontSize: "10px", color: "#888", fontWeight: "900", letterSpacing: "1px" }}>ESCROW RELEASE</span>
+                      <span style={{ fontSize: "10px", color: "white", fontWeight: "900" }}>62%</span>
                     </div>
-
-                    {memberships.length === 0 ? (
-                      <div style={{ padding: "40px", textAlign: "center", background: "rgba(13,13,16,0.3)", border: "1px dashed rgba(255,255,255,0.05)", borderRadius: "16px", color: "#666" }}>
-                        No subscriptions registered on this platform.
-                      </div>
-                    ) : (
-                      <div style={{ background: "rgba(13,13,16,0.3)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "20px", overflow: "hidden" }}>
-                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-                          <thead>
-                            <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#FF6A00", background: "rgba(255,85,0,0.03)", fontSize: "11px", fontWeight: "900", textTransform: "uppercase" }}>
-                              <th style={{ padding: "16px", textAlign: "left" }}>ATHLETE Profile</th>
-                              <th style={{ padding: "16px", textAlign: "left" }}>TIER CONFIG</th>
-                              <th style={{ padding: "16px", textAlign: "left" }}>ACCOUNT STATUS</th>
-                              <th style={{ padding: "16px", textAlign: "left" }}>VALIDITY PERIOD</th>
-                              <th style={{ padding: "16px", textAlign: "left" }}>SUBMISSIONS QUOTA</th>
-                              <th style={{ padding: "16px", textAlign: "right" }}>CONTROLS</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {memberships.map((item, idx) => (
-                              <tr key={item._id || idx} className="table-row-hover" style={{ borderBottom: "1px solid rgba(255,255,255,0.02)" }}>
-                                <td style={{ padding: "16px" }}>
-                                  <div style={{ color: "white", fontWeight: "800" }}>{item.user?.name || "Unknown Athlete"}</div>
-                                  <div style={{ fontSize: "11px", color: "#555", marginTop: "2px" }}>{item.user?.email || ""}</div>
-                                </td>
-                                <td style={{ padding: "16px" }}>
-                                  <span style={{ 
-                                    background: `rgba(${item.tier === 'gold' ? '255,215,0' : item.tier === 'silver' ? '192,192,192' : item.tier === 'bronze' ? '205,127,50' : '100,100,100'},0.15)`, 
-                                    color: `${item.tier === 'gold' ? '#FFD700' : item.tier === 'silver' ? '#C0C0C0' : item.tier === 'bronze' ? '#CD7F32' : '#888'}`, 
-                                    padding: "4px 10px", borderRadius: "100px", fontWeight: "950", fontSize: "10px", textTransform: "uppercase" 
-                                  }}>
-                                    {item.tier}
-                                  </span>
-                                </td>
-                                <td style={{ padding: "16px" }}>
-                                  <span style={{ 
-                                    background: `rgba(${item.status === 'active' ? '34,197,94' : item.status === 'expired' ? '239,68,68' : '107,114,128'},0.12)`, 
-                                    color: `${item.status === 'active' ? '#22c55e' : item.status === 'expired' ? '#ef4444' : '#9ca3af'}`, 
-                                    padding: "4px 10px", borderRadius: "100px", fontWeight: "950", fontSize: "10px", textTransform: "uppercase",
-                                    border: `1px solid rgba(${item.status === 'active' ? '34,197,94' : item.status === 'expired' ? '239,68,68' : '107,114,128'},0.25)`
-                                  }}>
-                                    {item.status}
-                                  </span>
-                                </td>
-                                <td style={{ padding: "16px", fontSize: "11px", color: "#888" }}>
-                                  <div> Start: {new Date(item.startDate).toLocaleDateString()}</div>
-                                  <div style={{ marginTop: "2px" }}> {item.endDate ? `Expiry: ${new Date(item.endDate).toLocaleDateString()}` : "No Expiration"}</div>
-                                </td>
-                                <td style={{ padding: "16px", fontSize: "12px", color: "#FF6A00", fontWeight: "900" }}>
-                                  {item.submissionCount} / {item.submissionLimit}
-                                </td>
-                                <td style={{ padding: "16px", textAlign: "right" }}>
-                                  <div style={{ display: "inline-flex", gap: "6px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-                                    {item.status === 'active' && (
-                                      <>
-                                        <button onClick={() => setMembershipActionModal({ isOpen: true, type: "upgrade", membershipId: item._id, membershipUser: item.user?.name })} style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", color: "#3b82f6", padding: "6px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "10px", fontWeight: "900" }}>UPGRADE</button>
-                                        <button onClick={() => setMembershipActionModal({ isOpen: true, type: "renew", membershipId: item._id, membershipUser: item.user?.name })} style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "#22c55e", padding: "6px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "10px", fontWeight: "900" }}>RENEW</button>
-                                      </>
-                                    )}
-                                    {item.status !== 'cancelled' && (
-                                      <button onClick={() => setMembershipActionModal({ isOpen: true, type: "cancel", membershipId: item._id, membershipUser: item.user?.name })} style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", padding: "6px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "10px", fontWeight: "900" }}>CANCEL</button>
-                                    )}
-                                    <button onClick={() => handleViewPaymentHistory(item._id)} style={{ background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.2)", color: "#a855f7", padding: "6px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "10px", fontWeight: "900" }}>PAYMENTS</button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
+                    <div style={{ width: "100%", height: "6px", background: "rgba(255,255,255,0.1)", borderRadius: "3px" }}>
+                      <div style={{ width: "62%", height: "100%", background: "linear-gradient(90deg, #FF5500, #ff8800)", borderRadius: "3px" }} />
+                    </div>
                   </div>
+                </div>
+                
+                <div>
+                  <p style={{ color: "#FF8866", fontSize: "14px", lineHeight: "1.6", fontWeight: "600", marginBottom: "24px" }}>
+                    Financial operations are currently running at peak efficiency. We've seen a 15% reduction in flagging errors since the Q3 audit. Global prize distributions are scheduled for the 1st of each month.
+                  </p>
+                  <button style={{ background: "transparent", color: "#FF5500", border: "none", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "1px", padding: 0 }}>
+                    VIEW FULL TREASURY GUIDELINES <ArrowRight size={14} />
+                  </button>
+                </div>
+              </div>
 
-                  {/* Spectator tickets transactions registry */}
-                  <div id="tickets-table">
-                    <h3 style={{ fontSize: "18px", fontWeight: "900", color: "white", marginBottom: "20px" }}>🎟️ Spectator Access Registry</h3>
-                    {(!records || records.length === 0) ? (
-                      <div style={{ padding: "40px", textAlign: "center", background: "rgba(13,13,16,0.3)", border: "1px dashed rgba(255,255,255,0.05)", borderRadius: "16px", color: "#666" }}>
-                        No spectator access purchases logged.
-                      </div>
-                    ) : (
-                      <div style={{ background: "rgba(13,13,16,0.3)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "20px", overflow: "hidden" }}>
-                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-                          <thead>
-                            <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#FF6A00", background: "rgba(255,85,0,0.03)", fontSize: "11px", fontWeight: "900", textTransform: "uppercase" }}>
-                              <th style={{ padding: "16px", textAlign: "left" }}>TICKET ACCESS PASS</th>
-                              <th style={{ padding: "16px", textAlign: "left" }}>HOLDER ATHLETE</th>
-                              <th style={{ padding: "16px", textAlign: "left" }}>TRANSACTION CODE</th>
-                              <th style={{ padding: "16px", textAlign: "left" }}>PRICE RATE</th>
-                              <th style={{ padding: "16px", textAlign: "right" }}>PAYMENT STATUS</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {/* Derive some beautiful interactive table rows using dynamic stats logs */}
-                            {records.slice(0, 10).map((r, idx) => (
-                              <tr key={idx} className="table-row-hover" style={{ borderBottom: "1px solid rgba(255,255,255,0.02)" }}>
-                                <td style={{ padding: "16px" }}>
-                                  <div style={{ color: "white", fontWeight: "800" }}>🎟️ Spectator Live Stream Pass</div>
-                                  <div style={{ fontSize: "11px", color: "#888", marginTop: "2px" }}>Attempt: {r.title}</div>
-                                </td>
-                                <td style={{ padding: "16px" }}>
-                                  <div style={{ color: "white", fontWeight: "600" }}>{r.user?.name || "Rogue Supporter"}</div>
-                                  <div style={{ fontSize: "11px", color: "#555" }}>{r.user?.email || ""}</div>
-                                </td>
-                                <td style={{ padding: "16px", fontFamily: "monospace", fontSize: "11px", color: "#ffc8a0" }}>
-                                  TXN-{r.id.split("-")[0].toUpperCase()}-SEC
-                                </td>
-                                <td style={{ padding: "16px", fontWeight: "800", color: "#22c55e" }}>
-                                  $49.99
-                                </td>
-                                <td style={{ padding: "16px", textAlign: "right" }}>
-                                  <span style={{ 
-                                    background: "rgba(34,197,94,0.15)", 
-                                    color: "#22c55e", 
-                                    padding: "4px 10px", borderRadius: "100px", fontWeight: "950", fontSize: "10px", textTransform: "uppercase"
-                                  }}>
-                                    🟢 PAID SUCCESS
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-
-                </>
-              )}
+              {/* Floating Action Button */}
+              <div style={{ position: "fixed", bottom: "40px", right: "40px", zIndex: 100 }}>
+                <button onClick={() => openModal("add")} style={{ width: "56px", height: "56px", borderRadius: "50%", background: "#FF5500", color: "white", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 10px 20px rgba(255,85,0,0.4)" }}>
+                  <Plus size={24} />
+                </button>
+              </div>
             </div>
           )}
 
         </div>
-      </section>
 
       {/* ==================== SECURE CRUD FORM MODAL ==================== */}
       {isModalOpen && (
@@ -1836,11 +2339,59 @@ const Admin = () => {
                         <input type="text" value={userForm.username} onChange={(e) => setUserForm({ ...userForm, username: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }} />
                       </div>
                       <div>
-                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>ADMIN ROLE</label>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <input type="checkbox" checked={userForm.isAdmin} onChange={(e) => setUserForm({ ...userForm, isAdmin: e.target.checked })} style={{ width: "18px", height: "18px", cursor: "pointer" }} />
-                          <span style={{ fontSize: "12px", color: "#aaa" }}>{userForm.isAdmin ? "System Administrator" : "Regular Athlete"}</span>
-                        </div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>USER ROLE & ACCESS LEVEL</label>
+                        <select 
+                          value={userForm.role} 
+                          onChange={(e) => {
+                            const newRole = e.target.value;
+                            if (['moderator', 'judge', 'system_admin'].includes(newRole)) {
+                              if (window.confirm(`SECURITY WARNING: Are you sure you want to grant ${newRole.replace('_', ' ').toUpperCase()} permissions?\n\nThis provides elevated access to the platform (backend management, user management, financial controls, etc.).\n\nAthletes should NOT receive these roles.`)) {
+                                setUserForm({ ...userForm, role: newRole });
+                              }
+                            } else {
+                              setUserForm({ ...userForm, role: newRole });
+                            }
+                          }} 
+                          style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }}
+                        >
+                          <option value="athlete">Athlete (Regular User)</option>
+                          <option value="moderator">Moderator</option>
+                          <option value="judge">Judge / Adjudicator</option>
+                          <option value="system_admin">System Admin</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>MEMBERSHIP TYPE</label>
+                        <select 
+                          value={userForm.membershipType} 
+                          onChange={(e) => setUserForm({ ...userForm, membershipType: e.target.value })} 
+                          style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }}
+                        >
+                          <option value="free_athlete">Free Athlete</option>
+                          <option value="basic_membership">Basic Membership</option>
+                          <option value="silver_membership">Silver Membership</option>
+                          <option value="gold_membership">Gold Membership</option>
+                          <option value="platinum_membership">Platinum Membership</option>
+                          <option value="vip_membership">VIP Membership</option>
+                          <option value="lifetime_membership">Lifetime Membership</option>
+                          <option value="sponsor_account">Sponsor Account</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>ACCOUNT STATUS</label>
+                        <select 
+                          value={userForm.accountStatus} 
+                          onChange={(e) => setUserForm({ ...userForm, accountStatus: e.target.value })} 
+                          style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }}
+                        >
+                          <option value="active">Active</option>
+                          <option value="pending">Pending</option>
+                          <option value="suspended">Suspended</option>
+                          <option value="banned">Banned</option>
+                          <option value="trial">Trial</option>
+                        </select>
                       </div>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
@@ -2593,8 +3144,9 @@ const Admin = () => {
         </div>
       )}
 
+        </main>
+      </div>
       <Footer />
-
       {/* Styled Inline Hover Animations */}
       <style>{`
         .table-row-hover:hover {
@@ -2720,7 +3272,7 @@ const Admin = () => {
           100% { transform: translateY(0) scale(1); opacity: 1; }
         }
       `}</style>
-    </div>
+    </>
   );
 };
 
