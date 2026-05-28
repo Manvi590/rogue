@@ -6,7 +6,7 @@ import {
   AlertTriangle, CheckCircle, Video, FileText, Loader2, 
   Sparkles, Trash2, Edit3, Plus, ShoppingBag, Mail, HardDrive, Ticket, Layers, Folder,
   ArrowRight, Bell, Settings, LogOut, LayoutDashboard, BarChart3, MoreVertical,
-  Activity, Zap, Timer, Network, Component, TrendingUp, DollarSign
+  Activity, Zap, Timer, Network, Component, TrendingUp, DollarSign, Clock, XCircle, Target, Radio
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -784,50 +784,35 @@ const Admin = () => {
               </div>
 
               {/* Stats Cards */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px", marginBottom: "24px" }}>
-                <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-                    <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(255,85,0,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#FF5500" }}>
-                      <Users size={20} />
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px", marginBottom: "32px" }}>
+                {[
+                  { label: "Total Users", value: dashboardStats?.counts?.users?.toLocaleString() || 0, icon: <Users size={20} />, color: "#3b82f6", bg: "rgba(59,130,246,0.1)" },
+                  { label: "Total Submissions", value: dashboardStats?.counts?.records?.toLocaleString() || 0, icon: <FileText size={20} />, color: "#a855f7", bg: "rgba(168,85,247,0.1)" },
+                  { label: "Pending Reviews", value: "0", icon: <Clock size={20} />, color: "#FF6A00", bg: "rgba(255,106,0,0.1)" },
+                  { label: "Approved Records", value: dashboardStats?.counts?.records?.toLocaleString() || 0, icon: <CheckCircle size={20} />, color: "#22c55e", bg: "rgba(34,197,94,0.1)" },
+                  { label: "Denied Records", value: "0", icon: <XCircle size={20} />, color: "#ef4444", bg: "rgba(239,68,68,0.1)" },
+                  { label: "Appeals", value: "0", icon: <ShieldAlert size={20} />, color: "#eab308", bg: "rgba(234,179,8,0.1)" },
+                  { label: "Challenge Submissions", value: "0", icon: <Target size={20} />, color: "#06b6d4", bg: "rgba(6,182,212,0.1)" },
+                  { label: "Revenue Totals", value: `$${(membershipStats?.totalRevenue || (dashboardStats?.counts?.memberships * 10) || 0).toLocaleString()}`, icon: <DollarSign size={20} />, color: "#22c55e", bg: "rgba(34,197,94,0.1)" },
+                  { label: "Membership Totals", value: dashboardStats?.counts?.memberships?.toLocaleString() || 0, icon: <Sparkles size={20} />, color: "#f43f5e", bg: "rgba(244,63,94,0.1)" },
+                  { label: "Ticket Sales", value: dashboardStats?.counts?.tickets?.toLocaleString() || 0, icon: <Ticket size={20} />, color: "#f97316", bg: "rgba(249,115,22,0.1)" },
+                  { label: "Shop Orders", value: dashboardStats?.counts?.products?.toLocaleString() || 0, icon: <ShoppingBag size={20} />, color: "#8b5cf6", bg: "rgba(139,92,246,0.1)" },
+                  { label: "Live Event Activity", value: dashboardStats?.counts?.events?.toLocaleString() || 0, icon: <Radio size={20} />, color: "#ef4444", bg: "rgba(239,68,68,0.1)" },
+                  { label: "Trending Records", value: "0", icon: <TrendingUp size={20} />, color: "#14b8a6", bg: "rgba(20,184,166,0.1)" },
+                  { label: "Most Active Categories", value: dashboardStats?.counts?.categories?.toLocaleString() || 0, icon: <Activity size={20} />, color: "#FF5500", bg: "rgba(255,85,0,0.1)" }
+                ].map((stat, idx) => (
+                  <div key={idx} style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px", transition: "transform 0.2s, box-shadow 0.2s", cursor: "default" }} 
+                       onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.2)"; }} 
+                       onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+                      <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: stat.bg, display: "flex", alignItems: "center", justifyContent: "center", color: stat.color }}>
+                        {stat.icon}
+                      </div>
                     </div>
-                    <span style={{ background: "rgba(34,197,94,0.15)", color: "#22c55e", padding: "4px 8px", borderRadius: "100px", fontSize: "11px", fontWeight: "800" }}>Users</span>
+                    <div style={{ fontSize: "13px", color: "#888", marginBottom: "4px", fontWeight: "600" }}>{stat.label}</div>
+                    <div style={{ fontSize: "28px", fontWeight: "950", color: "white" }}>{stat.value}</div>
                   </div>
-                  <div style={{ fontSize: "13px", color: "#888", marginBottom: "4px" }}>Total Users</div>
-                  <div style={{ fontSize: "28px", fontWeight: "950", color: "white" }}>{dashboardStats?.counts?.users?.toLocaleString() || 0}</div>
-                </div>
-
-                <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-                    <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(59,130,246,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#3b82f6" }}>
-                      <FileText size={20} />
-                    </div>
-                    <span style={{ background: "rgba(255,106,0,0.15)", color: "#FF6A00", padding: "4px 8px", borderRadius: "100px", fontSize: "11px", fontWeight: "800" }}>Attention</span>
-                  </div>
-                  <div style={{ fontSize: "13px", color: "#888", marginBottom: "4px" }}>Pending Submissions</div>
-                  <div style={{ fontSize: "28px", fontWeight: "950", color: "white" }}>{dashboardStats?.counts?.records || 0}</div>
-                </div>
-
-                <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-                    <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(34,197,94,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#22c55e" }}>
-                      <CheckCircle size={20} />
-                    </div>
-                    <span style={{ color: "#666", fontSize: "11px", fontWeight: "800" }}>Lifetime</span>
-                  </div>
-                  <div style={{ fontSize: "13px", color: "#888", marginBottom: "4px" }}>Approved Records</div>
-                  <div style={{ fontSize: "28px", fontWeight: "950", color: "white" }}>{dashboardStats?.counts?.evidence || 0}</div>
-                </div>
-
-                <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-                    <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(255,106,0,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#FF6A00" }}>
-                      <Ticket size={20} />
-                    </div>
-                    <span style={{ background: "rgba(34,197,94,0.15)", color: "#22c55e", padding: "4px 8px", borderRadius: "100px", fontSize: "11px", fontWeight: "800" }}>Revenue</span>
-                  </div>
-                  <div style={{ fontSize: "13px", color: "#888", marginBottom: "4px" }}>Total Payments</div>
-                  <div style={{ fontSize: "28px", fontWeight: "950", color: "white" }}>${(membershipStats?.totalRevenue || (dashboardStats?.counts?.memberships * 10) || 0).toLocaleString()}</div>
-                </div>
+                ))}
               </div>
 
               {/* Chart & Recent Activity */}
@@ -1964,70 +1949,7 @@ const Admin = () => {
             </div>
           )}
 
-          {/* ==================== 5. TICKETS & REVENUE FINANCIAL SUITE ==================== */}
-          {activeTab === "dashboard" && (
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
-                <div>
-                  <h2 style={{ fontSize: "26px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-1.0px", margin: 0 }}>
-                    📊 Global Database Metrics
-                  </h2>
-                  <p style={{ color: "#666", fontSize: "12px", margin: "4px 0 0 0", fontWeight: "700", letterSpacing: "0.5px" }}>
-                    REAL-TIME STATISTICS ACROSS ALL SUPABASE TABLES
-                  </p>
-                </div>
-              </div>
 
-              {/* KPI Grid Cards */}
-              {loading ? (
-                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "80px 0", background: "rgba(13,13,16,0.3)", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.03)", marginBottom: "40px" }}>
-                  <Loader2 className="animate-spin" size={36} color="#FF5500" />
-                  <p style={{ color: "#666", marginTop: "16px", fontSize: "13px", letterSpacing: "1.5px" }}>COMPUTING KPI METRICS...</p>
-                </div>
-              ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px", marginBottom: "40px" }}>
-                  {[
-                    { key: 'users', label: 'Total Athletes', icon: <User size={24} />, color: '#FF5500' },
-                    { key: 'records', label: 'Global Records', icon: <Trophy size={24} />, color: '#FF5500' },
-                    { key: 'events', label: 'Live Events', icon: <Calendar size={24} />, color: '#FF5500' },
-                    { key: 'products', label: 'Shop Products', icon: <ShoppingBag size={24} />, color: '#FF5500' },
-                    { key: 'videos', label: 'Uploaded Videos', icon: <Video size={24} />, color: '#FF5500' },
-                    { key: 'evidence', label: 'Evidence Files', icon: <Folder size={24} />, color: '#FF5500' },
-                    { key: 'categories', label: 'Categories', icon: <Filter size={24} />, color: '#FF5500' },
-                    { key: 'age_groups', label: 'Age Groups', icon: <Users size={24} />, color: '#FF5500' },
-                    { key: 'memberships', label: 'Memberships', icon: <Sparkles size={24} />, color: '#FF5500' },
-                    { key: 'tickets', label: 'Tickets', icon: <Ticket size={24} />, color: '#FF5500' },
-                    { key: 'contact_messages', label: 'Contact Messages', icon: <Mail size={24} />, color: '#FF5500' },
-                    { key: 'record_meta', label: 'Record Metadata', icon: <Layers size={24} />, color: '#FF5500' }
-                  ].map((metric) => (
-                    <div key={metric.key} className="kpi-card-hover" onClick={() => handleKpiCardClick(metric.key)} style={{ 
-                      background: `rgba(13,13,16,0.5)`, 
-                      border: `1px solid rgba(255,85,0,0.15)`, 
-                      borderRadius: "20px", 
-                      padding: "24px",
-                      position: "relative",
-                      overflow: "hidden",
-                      transition: "all 0.3s ease",
-                      cursor: "pointer"
-                    }}>
-                      <div style={{ position: "absolute", top: 0, left: 0, width: "4px", height: "100%", background: metric.color }}></div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-                        <div style={{ color: metric.color, background: `${metric.color}20`, padding: "10px", borderRadius: "12px" }}>
-                          {metric.icon}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: "32px", fontWeight: "950", color: "white", marginBottom: "4px", fontFamily: "monospace" }}>
-                        {dashboardStats?.counts?.[metric.key] || 0}
-                      </div>
-                      <div style={{ fontSize: "12px", color: "#888", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px" }}>
-                        {metric.label}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* ==================== 6. TICKETS & REVENUE FINANCIAL SUITE ==================== */}
           {activeTab === "revenue" && (
