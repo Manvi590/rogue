@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Play, Check, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Menu, X, Dumbbell, Zap, Timer, Gamepad2, Target, Infinity, Trophy, LayoutGrid, Activity, Waves, Settings, Brain, Gamepad, Search, Eye, Volume2, Maximize, Bike, Star, Palette, Baby, Globe } from "lucide-react";
+import { apiCall } from "../utils/api";
 import InfiniteSlider from "../components/InfiniteSlider";
 import FlowingMenu from "../components/FlowingMenu";
 import StackingSteps from "../components/StackingSteps";
@@ -246,6 +247,26 @@ const Home = () => {
   const [showAllCats, setShowAllCats] = useState(false);
   const [showCats, setShowCats] = useState(true);
   const [homeSearchQuery, setHomeSearchQuery] = useState("");
+  const [featuredStream, setFeaturedStream] = useState(null);
+
+  useEffect(() => {
+    const fetchFeaturedStream = async () => {
+      try {
+        const events = await apiCall("/events", "GET");
+        if (events && events.length > 0) {
+          // Find first event that is live and featured
+          const featured = events.find(e => e.isLive && e.isFeatured);
+          const fallbackFeatured = featured || events.find(e => e.isFeatured);
+          if (fallbackFeatured) {
+            setFeaturedStream(fallbackFeatured);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load featured stream on homepage:", error);
+      }
+    };
+    fetchFeaturedStream();
+  }, []);
 
   const handleHomeSearch = (e) => {
     e.preventDefault();
@@ -371,48 +392,64 @@ const Home = () => {
             {/* Middle: Video Frame */}
             <article style={{ width: "100%", height: "550px", marginBottom: "32px", position: "relative", borderRadius: "20px", overflow: "hidden", boxShadow: "0 32px 80px rgba(0,0,0,0.5)", background: "#000" }}>
               <img
-                src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1600&q=80"
-                alt="Hero Athlete"
+                src={featuredStream ? (featuredStream.imageUrl || featuredStream.image || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1600&q=80") : "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1600&q=80"}
+                alt="Featured Livestream"
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
               />
 
               {/* Left gradient for text readability */}
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.45) 50%, transparent 100%)", pointerEvents: "none" }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.45) 50%, transparent 100%)", pointerEvents: "none" }} />
               {/* Bottom gradient for controls */}
               <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "30%", background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)", pointerEvents: "none" }} />
 
               {/* LIVE badge + viewers — top left */}
               <div style={{ position: "absolute", top: 20, left: 20, display: "flex", gap: 12, alignItems: "center" }}>
-                <div style={{ background: "#ef4444", color: "white", padding: "5px 12px", borderRadius: "6px", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", gap: 6, letterSpacing: "0.08em", boxShadow: "0 2px 12px rgba(239,68,68,0.5)" }}>
-                  <Play size={10} fill="white" /> LIVE
+                <div style={{ background: featuredStream && featuredStream.isLive ? "#ef4444" : "#FF6A00", color: "white", padding: "5px 12px", borderRadius: "6px", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", gap: 6, letterSpacing: "0.08em", boxShadow: "0 2px 12px rgba(239,68,68,0.5)" }}>
+                  <Play size={10} fill="white" /> {featuredStream && featuredStream.isLive ? "LIVE NOW" : "FEATURED EVENT"}
                 </div>
                 <div style={{ color: "white", display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>
-                  <Eye size={15} /> 12.4K
+                  <Eye size={15} /> {featuredStream && featuredStream.isLive ? "34.2K VIEWERS" : "SPECTATORS ACTIVE"}
                 </div>
               </div>
 
               {/* Text + Buttons overlay — left center */}
               <div style={{ position: "absolute", left: 48, top: "50%", transform: "translateY(-50%)", maxWidth: 500, textAlign: "left" }}>
-                <h2 style={{ fontSize: "clamp(42px, 5.5vw, 80px)", fontWeight: 900, lineHeight: 0.95, letterSpacing: "-0.03em", color: "white", marginBottom: 20, textTransform: "uppercase" }}>
-                  Break Limits.<br />
-                  <span style={{ color: "#FF6A00" }}>Make History.</span>
+                <h2 style={{ fontSize: "clamp(30px, 4.5vw, 64px)", fontWeight: 900, lineHeight: 0.95, letterSpacing: "-0.03em", color: "white", marginBottom: 20, textTransform: "uppercase" }}>
+                  {featuredStream ? featuredStream.title : (
+                    <>
+                      Break Limits.<br />
+                      <span style={{ color: "#FF6A00" }}>Make History.</span>
+                    </>
+                  )}
                 </h2>
-                <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 17, lineHeight: 1.65, marginBottom: 36 }}>
-                  The ultimate platform for record breakers,<br />champions, and legends.
+                <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 16, lineHeight: 1.65, marginBottom: 36 }}>
+                  {featuredStream ? featuredStream.description : "The ultimate platform for record breakers, champions, and legends."}
                 </p>
                 <div style={{ display: "flex", gap: 14 }}>
-                  <Link to="/verify" style={{ textDecoration: "none" }}>
-                    <button
-                      style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "12px", padding: "15px 32px", fontSize: 16, fontWeight: 700, cursor: "pointer", transition: "transform 0.2s, box-shadow 0.2s", boxShadow: "0 4px 20px rgba(255,106,0,0.4)" }}
-                      onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 28px rgba(255,106,0,0.5)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(255,106,0,0.4)"; }}
-                    >
-                      Submit Record
-                    </button>
-                  </Link>
+                  {featuredStream ? (
+                    <Link to={`/stream/${featuredStream.id || featuredStream._id}`} style={{ textDecoration: "none" }}>
+                      <button
+                        style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "12px", padding: "15px 32px", fontSize: 15, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, boxShadow: "0 4px 20px rgba(255,106,0,0.4)" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 28px rgba(255,106,0,0.5)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(255,106,0,0.4)"; }}
+                      >
+                        <Play size={16} fill="white" /> WATCH LIVE STREAM
+                      </button>
+                    </Link>
+                  ) : (
+                    <Link to="/verify" style={{ textDecoration: "none" }}>
+                      <button
+                        style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "12px", padding: "15px 32px", fontSize: 16, fontWeight: 700, cursor: "pointer", transition: "transform 0.2s, box-shadow 0.2s", boxShadow: "0 4px 20px rgba(255,106,0,0.4)" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 28px rgba(255,106,0,0.5)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(255,106,0,0.4)"; }}
+                      >
+                        Submit Record
+                      </button>
+                    </Link>
+                  )}
                   <Link to="/explore" style={{ textDecoration: "none" }}>
                     <button
-                      style={{ background: "transparent", color: "white", border: "1.5px solid rgba(255,255,255,0.4)", borderRadius: "12px", padding: "15px 32px", fontSize: 16, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 10, backdropFilter: "blur(6px)", transition: "all 0.2s" }}
+                      style={{ background: "transparent", color: "white", border: "1.5px solid rgba(255,255,255,0.4)", borderRadius: "12px", padding: "15px 32px", fontSize: 15, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 10, backdropFilter: "blur(6px)", transition: "all 0.2s" }}
                       onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.7)"; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.4)"; }}
                     >

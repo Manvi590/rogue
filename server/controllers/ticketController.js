@@ -261,10 +261,130 @@ const grantFreeAccess = async (req, res) => {
   }
 };
 
+// @desc    Scan and verify a ticket
+// @route   POST /api/tickets/scan
+// @access  Private/Admin
+const scanAndVerifyTicket = async (req, res) => {
+  const { accessCode } = req.body;
+
+  try {
+    if (!accessCode) {
+      return res.status(400).json({ message: 'Access code is required' });
+    }
+
+    // Lookup ticket joining user and event tables
+    const { data: ticket, error } = await supabase
+      .from('tickets')
+      .select('*, user:users(*), event:events(*)')
+      .eq('access_code', accessCode)
+      .maybeSingle();
+
+    if (error || !ticket) {
+      return res.status(404).json({ message: 'Invalid ticket access code - Access Denied' });
+    }
+
+    // Check duplicate scan
+    if (ticket.status === 'used') {
+      return res.status(400).json({ 
+        message: 'Duplicate scan attempt - Already Used!', 
+        duplicate: true,
+        ticket: getFormattedTicket(ticket),
+        scannedAt: ticket.last_scanned_at,
+        scanCount: ticket.scan_count
+      });
+    }
+
+    // Check revoked ticket
+    if (ticket.status === 'revoked') {
+      return res.status(400).json({ message: 'This ticket has been revoked by an administrator', revoked: true });
+    }
+
+    // Check expiration
+    if (ticket.expires_at && new Date(ticket.expires_at) < new Date()) {
+      return res.status(400).json({ message: 'This ticket has expired and is no longer valid', expired: true });
+    }
+
+    // Mark as used, increment count and update timestamp
+    const nextScanCount = (ticket.scan_count || 0) + 1;
+    const { data: updatedTicket, error: updateError } = await supabase
+      .from('tickets')
+      .update({
+        status: 'used',
+        scan_count: nextScanCount,
+        last_scanned_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', ticket.id)
+      .select('*, user:users(*), event:events(*)')
+      .single();
+
+    if (updateError) throw updateError;
+
+    res.json({
+      message: 'Ticket scanned & verified successfully!',
+      success: true,
+      ticket: getFormattedTicket(updatedTicket)
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Get all tickets with user/event joins (admin only)
+// @route   GET /api/tickets/admin/list
+// @access  Private/Admin
+const getAllTicketsAdmin = async (req, res) => {
+  try {
+    const { data: tickets, error } = await supabase
+      .from('tickets')
+      .select('*, user:users(id, name, email), event:events(id, title)')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const formatted = tickets.map(t => getFormattedTicket(t));
+    res.json(formatted);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Reset ticket scan state for simulation/testing
+// @route   PUT /api/tickets/:ticketId/reset
+// @access  Private/Admin
+const resetTicketScan = async (req, res) => {
+  const { ticketId } = req.params;
+
+  try {
+    const { data: ticket, error } = await supabase
+      .from('tickets')
+      .update({
+        status: 'active',
+        scan_count: 0,
+        last_scanned_at: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', ticketId)
+      .select('*, user:users(*), event:events(*)')
+      .single();
+
+    if (error || !ticket) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+
+    res.json({ message: 'Ticket scan state reset successfully!', ticket: getFormattedTicket(ticket) });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   purchaseTicket,
   verifyTicket,
   getTicketDetails,
   revokeTicket,
-  grantFreeAccess
+  grantFreeAccess,
+  scanAndVerifyTicket,
+  getAllTicketsAdmin,
+  resetTicketScan
 };

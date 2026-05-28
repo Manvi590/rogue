@@ -2348,3 +2348,9 @@ a:hover svg {
   color: #666;
   line-height: 1.5;
 }
+.kpi-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px -10px rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.02) !important;
+  border-color: rgba(255,255,255,0.1) !important;
+}

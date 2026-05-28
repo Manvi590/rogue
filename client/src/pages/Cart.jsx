@@ -4,6 +4,9 @@ import { ShoppingBag, ArrowLeft, Trash2, ChevronRight, Plus, Minus, CheckCircle2
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { apiCall } from "../utils/api";
+import { useAuth } from "../context/AuthContext";
+
 
 const Cart = () => {
   const [items, setItems] = React.useState(() => {
@@ -31,9 +34,11 @@ const Cart = () => {
     localStorage.setItem("rogue_cart_items", JSON.stringify(items));
   }, [items]);
 
+  const { user } = useAuth();
   const [coupon, setCoupon] = React.useState("");
   const [couponMessage, setCouponMessage] = React.useState("");
   const [discount, setDiscount] = React.useState(0);
+  const [appliedCoupon, setAppliedCoupon] = React.useState(null);
 
   const [showCheckout, setShowCheckout] = React.useState(false);
   const [isProcessing, setIsProcessing] = React.useState(false);
@@ -42,6 +47,31 @@ const Cart = () => {
   const [cardNumber, setCardNumber] = React.useState("");
   const [expiryDate, setExpiryDate] = React.useState("");
   const [cvv, setCvv] = React.useState("");
+  const [shippingAddress, setShippingAddress] = React.useState("");
+
+  const [successMessages, setSuccessMessages] = React.useState({
+    msg_shop: 'Thank you! Your order has been processed securely. Your items will be processed and shipped shortly.',
+    msg_spectator: 'Thank you! Your order has been processed securely. Your spectator passes will be activated shortly.',
+    msg_combined: 'Thank you! Your order has been processed securely. Your items will be shipped shortly and your spectator passes will be activated shortly.'
+  });
+
+  React.useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const res = await apiCall("/contact/success-messages", "GET");
+        if (res) {
+          setSuccessMessages(prev => ({
+            ...prev,
+            ...res
+          }));
+        }
+      } catch (err) {
+        console.error("Error fetching success messages:", err);
+      }
+    };
+    fetchMessages();
+  }, []);
+
 
   const handleCardNumberChange = (e) => {
     const rawVal = e.target.value.replace(/\D/g, "");
@@ -89,16 +119,71 @@ const Cart = () => {
 
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.qty), 0);
 
-  const applyCoupon = () => {
+  const applyCoupon = async () => {
     if (!coupon.trim()) return;
-    if (coupon.toUpperCase() === "ROGUE20" || coupon.toUpperCase() === "ELITE20") {
-      setDiscount(subtotal * 0.20);
-      setCouponMessage("✓ 20% DISCOUNT APPLIED!");
-    } else {
-      setDiscount(0);
-      setCouponMessage("✗ Invalid coupon code.");
+    try {
+      setCouponMessage("Validating coupon...");
+      const response = await apiCall("/coupons/validate", "POST", {
+        code: coupon,
+        subtotal: subtotal,
+        items: items.map(item => ({
+          id: item.id,
+          title: item.title,
+          price: parseFloat(item.price),
+          qty: parseInt(item.qty),
+          category: item.category || null
+        })),
+        checkoutType: "shop",
+        userId: user?.id || null
+      });
+
+      if (response && response.valid) {
+        setAppliedCoupon(response);
+        setDiscount(parseFloat(response.discountAmount) || 0);
+        setCouponMessage(`✓ ${response.code} APPLIED! Saved $${parseFloat(response.discountAmount).toFixed(2)}`);
+      } else {
+        setAppliedCoupon(null);
+        setDiscount(0);
+        setCouponMessage(`✗ ${response?.message || "Invalid coupon code."}`);
+      }
+    } catch (err) {
+      console.error("Error applying coupon:", err);
+      // Hardcoded fallback for offline database testing/graceful path
+      if (coupon.toUpperCase() === "ROGUE20" || coupon.toUpperCase() === "ELITE20") {
+        const fallbackDiscount = subtotal * 0.20;
+        setAppliedCoupon({
+          code: coupon.toUpperCase(),
+          discountType: "percentage",
+          discountValue: 20,
+          discountAmount: fallbackDiscount
+        });
+        setDiscount(fallbackDiscount);
+        setCouponMessage("✓ 20% OFFLINE FALLBACK DISCOUNT APPLIED!");
+      } else {
+        setAppliedCoupon(null);
+        setDiscount(0);
+        setCouponMessage("✗ Validation failed. Coupon database offline.");
+      }
     }
   };
+
+  React.useEffect(() => {
+    if (appliedCoupon) {
+      const newSubtotal = items.reduce((acc, item) => acc + (item.price * item.qty), 0);
+      if (newSubtotal === 0) {
+        setAppliedCoupon(null);
+        setDiscount(0);
+        setCouponMessage("");
+        return;
+      }
+      if (appliedCoupon.discountType === "percentage") {
+        const newDiscount = newSubtotal * (parseFloat(appliedCoupon.discountValue) / 100);
+        setDiscount(Math.min(newDiscount, newSubtotal));
+      } else {
+        setDiscount(Math.min(parseFloat(appliedCoupon.discountValue), newSubtotal));
+      }
+    }
+  }, [items, appliedCoupon]);
 
   const total = Math.max(0, subtotal - discount);
 
@@ -233,7 +318,7 @@ const Cart = () => {
                 </div>
                 {discount > 0 && (
                   <div style={{ display: "flex", justifyContent: "space-between", color: "#22c55e", fontSize: "14px", fontWeight: "700" }}>
-                    <span>Discount (20% Off)</span>
+                    <span>Discount {appliedCoupon ? `(${appliedCoupon.code})` : ''}</span>
                     <span>-${discount.toFixed(2)}</span>
                   </div>
                 )}
@@ -306,9 +391,11 @@ const Cart = () => {
                     setCardNumber("");
                     setExpiryDate("");
                     setCvv("");
+                    setShippingAddress("");
                     setShowCheckout(true);
                   }
                 }}
+
                 style={{ width: "100%", background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "18px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: items.length > 0 ? "pointer" : "not-allowed", opacity: items.length > 0 ? 1 : 0.5, display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", transition: "all 0.3s" }} 
                 onMouseEnter={e => { if(items.length > 0) { e.currentTarget.style.transform = "scale(1.02)"; e.currentTarget.style.boxShadow = "0 10px 30px rgba(255,106,0,0.3)"; } }} 
                 onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "none"; }}
@@ -380,11 +467,11 @@ const Cart = () => {
                       const hasOtherItems = items.some(item => !item.title.toLowerCase().includes("spectator pass"));
                       
                       if (hasPass && !hasOtherItems) {
-                        return "Thank you! Your order has been processed securely. Your spectator passes will be activated shortly.";
+                        return successMessages.msg_spectator;
                       } else if (!hasPass && hasOtherItems) {
-                        return "Thank you! Your order has been processed securely. Your items will be processed and shipped shortly.";
+                        return successMessages.msg_shop;
                       } else {
-                        return "Thank you! Your order has been processed securely. Your items will be shipped shortly and your spectator passes will be activated shortly.";
+                        return successMessages.msg_combined;
                       }
                     })()}
                   </p>
@@ -404,7 +491,37 @@ const Cart = () => {
                 </div>
               ) : (
                 <form 
-                  onSubmit={(e) => { e.preventDefault(); setIsProcessing(true); setTimeout(() => { setIsProcessing(false); setIsSuccess(true); }, 2000); }}
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setIsProcessing(true);
+                    try {
+                      const payload = {
+                        customerName: cardholderName,
+                        customerEmail: user?.email || (cardholderName.toLowerCase().replace(/\s+/g, '') + "@example.com"),
+                        shippingAddress: shippingAddress || 'Digital Delivery',
+                        items: items.map(item => ({
+                          id: item.id,
+                          title: item.title,
+                          price: parseFloat(item.price),
+                          qty: parseInt(item.qty),
+                          size: item.size || null,
+                          color: item.color || null
+                        })),
+                        subtotal: parseFloat(subtotal),
+                        discount: parseFloat(discount),
+                        total: parseFloat(total),
+                        userId: user?.id || null,
+                        couponCode: appliedCoupon?.code || null
+                      };
+
+                      await apiCall("/shop/checkout", "POST", payload);
+                      setIsProcessing(false);
+                      setIsSuccess(true);
+                    } catch (err) {
+                      setIsProcessing(false);
+                      alert(`Checkout failed: ${err.message || 'Server error'}`);
+                    }
+                  }}
                   style={{ display: "flex", flexDirection: "column", gap: "24px" }}
                 >
                   <div>
@@ -425,7 +542,7 @@ const Cart = () => {
                     ))}
                     {discount > 0 && (
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ fontSize: "14px", fontWeight: "800", color: "#22c55e" }}>Discount</div>
+                        <div style={{ fontSize: "14px", fontWeight: "800", color: "#22c55e" }}>Discount {appliedCoupon ? `(${appliedCoupon.code})` : ''}</div>
                         <div style={{ fontSize: "14px", fontWeight: "900", color: "#22c55e" }}>-${discount.toFixed(2)}</div>
                       </div>
                     )}
@@ -436,6 +553,10 @@ const Cart = () => {
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    <div style={{ textAlign: "left" }}>
+                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>SHIPPING ADDRESS</label>
+                      <textarea placeholder="123 Main St, New York, NY 10001" value={shippingAddress} onChange={(e) => setShippingAddress(e.target.value)} required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px", minHeight: "60px", fontFamily: "inherit" }} />
+                    </div>
                     <div style={{ textAlign: "left" }}>
                       <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>CARDHOLDER NAME</label>
                       <input type="text" placeholder="John Doe" value={cardholderName} onChange={(e) => setCardholderName(e.target.value)} required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />

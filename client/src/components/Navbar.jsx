@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ArrowRight, Menu, X, User, LogOut, ChevronDown, BarChart3, Users, FileText, Settings } from "lucide-react";
+import { ArrowRight, Menu, X, User, LogOut, ChevronDown, BarChart3, Users, FileText, Settings, DollarSign, CreditCard, Layers, Target, Shield, ClipboardList, Sparkles, MessageSquare, ShieldAlert, Image, Layout, Lock, Server, TrendingUp, Megaphone, Crown } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 const Navbar = () => {
@@ -20,13 +20,32 @@ const Navbar = () => {
   ];
 
   const adminMenuItems = [
-    { label: "Dashboard", icon: <BarChart3 size={16} />, to: "/admin" },
-    { label: "Records & Submissions", icon: <FileText size={16} />, to: "/admin?tab=records" },
-    { label: "User Management", icon: <Users size={16} />, to: "/admin?tab=users" },
-    { label: "Events", icon: <Settings size={16} />, to: "/admin?tab=events" },
-    { label: "Products & Shop", icon: <Settings size={16} />, to: "/admin?tab=products" },
-    { label: "Revenue", icon: <Settings size={16} />, to: "/admin?tab=revenue" },
+    { label: "Dashboard", icon: <BarChart3 size={16} />, to: "/admin?tab=dashboard" },
+    { label: "User", icon: <Users size={16} />, to: "/admin?tab=user" },
+    { label: "Submissions", icon: <FileText size={16} />, to: "/admin?tab=submissions" },
+    { label: "Adjudicators", icon: <Shield size={16} />, to: "/admin?tab=adjudicators" },
+    { label: "Verification Queue", icon: <ClipboardList size={16} />, to: "/admin?tab=verification-queue" },
+    { label: "AI Controls", icon: <Sparkles size={16} />, to: "/admin?tab=aiVerification" },
+    { label: "Communications", icon: <MessageSquare size={16} />, to: "/admin?tab=communications" },
+    { label: "Moderation", icon: <ShieldAlert size={16} />, to: "/admin?tab=moderation" },
+    { label: "Media Library", icon: <Image size={16} />, to: "/admin?tab=mediaLibrary" },
+    { label: "Content Pages", icon: <Layout size={16} />, to: "/admin?tab=contentManagement" },
+    { label: "Security & Logs", icon: <Lock size={16} />, to: "/admin?tab=security" },
+    { label: "System Settings", icon: <Server size={16} />, to: "/admin?tab=systemSettings" },
+    { label: "Monetization", icon: <TrendingUp size={16} />, to: "/admin?tab=monetization" },
+    { label: "Sponsorships", icon: <Megaphone size={16} />, to: "/admin?tab=sponsorships" },
+    { label: "VIP Competitors", icon: <Crown size={16} />, to: "/admin?tab=vip" },
+    { label: "Challenges", icon: <Settings size={16} />, to: "/admin?tab=challenges" },
+    { label: "Payments", icon: <DollarSign size={16} />, to: "/admin?tab=payments" },
+    { label: "Memberships", icon: <CreditCard size={16} />, to: "/admin?tab=memberships" },
+    { label: "Shop Catalog", icon: <Layers size={16} />, to: "/admin?tab=products" },
+    { label: "Shop Orders", icon: <CreditCard size={16} />, to: "/admin?tab=orders" },
+    { label: "Categories", icon: <Layers size={16} />, to: "/admin?tab=categories" },
+    { label: "Divisions", icon: <Target size={16} />, to: "/admin?tab=divisions" },
+    { label: "Appeals", icon: <FileText size={16} />, to: "/admin?tab=appeals" },
+    { label: "Leaderboards", icon: <BarChart3 size={16} />, to: "/admin?tab=leaderboards" },
   ];
+
 
   const isActive = (path) => {
     if (path === "/leaderboard") {
@@ -108,10 +127,12 @@ const Navbar = () => {
                   background: "#161616",
                   border: "1px solid rgba(255,106,0,0.3)",
                   borderRadius: "12px",
-                  minWidth: "220px",
+                  minWidth: "440px",
                   zIndex: 1000,
                   boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
-                  overflow: "hidden"
+                  overflow: "hidden",
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
                 }}>
                   {adminMenuItems.map((item, idx) => (
                     <Link 
@@ -128,7 +149,8 @@ const Navbar = () => {
                         display: "flex",
                         alignItems: "center",
                         gap: "10px",
-                        borderBottom: idx < adminMenuItems.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
+                        borderBottom: "1px solid rgba(255,255,255,0.05)",
+                        borderRight: idx % 2 === 0 ? "1px solid rgba(255,255,255,0.05)" : "none",
                         cursor: "pointer",
                         transition: "background 0.2s",
                         background: "transparent"

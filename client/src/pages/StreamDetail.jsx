@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Play, Eye, Users, MessageSquare, Share2, Shield, Activity, Zap } from "lucide-react";
+import { ArrowLeft, ArrowRight, Play, Eye, Users, MessageSquare, Share2, Shield, Activity, Zap, Trash2, Ban } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -124,41 +125,79 @@ const StreamDetail = () => {
   const [ticketPrice, setTicketPrice] = React.useState(49);
   const [eventIsPaid, setEventIsPaid] = React.useState(false);
 
-  // Fetch event and verify ticket access
-  useEffect(() => {
-    const fetchEventAndVerifyAccess = async () => {
-      setLoading(true);
-      try {
-        // Get event details
-        const eventData = await apiCall(`/events/${id}`, 'GET');
-        setEvent(eventData);
-        
-        // Set event type and price
-        if (eventData) {
-          setEventIsPaid(eventData.isPaid || false);
-          setTicketPrice(eventData.ticketPrice || 49);
-          
-          // If user is logged in, verify ticket
-          if (user) {
-            const ticketVerification = await apiCall(`/tickets/verify/${id}`, 'GET', null, user.token);
-            setCanWatch(ticketVerification.canWatch);
-            setHasTicket(ticketVerification.hasTicket);
-          } else {
-            // Not logged in - can only watch free events
-            setCanWatch(!eventData.isPaid);
-            setHasTicket(false);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch event details", error);
-        // Fallback to demo events
-        setCanWatch(true);
-        setHasTicket(false);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Admin controls hooks
+  const [isAdminEditing, setIsAdminEditing] = React.useState(false);
+  const [adminFields, setAdminFields] = React.useState({
+    title: "",
+    description: "",
+    imageUrl: "",
+    streamUrl: "",
+    isPaid: false,
+    ticketPrice: "49.00",
+    competitors: "",
+    judges: "",
+    category: "WORLD RECORD",
+    isLive: false,
+    isFeatured: false
+  });
 
+  // Dynamic Chat & Moderation hooks
+  const [chatMessages, setChatMessages] = React.useState([
+    { id: 1, user: "IronMike", msg: "This is insane! 500kg incoming?", userId: "user-iron-mike" },
+    { id: 2, user: "RogueMarshal", msg: "Welcome to the finals everyone.", color: "#FF6A00", userId: "user-rogue-marshal" },
+    { id: 3, user: "LiftLover", msg: "Thor looks ready today.", userId: "user-lift-lover" },
+    { id: 4, user: "GymRat99", msg: "Let's goooooooo!", userId: "user-gym-rat-99" },
+    { id: 5, user: "Sarah_Lift", msg: "The atmosphere in Tokyo is electric.", userId: "user-sarah-lift" },
+  ]);
+  const [chatInput, setChatInput] = React.useState("");
+  const [blockedUsers, setBlockedUsers] = React.useState([]);
+
+  const isCurrentUserKicked = user && blockedUsers.includes(user.id || user._id);
+
+  // Fetch event and verify ticket access
+  const fetchEventAndVerifyAccess = async () => {
+    setLoading(true);
+    try {
+      const eventData = await apiCall(`/events/${id}`, 'GET');
+      setEvent(eventData);
+      
+      if (eventData) {
+        setEventIsPaid(eventData.isPaid || false);
+        setTicketPrice(eventData.ticketPrice || 49);
+        
+        if (user) {
+          const ticketVerification = await apiCall(`/tickets/verify/${id}`, 'GET', null, user.token);
+          setCanWatch(ticketVerification.canWatch);
+          setHasTicket(ticketVerification.hasTicket);
+        } else {
+          setCanWatch(!eventData.isPaid);
+          setHasTicket(false);
+        }
+
+        setAdminFields({
+          title: eventData.title || "",
+          description: eventData.description || "",
+          imageUrl: eventData.imageUrl || eventData.image || "",
+          streamUrl: eventData.streamUrl || "",
+          isPaid: eventData.isPaid || false,
+          ticketPrice: eventData.ticketPrice ? eventData.ticketPrice.toString() : "49.00",
+          competitors: eventData.competitors || "",
+          judges: eventData.judges || "",
+          category: eventData.category || "WORLD RECORD",
+          isLive: eventData.isLive || false,
+          isFeatured: eventData.isFeatured || false
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch event details", error);
+      setCanWatch(true);
+      setHasTicket(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchEventAndVerifyAccess();
   }, [id, user]);
 
@@ -166,6 +205,7 @@ const StreamDetail = () => {
   const isLocked = !loading && currentEvent && eventIsPaid && !canWatch;
 
   const handleWatchClick = () => {
+    if (isCurrentUserKicked) return;
     if (isLocked) {
       setShowModal(true);
       return;
@@ -182,7 +222,6 @@ const StreamDetail = () => {
   const purchaseTicket = async () => {
     if (!user) {
       showToast("Please log in to purchase a ticket.");
-      // Redirect to login
       window.location.href = '/login';
       return;
     }
@@ -190,7 +229,6 @@ const StreamDetail = () => {
       setLoading(true);
       await apiCall('/tickets', 'POST', { eventId: id }, user.token);
       
-      // Re-verify ticket access
       const ticketVerification = await apiCall(`/tickets/verify/${id}`, 'GET', null, user.token);
       setCanWatch(ticketVerification.canWatch);
       setHasTicket(ticketVerification.hasTicket);
@@ -206,6 +244,80 @@ const StreamDetail = () => {
     }
   };
 
+  const handleSaveAdminChanges = async (e) => {
+    e.preventDefault();
+    if (!user || !user.token) return;
+
+    try {
+      setLoading(true);
+      const payload = {
+        title: adminFields.title,
+        description: adminFields.description,
+        imageUrl: adminFields.imageUrl,
+        streamUrl: adminFields.streamUrl,
+        isPaid: adminFields.isPaid,
+        ticketPrice: adminFields.isPaid ? parseFloat(adminFields.ticketPrice) : 0,
+        competitors: adminFields.competitors,
+        judges: adminFields.judges,
+        category: adminFields.category,
+        isLive: adminFields.isLive,
+        isFeatured: adminFields.isFeatured
+      };
+
+      const res = await apiCall(`/events/${id}`, 'PUT', payload, user.token);
+      setEvent(res.event);
+      setEventIsPaid(res.event.isPaid || false);
+      setTicketPrice(res.event.ticketPrice || 49);
+      
+      const ticketVerification = await apiCall(`/tickets/verify/${id}`, 'GET', null, user.token);
+      setCanWatch(ticketVerification.canWatch);
+      setHasTicket(ticketVerification.hasTicket);
+
+      setIsAdminEditing(false);
+      showToast("⚡ Livestream Settings & Controls Updated!");
+    } catch (err) {
+      showToast(`Error: ${err.message || "Failed to update stream configuration"}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendChatMessage = (e) => {
+    if (e.key === "Enter" || e.type === "click") {
+      if (!chatInput.trim()) return;
+      
+      if (user && blockedUsers.includes(user.id || user._id)) {
+        showToast("🚫 Message blocked! You are banned from this chat.");
+        return;
+      }
+
+      const newMessage = {
+        id: Date.now(),
+        user: user ? user.name : "AnonymousSpectator",
+        msg: chatInput,
+        color: user && user.isAdmin ? "#FF6A00" : undefined,
+        userId: user ? user.id || user._id : "anonymous"
+      };
+
+      setChatMessages(prev => [...prev, newMessage]);
+      setChatInput("");
+    }
+  };
+
+  const handleDeleteChatMessage = (messageId) => {
+    setChatMessages(prev => prev.filter(m => m.id !== messageId));
+    showToast("🗑️ Message Deleted by Moderator.");
+  };
+
+  const handleBanChatter = (userId, userName) => {
+    if (userId === "anonymous" || !userId) {
+      showToast("Cannot ban anonymous participants.");
+      return;
+    }
+    setBlockedUsers(prev => [...prev, userId]);
+    showToast(`🚫 Chatter ${userName} has been banned & kicked!`);
+  };
+
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(""), 4000);
@@ -214,11 +326,10 @@ const StreamDetail = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
     
-    // Simple working countdown
     const timer = setInterval(() => {
       const now = new Date();
       const target = new Date();
-      target.setHours(23, 59, 59); // Example deadline for today
+      target.setHours(23, 59, 59);
       
       const diff = target - now;
       
@@ -311,7 +422,6 @@ const StreamDetail = () => {
               position: "relative",
               overflow: "hidden"
             }}>
-              {/* Background Glow */}
               <div style={{ position: "absolute", width: "150px", height: "150px", background: "#FF6A00", filter: "blur(100px)", opacity: 0.15, top: "-30px", right: "-30px" }} />
 
               <div style={{ display: "inline-flex", padding: "16px", background: "rgba(255, 106, 0, 0.1)", borderRadius: "50%", marginBottom: "24px", color: "#FF6A00" }}>
@@ -389,10 +499,22 @@ const StreamDetail = () => {
 
             {/* VIDEO PLAYER */}
             <div style={{ position: "relative", height: "600px", background: "#000", borderRadius: "24px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)" }}>
-              {isLocked ? (
+              {isCurrentUserKicked ? (
+                /* RECTIVE EJECTION SCREEN FOR BANNED USERS */
+                <div style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.95)", padding: "20px" }}>
+                  <Shield size={64} color="#EF4444" style={{ marginBottom: "20px", opacity: 0.9, filter: "drop-shadow(0 0 20px rgba(239,68,68,0.5))" }} />
+                  <h3 style={{ fontSize: "24px", fontWeight: "950", marginBottom: "12px", textAlign: "center", textTransform: "uppercase", letterSpacing: "0.05em", color: "#EF4444" }}>🚫 ACCESS REVOKED</h3>
+                  <p style={{ fontSize: "15px", color: "rgba(255,255,255,0.7)", marginBottom: "32px", textAlign: "center", maxWidth: "480px", lineHeight: "1.6" }}>
+                    You have been kicked from this livestream. An administrator has terminated your viewing session due to chat or safety policy violations.
+                  </p>
+                  <button onClick={() => window.location.href = '/'} style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "14px 32px", borderRadius: "100px", fontWeight: "800", fontSize: "13px", cursor: "pointer" }}>
+                    RETURN HOME
+                  </button>
+                </div>
+              ) : isLocked ? (
                 <>
                   <img
-                    src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1600&q=80"
+                    src={currentEvent.img || "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1600&q=80"}
                     alt="Stream locked"
                     style={{ width: "100%", height: "100%", objectFit: "cover", filter: "blur(16px)", opacity: 0.4 }}
                   />
@@ -422,7 +544,7 @@ const StreamDetail = () => {
               ) : isPlaying ? (
                 <div style={{ width: "100%", height: "100%", position: "relative", background: "#0c0c0c" }}>
                   <img
-                    src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1600&q=80"
+                    src={currentEvent.img || "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1600&q=80"}
                     alt="Stream playing"
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />
@@ -447,7 +569,7 @@ const StreamDetail = () => {
               ) : (
                 <>
                   <img
-                    src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1600&q=80"
+                    src={currentEvent.img || "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1600&q=80"}
                     alt="Stream"
                     style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.6 }}
                   />
@@ -462,7 +584,7 @@ const StreamDetail = () => {
               {/* Overlay Info */}
               <div style={{ position: "absolute", top: "24px", left: "24px", display: "flex", gap: "12px", zIndex: 10 }}>
                 <div style={{ background: isPlaying ? "#EF4444" : "#FF6A00", padding: "6px 16px", borderRadius: "6px", fontSize: "12px", fontWeight: "900", display: "flex", alignItems: "center", gap: "8px", transition: "background 0.3s" }}>
-                  <div style={{ width: "6px", height: "6px", background: "white", borderRadius: "50%" }}></div> {currentEvent.isFreeStream ? "FREE STREAM" : isPlaying ? "LIVE FEED" : "LIVE"}
+                  <div style={{ width: "6px", height: "6px", background: "white", borderRadius: "50%" }}></div> {!eventIsPaid ? "FREE STREAM" : isPlaying ? "LIVE FEED" : "LIVE"}
                 </div>
                 <div style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(10px)", padding: "6px 16px", borderRadius: "6px", fontSize: "12px", fontWeight: "900", display: "flex", alignItems: "center", gap: "8px" }}>
                   <Eye size={14} /> 34.2K VIEWERS
@@ -479,16 +601,38 @@ const StreamDetail = () => {
 
               {/* Messages */}
               <div style={{ flex: 1, padding: "24px", display: "flex", flexDirection: "column", gap: "16px", overflowY: "auto" }}>
-                {[
-                  { user: "IronMike", msg: "This is insane! 500kg incoming?" },
-                  { user: "RogueMarshal", msg: "Welcome to the finals everyone.", color: "#FF6A00" },
-                  { user: "LiftLover", msg: "Thor looks ready today." },
-                  { user: "GymRat99", msg: "Let's goooooooo!" },
-                  { user: "Sarah_Lift", msg: "The atmosphere in Tokyo is electric." },
-                ].map((m, i) => (
-                  <div key={i} style={{ fontSize: "13px", lineHeight: "1.5" }}>
-                    <span style={{ fontWeight: "900", color: m.color || "rgba(255,255,255,0.4)", marginRight: "8px" }}>{m.user}:</span>
-                    <span style={{ fontWeight: "500" }}>{m.msg}</span>
+                {chatMessages.map((m) => (
+                  <div key={m.id} style={{ fontSize: "13px", lineHeight: "1.5", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <span style={{ fontWeight: "900", color: m.color || "rgba(255,255,255,0.4)", marginRight: "8px" }}>{m.user}:</span>
+                      <span style={{ fontWeight: "500" }}>{m.msg}</span>
+                    </div>
+
+                    {/* MODERATOR CHAT ACTIONS */}
+                    {user && user.isAdmin && (
+                      <div style={{ display: "flex", gap: "8px", marginLeft: "12px" }}>
+                        <button
+                          onClick={() => handleDeleteChatMessage(m.id)}
+                          title="Delete message"
+                          style={{ background: "transparent", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", padding: "2px", display: "flex", alignItems: "center" }}
+                          onMouseEnter={e => e.currentTarget.style.color = "#EF4444"}
+                          onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                        {m.userId && m.userId !== "anonymous" && !blockedUsers.includes(m.userId) && (
+                          <button
+                            onClick={() => handleBanChatter(m.userId, m.user)}
+                            title="Ban and eject user"
+                            style={{ background: "transparent", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", padding: "2px", display: "flex", alignItems: "center" }}
+                            onMouseEnter={e => e.currentTarget.style.color = "#EF4444"}
+                            onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
+                          >
+                            <Ban size={12} />
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -498,10 +642,15 @@ const StreamDetail = () => {
                 <div style={{ position: "relative" }}>
                   <input
                     type="text"
+                    value={chatInput}
+                    onChange={e => setChatInput(e.target.value)}
+                    onKeyDown={handleSendChatMessage}
                     placeholder="Send a message..."
-                    style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "none", borderRadius: "100px", padding: "14px 20px", color: "white", fontSize: "13px", outline: "none" }}
+                    style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "none", borderRadius: "100px", padding: "14px 20px 14px 20px", color: "white", fontSize: "13px", outline: "none" }}
                   />
-                  <MessageSquare size={16} style={{ position: "absolute", right: "20px", top: "50%", transform: "translateY(-50%)", opacity: 0.3 }} />
+                  <button onClick={handleSendChatMessage} style={{ background: "transparent", border: "none", position: "absolute", right: "20px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "rgba(255,255,255,0.4)" }}>
+                    <MessageSquare size={16} />
+                  </button>
                 </div>
               </div>
             </div>
@@ -514,13 +663,25 @@ const StreamDetail = () => {
                   <div style={{ display: "flex", gap: "20px", color: "rgba(255,255,255,0.4)", fontSize: "14px", fontWeight: "700" }}>
                     <span style={{ color: "#FF6A00" }}>#{currentEvent.category}</span>
                     <span>• Tokyo Hub</span>
-                    <span>• {currentEvent.athletes}</span>
+                    <span>• {currentEvent.competitors || currentEvent.athletes || "CONTESTANTS SELECTED"}</span>
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                  
+                  {/* INLINE ADMIN CONTROLS SWITCH */}
+                  {user && user.isAdmin && event && (
+                    <button 
+                      onClick={() => setIsAdminEditing(prev => !prev)}
+                      style={{ background: "rgba(255,106,0,0.1)", border: "1px solid rgba(255,106,0,0.3)", color: "#FF6A00", padding: "12px 24px", borderRadius: "100px", fontWeight: "800", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+                    >
+                      <Zap size={14} fill="#FF6A00" /> {isAdminEditing ? "CLOSE SETTINGS" : "⚡ EDIT STREAM"}
+                    </button>
+                  )}
+
                   <button style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "12px 24px", borderRadius: "100px", fontWeight: "800", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
                     <Share2 size={16} /> SHARE
                   </button>
+                  
                   <button 
                     onClick={handleWatchClick}
                     style={{ 
@@ -554,9 +715,181 @@ const StreamDetail = () => {
                   </button>
                 </div>
               </div>
-              <p style={{ color: "rgba(255,255,255,0.5)", lineHeight: "1.6", fontSize: "15px" }}>
+
+              {/* DYNAMIC COMPETITORS AND JUDGES METADATA TILES */}
+              <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "16px", padding: "20px", marginBottom: "20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                <div>
+                  <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>OFFICIAL COMPETITORS</div>
+                  <div style={{ fontSize: "14px", fontWeight: "700", color: "white", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Users size={16} color="#FF6A00" /> {currentEvent.competitors || currentEvent.athletes || "CONTESTANTS SELECTED"}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>VERIFIED ADJUDICATORS & JUDGES</div>
+                  <div style={{ fontSize: "14px", fontWeight: "700", color: "white", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Shield size={16} color="#FF6A00" /> {currentEvent.judges || "ROGUE OFFICIAL ADJUDICATION TEAM"}
+                  </div>
+                </div>
+              </div>
+
+              <p style={{ color: "rgba(255,255,255,0.5)", lineHeight: "1.6", fontSize: "15px", margin: 0 }}>
                 {currentEvent.desc || "The final stage of the Rogue World Series. Competitors battle live for the absolute title record, officially adjudicated."}
               </p>
+
+              {/* INLINE ADMIN EDITING SUITE */}
+              <AnimatePresence>
+                {isAdminEditing && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    style={{ marginTop: "32px", padding: "32px", background: "rgba(255, 106, 0, 0.04)", border: "1px solid rgba(255, 106, 0, 0.2)", borderRadius: "20px", overflow: "hidden" }}
+                  >
+                    <h3 style={{ fontSize: "15px", fontWeight: "950", color: "white", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "20px" }}>
+                      ⚡ ADMIN LIVESTREAM LOCK & TICKET PRICING CONTROLS
+                    </h3>
+                    
+                    <form onSubmit={handleSaveAdminChanges} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>STREAM TITLE</label>
+                          <input 
+                            type="text" 
+                            required
+                            value={adminFields.title}
+                            onChange={e => setAdminFields({...adminFields, title: e.target.value})}
+                            style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>BANNER / THUMBNAIL URL</label>
+                          <input 
+                            type="text" 
+                            value={adminFields.imageUrl}
+                            onChange={e => setAdminFields({...adminFields, imageUrl: e.target.value})}
+                            style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none" }}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>STREAM DESCRIPTION</label>
+                        <textarea 
+                          value={adminFields.description}
+                          onChange={e => setAdminFields({...adminFields, description: e.target.value})}
+                          style={{ width: "100%", height: "60px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none", resize: "none" }}
+                        />
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>COMPETITORS</label>
+                          <input 
+                            type="text" 
+                            value={adminFields.competitors}
+                            onChange={e => setAdminFields({...adminFields, competitors: e.target.value})}
+                            placeholder="e.g. 12 ATHLETES"
+                            style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>JUDGING OFFICIALS</label>
+                          <input 
+                            type="text" 
+                            value={adminFields.judges}
+                            onChange={e => setAdminFields({...adminFields, judges: e.target.value})}
+                            placeholder="e.g. Adjudicated by Rogue Marshals"
+                            style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none" }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr 1fr", gap: "16px", alignItems: "center" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>STREAM VIDEO SOURCE URL</label>
+                          <input 
+                            type="text" 
+                            value={adminFields.streamUrl}
+                            onChange={e => setAdminFields({...adminFields, streamUrl: e.target.value})}
+                            placeholder="e.g. https://..."
+                            style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none" }}
+                          />
+                        </div>
+                        
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "16px" }}>
+                          <input 
+                            type="checkbox" 
+                            id="adminIsPaid"
+                            checked={adminFields.isPaid}
+                            onChange={e => setAdminFields({...adminFields, isPaid: e.target.checked})}
+                            style={{ accentColor: "#FF6A00", width: "16px", height: "16px", cursor: "pointer" }}
+                          />
+                          <label htmlFor="adminIsPaid" style={{ fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>PAID SPECTATOR PASS</label>
+                        </div>
+
+                        {adminFields.isPaid && (
+                          <div>
+                            <label style={{ display: "block", fontSize: "9px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "4px" }}>PASS PRICE ($ USD)</label>
+                            <input 
+                              type="number" 
+                              step="0.01"
+                              value={adminFields.ticketPrice}
+                              onChange={e => setAdminFields({...adminFields, ticketPrice: e.target.value})}
+                              style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none" }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* LIVESTREAM STATUS & HOMEPAGE FEATURE CONTROLS */}
+                      <div style={{ display: "flex", gap: "24px", alignItems: "center", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "16px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <input 
+                            type="checkbox" 
+                            id="adminIsLive"
+                            checked={adminFields.isLive}
+                            onChange={e => setAdminFields({...adminFields, isLive: e.target.checked})}
+                            style={{ accentColor: "#FF6A00", width: "16px", height: "16px", cursor: "pointer" }}
+                          />
+                          <label htmlFor="adminIsLive" style={{ fontSize: "12px", fontWeight: "800", cursor: "pointer", color: adminFields.isLive ? "#EF4444" : "white" }}>
+                            {adminFields.isLive ? "🔴 STREAM IS LIVE NOW" : "⚪ STREAM IS ENDED (PLAYBACK)"}
+                          </label>
+                        </div>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <input 
+                            type="checkbox" 
+                            id="adminIsFeatured"
+                            checked={adminFields.isFeatured}
+                            onChange={e => setAdminFields({...adminFields, isFeatured: e.target.checked})}
+                            style={{ accentColor: "#FF6A00", width: "16px", height: "16px", cursor: "pointer" }}
+                          />
+                          <label htmlFor="adminIsFeatured" style={{ fontSize: "12px", fontWeight: "800", cursor: "pointer", color: adminFields.isFeatured ? "#FF6A00" : "white" }}>
+                            ⭐ FEATURE THIS LIVESTREAM ON HOMEPAGE
+                          </label>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", gap: "16px", marginTop: "8px" }}>
+                        <button 
+                          type="submit"
+                          style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "12px 32px", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer" }}
+                        >
+                          💾 SAVE CHANGES
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => setIsAdminEditing(false)}
+                          style={{ background: "rgba(255, 255, 255, 0.05)", color: "rgba(255, 255, 255, 0.6)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "100px", padding: "12px 32px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", cursor: "pointer" }}
+                        >
+                          CANCEL
+                        </button>
+                      </div>
+                    </form>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
             </div>
 
           </div>
@@ -596,7 +929,7 @@ const StreamDetail = () => {
                     🔥 92% TICKETS SOLD OUT
                   </div>
                   <div style={{ fontSize: "18px", fontWeight: "900", color: "white" }}>
-                    FROM <span style={{ color: "#FF6A00" }}>$49.00</span> / PASS
+                    FROM <span style={{ color: "#FF6A00" }}>${ticketPrice.toFixed(2)}</span> / PASS
                   </div>
                 </div>
               </div>

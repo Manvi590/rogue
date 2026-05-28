@@ -26,6 +26,9 @@ const getEvents = async (req, res) => {
       streamUrl: e.stream_url,
       isPaid: e.is_paid,
       ticketPrice: e.ticket_price,
+      competitors: e.competitors,
+      judges: e.judges,
+      isFeatured: e.is_featured,
       createdAt: e.created_at,
       updatedAt: e.updated_at
     }));
@@ -64,6 +67,9 @@ const getEventById = async (req, res) => {
       streamUrl: event.stream_url,
       isPaid: event.is_paid,
       ticketPrice: event.ticket_price,
+      competitors: event.competitors,
+      judges: event.judges,
+      isFeatured: event.is_featured,
       createdAt: event.created_at,
       updatedAt: event.updated_at
     };
@@ -78,7 +84,7 @@ const getEventById = async (req, res) => {
 // @route   POST /api/events
 // @access  Private/Admin
 const createEvent = async (req, res) => {
-  const { title, description, date, location, image, imageUrl, isLive, streamUrl, isPaid, ticketPrice } = req.body;
+  const { title, description, date, location, image, imageUrl, isLive, streamUrl, isPaid, ticketPrice, competitors, judges, isFeatured } = req.body;
 
   try {
     if (!title || !description || !date || !location) {
@@ -100,7 +106,10 @@ const createEvent = async (req, res) => {
         is_live: isLive || false,
         stream_url: streamUrl || '',
         is_paid: isPaid || false,
-        ticket_price: isPaid ? parseFloat(ticketPrice) : 0.00
+        ticket_price: isPaid ? parseFloat(ticketPrice) : 0.00,
+        competitors: competitors || '',
+        judges: judges || '',
+        is_featured: isFeatured || false
       }])
       .select()
       .single();
@@ -120,6 +129,9 @@ const createEvent = async (req, res) => {
       streamUrl: event.stream_url,
       isPaid: event.is_paid,
       ticketPrice: event.ticket_price,
+      competitors: event.competitors,
+      judges: event.judges,
+      isFeatured: event.is_featured,
       createdAt: event.created_at,
       updatedAt: event.updated_at
     };
@@ -134,7 +146,7 @@ const createEvent = async (req, res) => {
 // @route   PUT /api/events/:id
 // @access  Private/Admin
 const updateEvent = async (req, res) => {
-  const { title, description, date, location, image, imageUrl, isLive, streamUrl, isPaid, ticketPrice } = req.body;
+  const { title, description, date, location, image, imageUrl, isLive, streamUrl, isPaid, ticketPrice, competitors, judges, isFeatured } = req.body;
 
   try {
     // Check if event exists
@@ -153,15 +165,18 @@ const updateEvent = async (req, res) => {
     }
 
     const updates = {
-      title: title || existingEvent.title,
-      description: description || existingEvent.description,
-      date: date || existingEvent.date,
-      location: location || existingEvent.location,
-      image_url: imageUrl || image || existingEvent.image_url,
+      title: title !== undefined ? title : existingEvent.title,
+      description: description !== undefined ? description : existingEvent.description,
+      date: date !== undefined ? date : existingEvent.date,
+      location: location !== undefined ? location : existingEvent.location,
+      image_url: imageUrl !== undefined ? imageUrl : (image !== undefined ? image : existingEvent.image_url),
       is_live: isLive !== undefined ? isLive : existingEvent.is_live,
-      stream_url: streamUrl || existingEvent.stream_url,
+      stream_url: streamUrl !== undefined ? streamUrl : existingEvent.stream_url,
       is_paid: isPaid !== undefined ? isPaid : existingEvent.is_paid,
       ticket_price: isPaid !== undefined ? (isPaid ? parseFloat(ticketPrice) : 0.00) : existingEvent.ticket_price,
+      competitors: competitors !== undefined ? competitors : existingEvent.competitors,
+      judges: judges !== undefined ? judges : existingEvent.judges,
+      is_featured: isFeatured !== undefined ? isFeatured : existingEvent.is_featured,
       updated_at: new Date()
     };
 
@@ -187,6 +202,9 @@ const updateEvent = async (req, res) => {
       streamUrl: event.stream_url,
       isPaid: event.is_paid,
       ticketPrice: event.ticket_price,
+      competitors: event.competitors,
+      judges: event.judges,
+      isFeatured: event.is_featured,
       createdAt: event.created_at,
       updatedAt: event.updated_at
     };

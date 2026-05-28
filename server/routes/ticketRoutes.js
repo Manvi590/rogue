@@ -5,9 +5,12 @@ const {
   verifyTicket, 
   getTicketDetails,
   revokeTicket,
-  grantFreeAccess
+  grantFreeAccess,
+  scanAndVerifyTicket,
+  getAllTicketsAdmin,
+  resetTicketScan
 } = require('../controllers/ticketController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, admin } = require('../middleware/authMiddleware');
 
 // Public routes
 router.get('/verify/:eventId', protect, verifyTicket);
@@ -17,7 +20,10 @@ router.post('/', protect, purchaseTicket);
 router.get('/:ticketId', protect, getTicketDetails);
 
 // Admin routes
-router.put('/:ticketId/revoke', protect, revokeTicket);
-router.post('/grant', protect, grantFreeAccess);
+router.put('/:ticketId/revoke', protect, admin, revokeTicket);
+router.post('/grant', protect, admin, grantFreeAccess);
+router.post('/scan', protect, admin, scanAndVerifyTicket);
+router.get('/admin/list', protect, admin, getAllTicketsAdmin);
+router.put('/:ticketId/reset', protect, admin, resetTicketScan);
 
 module.exports = router;

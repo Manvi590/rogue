@@ -13,6 +13,10 @@ const SubmissionCheckout = () => {
   const { submissionData } = location.state || {};
   const { user } = useAuth();
   
+  const [coupon, setCoupon] = useState("");
+  const [couponMessage, setCouponMessage] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [discount, setDiscount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -26,7 +30,74 @@ const SubmissionCheckout = () => {
     );
   }
 
+  const [successMessages, setSuccessMessages] = useState({
+    msg_record: 'Thank you! Your order has been processed securely. Our adjudication team will get back to you with the results using the email you provided.',
+    msg_challenge: 'Thank you! Your challenge registration fee has been securely processed. Prepare to compete and claim your record!'
+  });
+
+  React.useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const res = await apiCall("/contact/success-messages", "GET");
+        if (res) {
+          setSuccessMessages(prev => ({
+            ...prev,
+            ...res
+          }));
+        }
+      } catch (err) {
+        console.error("Error fetching success messages:", err);
+      }
+    };
+    fetchMessages();
+  }, []);
+
   const [trackingNumber, setTrackingNumber] = useState("");
+
+  const baseFee = 3.50;
+  const finalFee = Math.max(0, baseFee - discount);
+
+  const applyCoupon = async () => {
+    if (!coupon.trim()) return;
+    try {
+      setCouponMessage("Validating coupon...");
+      const response = await apiCall("/coupons/validate", "POST", {
+        code: coupon,
+        subtotal: baseFee,
+        checkoutType: "ticket", // Fits processing fees / tickets category rules
+        targetId: submissionData.id,
+        userId: user?.id || null
+      });
+
+      if (response && response.valid) {
+        setAppliedCoupon(response);
+        setDiscount(parseFloat(response.discountAmount) || 0);
+        setCouponMessage(`✓ ${response.code} APPLIED! Saved $${parseFloat(response.discountAmount).toFixed(2)}`);
+      } else {
+        setAppliedCoupon(null);
+        setDiscount(0);
+        setCouponMessage(`✗ ${response?.message || "Invalid coupon code."}`);
+      }
+    } catch (err) {
+      console.error("Error applying submission coupon:", err);
+      // Hardcoded fallback
+      if (coupon.toUpperCase() === "ELITE20" || coupon.toUpperCase() === "ROGUE20") {
+        const fallbackDiscount = baseFee * 0.20;
+        setAppliedCoupon({
+          code: coupon.toUpperCase(),
+          discountType: "percentage",
+          discountValue: 20,
+          discountAmount: fallbackDiscount
+        });
+        setDiscount(fallbackDiscount);
+        setCouponMessage("✓ 20% OFFLINE FALLBACK DISCOUNT APPLIED!");
+      } else {
+        setAppliedCoupon(null);
+        setDiscount(0);
+        setCouponMessage("✗ Validation failed. Coupon database offline.");
+      }
+    }
+  };
 
   const handlePayment = async () => {
     setLoading(true);
@@ -37,7 +108,11 @@ const SubmissionCheckout = () => {
         throw new Error("Invalid submission ID. Please try submitting again.");
       }
       
-      const response = await apiCall(`/records/${submissionData.id}/checkout`, 'POST', {}, user?.token);
+      const response = await apiCall(`/records/${submissionData.id}/checkout`, 'POST', {
+        couponCode: appliedCoupon?.code || null,
+        discountAmount: discount,
+        finalAmount: finalFee
+      }, user?.token);
       
       setTrackingNumber(response.trackingNumber || `RWR-${Math.random().toString(36).substr(2, 9).toUpperCase()}`);
       setSuccess(true);
@@ -61,7 +136,9 @@ const SubmissionCheckout = () => {
               </div>
               <h1 style={{ fontSize: "40px", fontWeight: "950", textTransform: "uppercase", marginBottom: "20px" }}>PAYMENT <span style={{ color: "#FF6A00" }}>SUCCESSFUL</span></h1>
               <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "16px", marginBottom: "40px", lineHeight: "1.6" }}>
-                Thank you! Your order has been processed securely. Our adjudication team will get back to you with the results using the email you provided.
+                {submissionData.recordType === 'challenge' 
+                  ? successMessages.msg_challenge 
+                  : successMessages.msg_record}
               </p>
               
               <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", padding: "30px", marginBottom: "40px", textAlign: "left", display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -121,7 +198,7 @@ const SubmissionCheckout = () => {
                     disabled={loading}
                     style={{ width: "100%", background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "18px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", boxShadow: "0 10px 20px rgba(255,106,0,0.2)", opacity: loading ? 0.7 : 1 }}
                   >
-                    {loading ? <><Loader2 size={18} className="animate-spin" /> PROCESSING...</> : "PAY $3.50 & SUBMIT"}
+                    {loading ? <><Loader2 size={18} className="animate-spin" /> PROCESSING...</> : `PAY $${finalFee.toFixed(2)} & SUBMIT`}
                   </button>
                 </div>
 
@@ -145,10 +222,49 @@ const SubmissionCheckout = () => {
                     
                     <div style={{ height: "1px", background: "rgba(255,255,255,0.1)", marginBottom: "20px" }}></div>
                     
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "14px", color: "rgba(255,255,255,0.6)", marginBottom: "12px" }}>
+                      <span>PROCESSING FEE</span>
+                      <span>$3.50</span>
+                    </div>
+                    {discount > 0 && (
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "14px", color: "#22c55e", fontWeight: "700", marginBottom: "12px" }}>
+                        <span>DISCOUNT {appliedCoupon ? `(${appliedCoupon.code})` : ''}</span>
+                        <span>-${discount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div style={{ height: "1px", background: "rgba(255,255,255,0.1)", marginBottom: "20px" }}></div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "18px", fontWeight: "900" }}>
                       <span>TOTAL FEE</span>
-                      <span style={{ color: "#FF6A00" }}>$3.50</span>
+                      <span style={{ color: "#FF6A00" }}>${finalFee.toFixed(2)}</span>
                     </div>
+                  </div>
+
+                  {/* Coupon Redeem Box */}
+                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "24px", padding: "24px", marginBottom: "20px" }}>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>
+                      Redeem Coupon Code
+                    </label>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. ELITE20" 
+                        value={coupon}
+                        onChange={(e) => setCoupon(e.target.value)}
+                        style={{ flex: 1, background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none", fontWeight: "700" }}
+                      />
+                      <button 
+                        type="button"
+                        onClick={applyCoupon}
+                        style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "12px", padding: "12px 24px", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer" }}
+                      >
+                        REDEEM
+                      </button>
+                    </div>
+                    {couponMessage && (
+                      <div style={{ marginTop: "10px", fontSize: "11px", fontWeight: "800", color: couponMessage.includes("Invalid") || couponMessage.includes("failed") || couponMessage.includes("restricted") || couponMessage.includes("not valid") ? "#ef4444" : "#22c55e", textTransform: "uppercase" }}>
+                        {couponMessage}
+                      </div>
+                    )}
                   </div>
                   
                   <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.3)", lineHeight: "1.5", textAlign: "center" }}>

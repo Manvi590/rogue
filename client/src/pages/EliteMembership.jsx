@@ -24,8 +24,15 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ScrollReveal from "../components/ScrollReveal";
 import { motion } from "framer-motion";
+import { apiCall } from "../utils/api";
+import { useAuth } from "../context/AuthContext";
 
 const EliteMembership = () => {
+  const { user } = useAuth();
+  const [coupon, setCoupon] = useState("");
+  const [couponMessage, setCouponMessage] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [discount, setDiscount] = useState(0);
   const [activeTab, setActiveTab] = useState("MONTHLY");
   const [selectedTier, setSelectedTier] = useState("silver");
   const [selectedPack, setSelectedPack] = useState(1);
@@ -72,6 +79,49 @@ const EliteMembership = () => {
     const rawVal = e.target.value.replace(/\D/g, "");
     const limitedVal = rawVal.substring(0, maxCvvLength);
     setCvv(limitedVal);
+  };
+
+  const applyCoupon = async () => {
+    if (!coupon.trim() || !checkoutItem) return;
+    const originalPrice = parseFloat(checkoutItem.price.replace("$", "")) || 0;
+    try {
+      setCouponMessage("Validating coupon...");
+      const response = await apiCall("/coupons/validate", "POST", {
+        code: coupon,
+        subtotal: originalPrice,
+        checkoutType: "membership",
+        targetId: checkoutItem.name.toLowerCase().replace(" membership", ""), // e.g. "silver" or "gold" or "bronze"
+        userId: user?.id || null
+      });
+
+      if (response && response.valid) {
+        setAppliedCoupon(response);
+        setDiscount(parseFloat(response.discountAmount) || 0);
+        setCouponMessage(`✓ ${response.code} APPLIED! Saved $${parseFloat(response.discountAmount).toFixed(2)}`);
+      } else {
+        setAppliedCoupon(null);
+        setDiscount(0);
+        setCouponMessage(`✗ ${response?.message || "Invalid coupon code."}`);
+      }
+    } catch (err) {
+      console.error("Error applying membership coupon:", err);
+      // Hardcoded fallback
+      if (coupon.toUpperCase() === "ELITE20" || coupon.toUpperCase() === "ROGUE20") {
+        const fallbackDiscount = originalPrice * 0.20;
+        setAppliedCoupon({
+          code: coupon.toUpperCase(),
+          discountType: "percentage",
+          discountValue: 20,
+          discountAmount: fallbackDiscount
+        });
+        setDiscount(fallbackDiscount);
+        setCouponMessage("✓ 20% OFFLINE FALLBACK DISCOUNT APPLIED!");
+      } else {
+        setAppliedCoupon(null);
+        setDiscount(0);
+        setCouponMessage("✗ Validation failed. Coupon database offline.");
+      }
+    }
   };
 
   React.useEffect(() => {
@@ -295,6 +345,10 @@ const EliteMembership = () => {
                         setCardNumber("");
                         setExpiryDate("");
                         setCvv("");
+                        setCoupon("");
+                        setCouponMessage("");
+                        setAppliedCoupon(null);
+                        setDiscount(0);
                         setShowCheckout(true);
                       }}
                       style={{ 
@@ -404,6 +458,10 @@ const EliteMembership = () => {
                           setCardNumber("");
                           setExpiryDate("");
                           setCvv("");
+                          setCoupon("");
+                          setCouponMessage("");
+                          setAppliedCoupon(null);
+                          setDiscount(0);
                           setShowCheckout(true);
                         }}
                         style={{ 
@@ -633,24 +691,77 @@ const EliteMembership = () => {
                   </div>
 
                   {/* ITEM SUMMARY BOX */}
-                  <div style={{
-                    background: "rgba(255, 106, 0, 0.05)",
-                    border: "1px dashed rgba(255, 106, 0, 0.2)",
-                    borderRadius: "16px",
-                    padding: "20px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center"
-                  }}>
-                    <div style={{ textAlign: "left" }}>
-                      <div style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.4)" }}>ITEM</div>
-                      <div style={{ fontSize: "16px", fontWeight: "800", color: "white" }}>{checkoutItem.name}</div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.4)" }}>TOTAL DUE</div>
-                      <div style={{ fontSize: "20px", fontWeight: "950", color: "#FF6A00" }}>{checkoutItem.price}</div>
-                    </div>
-                  </div>
+                  {(() => {
+                    const originalPrice = parseFloat(checkoutItem.price.replace("$", "")) || 0;
+                    const finalPrice = Math.max(0, originalPrice - discount);
+                    
+                    return (
+                      <>
+                        <div style={{
+                          background: "rgba(255, 106, 0, 0.05)",
+                          border: "1px dashed rgba(255, 106, 0, 0.2)",
+                          borderRadius: "16px",
+                          padding: "20px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "12px"
+                        }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div style={{ textAlign: "left" }}>
+                              <div style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.4)" }}>ITEM</div>
+                              <div style={{ fontSize: "16px", fontWeight: "800", color: "white" }}>{checkoutItem.name}</div>
+                            </div>
+                            <div style={{ textAlign: "right" }}>
+                              <div style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.4)" }}>BASE PRICE</div>
+                              <div style={{ fontSize: "16px", fontWeight: "800", color: "white" }}>{checkoutItem.price}</div>
+                            </div>
+                          </div>
+
+                          {discount > 0 && (
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <div style={{ fontSize: "11px", fontWeight: "900", color: "#22c55e" }}>DISCOUNT {appliedCoupon ? `(${appliedCoupon.code})` : ''}</div>
+                              <div style={{ fontSize: "16px", fontWeight: "800", color: "#22c55e" }}>-${discount.toFixed(2)}</div>
+                            </div>
+                          )}
+
+                          <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.4)" }}>TOTAL DUE</div>
+                            <div style={{ fontSize: "20px", fontWeight: "950", color: "#FF6A00" }}>${finalPrice.toFixed(2)}</div>
+                          </div>
+                        </div>
+
+                        {/* COUPON REDEEM SECTION */}
+                        {originalPrice > 0 && (
+                          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "16px", textAlign: "left" }}>
+                            <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>
+                              Redeem Coupon Code
+                            </label>
+                            <div style={{ display: "flex", gap: "8px" }}>
+                              <input 
+                                type="text" 
+                                placeholder="e.g. ELITE20" 
+                                value={coupon}
+                                onChange={(e) => setCoupon(e.target.value)}
+                                style={{ flex: 1, background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "10px", padding: "10px 14px", color: "white", fontSize: "12px", outline: "none", fontWeight: "700" }}
+                              />
+                              <button 
+                                type="button"
+                                onClick={applyCoupon}
+                                style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "10px", padding: "10px 18px", fontSize: "11px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer" }}
+                              >
+                                REDEEM
+                              </button>
+                            </div>
+                            {couponMessage && (
+                              <div style={{ marginTop: "8px", fontSize: "11px", fontWeight: "800", color: couponMessage.includes("Invalid") || couponMessage.includes("failed") || couponMessage.includes("offline") || couponMessage.includes("restricted") || couponMessage.includes("not valid") ? "#ef4444" : "#22c55e", textTransform: "uppercase" }}>
+                                {couponMessage}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
 
                   {/* CARD DETAILS FORM */}
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -694,7 +805,10 @@ const EliteMembership = () => {
                       marginTop: "8px"
                     }}
                   >
-                    <span>SECURELY PAY {checkoutItem.price}</span> <Shield size={16} />
+                    <span>SECURELY PAY ${(() => {
+                      const originalPrice = parseFloat(checkoutItem.price.replace("$", "")) || 0;
+                      return Math.max(0, originalPrice - discount).toFixed(2);
+                    })()}</span> <Shield size={16} />
                   </button>
                 </form>
               )}

@@ -6,7 +6,7 @@ const supabase = require('../config/supabase');
 const getRecords = async (req, res) => {
   const { data: records, error } = await supabase
     .from('records')
-    .select('*, user:users(name)')
+    .select('*, user:users!records_user_id_fkey(name)')
     .eq('status', 'verified');
   
   if (error) {
@@ -21,7 +21,7 @@ const getRecords = async (req, res) => {
 const getRecordById = async (req, res) => {
   const { data: record, error } = await supabase
     .from('records')
-    .select('*, user:users(name)')
+    .select('*, user:users!records_user_id_fkey(name)')
     .eq('id', req.params.id)
     .single();
 
@@ -126,7 +126,7 @@ const processCheckout = async (req, res) => {
 const getLeaderboard = async (req, res) => {
   const { data: leaderboard, error } = await supabase
     .from('records')
-    .select('*, user:users(name, profile_image)')
+    .select('*, user:users!records_user_id_fkey(name, profile_image)')
     .eq('status', 'verified')
     .order('created_at', { ascending: false })
     .limit(10);
@@ -162,7 +162,7 @@ const getAllSubmissionsForAdmin = async (req, res) => {
   try {
     const { data: records, error } = await supabase
       .from('records')
-      .select('*, user:users(name, email), record_meta(*)')
+      .select('*, user:users!records_user_id_fkey(name, email), record_meta(*)')
       .order('created_at', { ascending: false });
 
     if (error) throw error;

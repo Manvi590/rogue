@@ -5,12 +5,33 @@ import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ScrollReveal from "../components/ScrollReveal";
+import { apiCall } from "../utils/api";
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  const products = [
+  const [dbProduct, setDbProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        if (id && id.length > 8) { // DB UUIDs are long
+          const data = await apiCall(`/shop/${id}`, "GET");
+          setDbProduct(data);
+        }
+      } catch (err) {
+        console.error("Failed to query product from database:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProduct();
+  }, [id]);
+
+  const hardcodedProducts = [
+
     {
       id: 5,
       title: "LIVE EVENT SPECTATOR PASS",
@@ -73,20 +94,53 @@ const ProductDetail = () => {
     },
   ];
 
-  const product = products.find(p => p.id === parseInt(id)) || products[0];
+  const product = dbProduct
+    ? {
+        id: dbProduct.id,
+        title: dbProduct.name,
+        price: dbProduct.price,
+        desc: dbProduct.description,
+        img: dbProduct.image_url || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=600&q=80",
+        badge: dbProduct.category?.toUpperCase() || "GEAR",
+        category: dbProduct.category?.toUpperCase() || "APPAREL",
+        fullDesc: dbProduct.description,
+        sizes: Array.isArray(dbProduct.sizes) ? dbProduct.sizes.map(sz => sz.size) : [],
+        dbSizes: dbProduct.sizes || [],
+        colors: []
+      }
+    : (hardcodedProducts.find(p => String(p.id) === String(id)) || hardcodedProducts[0]);
 
   const [quantity, setQuantity] = useState(1);
-  const [selectedSize, setSelectedSize] = useState(product.sizes[0] || "");
-  const [selectedColor, setSelectedColor] = useState(product.colors[0] || "");
+  const [selectedSize, setSelectedSize] = useState("");
+  const [selectedColor, setSelectedColor] = useState("");
   const [added, setAdded] = useState(false);
+
+  useEffect(() => {
+    if (product) {
+      setSelectedSize(product.sizes[0] || "");
+      setSelectedColor(product.colors[0] || "");
+    }
+  }, [product]);
 
   const incrementQty = () => setQuantity(q => q + 1);
   const decrementQty = () => setQuantity(q => q > 1 ? q - 1 : 1);
 
   const getCalculatedPrice = () => {
-    let basePrice = parseFloat(product.price.replace(/[^0-9.]/g, ""));
+    if (!product) return 0;
+
+    // If database product sizes exist, read the size-based price directly
+    if (product.dbSizes && Array.isArray(product.dbSizes) && product.dbSizes.length > 0) {
+      const foundSize = product.dbSizes.find(sz => sz.size === selectedSize);
+      if (foundSize) {
+        return parseFloat(foundSize.price || product.price);
+      }
+    }
+
+    // Fallback for hardcoded products
+    let basePrice = typeof product.price === 'number' ? product.price : parseFloat(String(product.price).replace(/[^0-9.]/g, ""));
     if (selectedSize) {
       const match = selectedSize.match(/\(\+\s*\$(\d+(\.\d+)?)\)/);
+
       if (match) {
         basePrice += parseFloat(match[1]);
       }
@@ -135,8 +189,20 @@ const ProductDetail = () => {
     }, 1500);
   };
 
+  if (loading && id && id.length > 8) {
+    return (
+      <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", fontFamily: "'Inter', sans-serif" }}>
+        <Navbar />
+        <div style={{ width: "50px", height: "50px", border: "4px solid rgba(255,106,0,0.1)", borderTop: "4px solid #FF6A00", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+        <p style={{ marginTop: "20px", color: "#666", letterSpacing: "1px", fontSize: "12px", fontWeight: "bold" }}>LOADING PRODUCT DETAILS...</p>
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
   return (
     <PageTransition>
+
       <div style={{ background: "#0A0A0A", color: "white", fontFamily: "'Inter', sans-serif", minHeight: "100vh", paddingTop: "80px", display: "flex", flexDirection: "column" }}>
         
         {/* NAVBAR */}

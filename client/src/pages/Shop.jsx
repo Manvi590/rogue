@@ -5,11 +5,126 @@ import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ScrollReveal from "../components/ScrollReveal";
+import { apiCall } from "../utils/api";
+import { useAuth } from "../context/AuthContext";
 
 const Shop = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("ALL ITEMS");
+  const [dbProducts, setDbProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const [toast, setToast] = useState("");
+
+  // Admin Certificate & Award Hub states
+  const [adminSubTab, setAdminSubTab] = useState("generator");
+  
+  // Certificate states
+  const [certName, setCertName] = useState("JOHNATHAN TITAN");
+  const [certRecord, setCertRecord] = useState("HEAVYWEIGHT BENCH PRESS WORLD RECORD");
+  const [certValue, setCertValue] = useState("502.5 KG");
+  const [certAdjudicator, setCertAdjudicator] = useState("CHIEF MARSHAL O'NEILL");
+  const [certDate, setCertDate] = useState(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase());
+  const [certTheme, setCertTheme] = useState("onyx"); // "onyx" | "parchment" | "gold" | "glacial"
+
+  // Medal & Award Creator states
+  const [awardName, setAwardName] = useState("");
+  const [awardPrice, setAwardPrice] = useState("");
+  const [awardDesc, setAwardDesc] = useState("");
+  const [awardStock, setAwardStock] = useState("10");
+  const [awardImg, setAwardImg] = useState("");
+  const [awardCategory, setAwardCategory] = useState("CERTIFICATES");
+
+  // Framed Award Orders states
+  const [awardOrders, setAwardOrders] = useState([
+    { id: "ord-1", name: "Johnathan Titan", product: "Embossed Obsidian Framed Certificate", date: "2026-05-12", frameType: "Obsidian Frame", customDetails: "Recipient: Johnathan Titan - 502.5kg Bench Press", status: "processing" },
+    { id: "ord-2", name: "Michael Jordan", product: "Titan Gold Medal & Premium Ribbon", date: "2026-05-18", frameType: "Gold Leaf Border", customDetails: "Recipient: Michael Jordan - Retro Basketball Max Score", status: "shipped" },
+    { id: "ord-3", name: "Serena Williams", product: "Archival Brushed Steel Plaque", date: "2026-05-24", frameType: "Brushed Steel Frame", customDetails: "Recipient: Serena Williams - Glacial Endurance Ice Swim", status: "pending" }
+  ]);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 4000);
+  };
+
+  const handleCreateAwardProduct = async (e) => {
+    e.preventDefault();
+    if (!awardName || !awardPrice) {
+      showToast("Please provide award name and price.");
+      return;
+    }
+
+    const payload = {
+      name: awardName,
+      description: awardDesc,
+      price: parseFloat(awardPrice),
+      imageUrl: awardImg || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=600&q=80",
+      category: awardCategory,
+      stockCount: parseInt(awardStock) || 10,
+      sizes: [],
+      imageUrls: []
+    };
+
+    try {
+      if (user && user.token) {
+        const newProd = await apiCall("/admin/products", "POST", payload, user.token);
+        setDbProducts(prev => [newProd, ...prev]);
+        showToast("🎖️ Custom Award Product Created Successfully in Database!");
+      } else {
+        throw new Error("No admin token");
+      }
+    } catch (err) {
+      console.warn("Backend API unavailable. Creating award locally in mock catalog.", err);
+      const mockProd = {
+        id: Date.now(),
+        name: payload.name,
+        description: payload.description,
+        price: payload.price,
+        image_url: payload.imageUrl,
+        category: payload.category,
+        stock_count: payload.stockCount
+      };
+      setDbProducts(prev => [mockProd, ...prev]);
+      showToast("🎖️ Custom Award Product Created Locally!");
+    }
+
+    // Reset Form
+    setAwardName("");
+    setAwardPrice("");
+    setAwardDesc("");
+    setAwardStock("10");
+    setAwardImg("");
+  };
+
+  const handleToggleShipping = (orderId) => {
+    setAwardOrders(prev => prev.map(o => {
+      if (o.id === orderId) {
+        const nextStatus = o.status === "shipped" ? "processing" : "shipped";
+        showToast(`📦 Order ${orderId} marked as ${nextStatus.toUpperCase()}!`);
+        return { ...o, status: nextStatus };
+      }
+      return o;
+    }));
+  };
+
+  const handlePrintSheet = (order) => {
+    showToast(`🖨️ Custom Customization Sheet Dispatched for: ${order.name}`);
+  };
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const data = await apiCall("/shop", "GET");
+        setDbProducts(data || []);
+      } catch (err) {
+        console.error("Failed to load products from database:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   useEffect(() => {
     const cat = searchParams.get("category");
@@ -22,7 +137,8 @@ const Shop = () => {
 
   const categories = ["ALL ITEMS", "TICKETS", "CERTIFICATES", "HARDWARE", "APPAREL", "LIMITED DROP"];
 
-  const products = [
+  const hardcodedProducts = [
+
     {
       id: 5,
       title: "LIVE EVENT SPECTATOR PASS",
@@ -70,7 +186,20 @@ const Shop = () => {
     },
   ];
 
+  const products = dbProducts.length > 0
+    ? dbProducts.map(p => ({
+        id: p.id,
+        title: p.name,
+        price: `$${parseFloat(p.price).toFixed(2)}`,
+        desc: p.description,
+        img: p.image_url || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=600&q=80",
+        badge: p.category?.toUpperCase() || "GEAR",
+        category: p.category?.toUpperCase() || "APPAREL"
+      }))
+    : hardcodedProducts;
+
   const buttonHover = {
+
     onMouseEnter: (e) => {
       e.currentTarget.style.transform = "scale(1.05)";
       e.currentTarget.style.boxShadow = "0 10px 30px rgba(255,106,0,0.3)";
@@ -150,6 +279,582 @@ const Shop = () => {
             ))}
           </div>
         </div>
+
+        {/* TOAST NOTIFICATION CONTAINER */}
+        {toast && (
+          <div style={{
+            position: "fixed",
+            top: "120px",
+            right: "5%",
+            zIndex: 9999,
+            background: "rgba(255, 106, 0, 0.15)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 106, 0, 0.4)",
+            padding: "16px 28px",
+            borderRadius: "16px",
+            color: "white",
+            fontSize: "14px",
+            fontWeight: "800",
+            boxShadow: "0 20px 40px rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px"
+          }}>
+            <div style={{ width: "8px", height: "8px", background: "#FF6A00", borderRadius: "50%" }}></div>
+            {toast}
+          </div>
+        )}
+
+        {/* 🎖️ ADMIN CERTIFICATE & AWARD HUB */}
+        {activeTab === "CERTIFICATES" && user && user.isAdmin && (
+          <div style={{
+            background: "rgba(20, 20, 20, 0.4)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 106, 0, 0.15)",
+            borderRadius: "32px",
+            padding: "40px",
+            maxWidth: "1400px",
+            width: "90%",
+            margin: "0 auto 40px",
+            boxShadow: "0 30px 60px rgba(0,0,0,0.4)"
+          }}>
+            
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "24px", marginBottom: "32px" }}>
+              <div>
+                <h3 style={{ fontSize: "20px", fontWeight: "950", color: "white", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "6px" }}>
+                  🎖️ CERTIFICATE & AWARD CONTROL SUITE
+                </h3>
+                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)", margin: 0 }}>
+                  Customize live certificates, upload border templates, add physical medals to the Shop catalog, and review framed award customizations.
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: "10px" }}>
+                {[
+                  { id: "generator", label: "🎨 Visual Generator" },
+                  { id: "templates", label: "📁 Theme templates" },
+                  { id: "medal-creator", label: "🏅 Award Creator" },
+                  { id: "orders", label: "📦 Framed Orders" }
+                ].map(sub => (
+                  <button
+                    key={sub.id}
+                    onClick={() => setAdminSubTab(sub.id)}
+                    style={{
+                      background: adminSubTab === sub.id ? "#FF6A00" : "rgba(255,255,255,0.05)",
+                      color: "white",
+                      border: "none",
+                      padding: "8px 20px",
+                      borderRadius: "100px",
+                      fontSize: "11px",
+                      fontWeight: "900",
+                      cursor: "pointer",
+                      textTransform: "uppercase",
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    {sub.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Dynamic Tab Body */}
+            <div>
+              {/* TAB 1: VISUAL GENERATOR */}
+              {adminSubTab === "generator" && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "40px" }}>
+                  {/* Left Column: Form */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>RECIPIENT FULL NAME</label>
+                      <input 
+                        type="text" 
+                        value={certName}
+                        onChange={e => setCertName(e.target.value.toUpperCase())}
+                        style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>RECORD SCHEME / DESCRIPTION</label>
+                      <input 
+                        type="text" 
+                        value={certRecord}
+                        onChange={e => setCertRecord(e.target.value.toUpperCase())}
+                        style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                      />
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>ACHIEVEMENT VALUE</label>
+                        <input 
+                          type="text" 
+                          value={certValue}
+                          onChange={e => setCertValue(e.target.value.toUpperCase())}
+                          style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>ACHIEVED DATE</label>
+                        <input 
+                          type="text" 
+                          value={certDate}
+                          onChange={e => setCertDate(e.target.value.toUpperCase())}
+                          style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>VERIFYING ADJUDICATOR</label>
+                        <input 
+                          type="text" 
+                          value={certAdjudicator}
+                          onChange={e => setCertAdjudicator(e.target.value.toUpperCase())}
+                          style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>SELECT TEMPLATE STYLE</label>
+                        <select 
+                          value={certTheme}
+                          onChange={e => setCertTheme(e.target.value)}
+                          style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px", color: "white", fontSize: "13px", outline: "none", cursor: "pointer" }}
+                        >
+                          <option value="onyx">ROGUE ONYX PREMIUM (CARBON)</option>
+                          <option value="parchment">CLASSIC IVORY PARCHMENT (VINTAGE)</option>
+                          <option value="gold">TITAN GOLD ARENA (LUXURY)</option>
+                          <option value="glacial">GLACIAL SUB-ZERO ENDURANCE (ICE)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => showToast("🖨️ Archival High-Definition Certificate Dispatched to Printer!")}
+                      style={{
+                        background: "#FF6A00",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "100px",
+                        padding: "16px 36px",
+                        fontSize: "12px",
+                        fontWeight: "900",
+                        textTransform: "uppercase",
+                        cursor: "pointer",
+                        marginTop: "12px",
+                        boxShadow: "0 10px 20px rgba(255,106,0,0.2)"
+                      }}
+                    >
+                      🖨️ PRINT & SHIP CERTIFICATE
+                    </button>
+                  </div>
+
+                  {/* Right Column: High-Fidelity Interactive Preview Card */}
+                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                    <div style={{
+                      width: "100%",
+                      maxWidth: "560px",
+                      aspectRatio: "1.414", 
+                      padding: "24px",
+                      boxSizing: "border-box",
+                      borderRadius: "16px",
+                      position: "relative",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      boxShadow: "0 25px 50px rgba(0,0,0,0.6)",
+                      border: 
+                        certTheme === "onyx" ? "3px double #FF6A00" :
+                        certTheme === "parchment" ? "3px double #8a6d3b" :
+                        certTheme === "gold" ? "3px double #d4af37" :
+                        "3px double #38bdf8",
+                      background:
+                        certTheme === "onyx" ? "radial-gradient(circle, #1a1a1a 0%, #0a0a0a 100%)" :
+                        certTheme === "parchment" ? "#f4edd8" :
+                        certTheme === "gold" ? "radial-gradient(circle, #2d2410 0%, #0c0903 100%)" :
+                        "radial-gradient(circle, #0e1e24 0%, #050a0c 100%)",
+                      color: certTheme === "parchment" ? "#222" : "white"
+                    }}>
+                      
+                      <div style={{
+                        position: "absolute",
+                        inset: "8px",
+                        border: 
+                          certTheme === "onyx" ? "1px solid rgba(255,106,0,0.2)" :
+                          certTheme === "parchment" ? "1px solid rgba(138,109,59,0.3)" :
+                          certTheme === "gold" ? "1px solid rgba(212,175,55,0.3)" :
+                          "1px solid rgba(56,189,248,0.2)",
+                        pointerEvents: "none"
+                      }} />
+
+                      <div style={{ textAlign: "center", marginTop: "12px", zIndex: 2 }}>
+                        <div style={{ 
+                          fontSize: "8px", 
+                          fontWeight: "900", 
+                          letterSpacing: "3px", 
+                          color: 
+                            certTheme === "parchment" ? "#8a6d3b" : 
+                            certTheme === "gold" ? "#d4af37" : 
+                            certTheme === "glacial" ? "#38bdf8" : 
+                            "#FF6A00",
+                          marginBottom: "4px"
+                        }}>
+                          ROGUE WORLD RECORDS ASSOCIATION
+                        </div>
+                        <h4 style={{ 
+                          fontSize: "20px", 
+                          fontWeight: "950", 
+                          letterSpacing: "-0.5px", 
+                          fontFamily: "'Playfair Display', 'Georgia', serif",
+                          margin: 0
+                        }}>
+                          CERTIFICATE OF RECORD ACHIEVEMENT
+                        </h4>
+                      </div>
+
+                      <div style={{ textAlign: "center", zIndex: 2, padding: "0 20px" }}>
+                        <div style={{ fontSize: "7px", letterSpacing: "1px", fontStyle: "italic", opacity: 0.6, marginBottom: "4px" }}>
+                          THIS IS TO OFFICIALLY CERTIFY THAT
+                        </div>
+                        <div style={{ 
+                          fontSize: "22px", 
+                          fontWeight: "950", 
+                          letterSpacing: "0.5px", 
+                          fontFamily: "'Playfair Display', 'Georgia', serif",
+                          color: 
+                            certTheme === "parchment" ? "#000" :
+                            certTheme === "gold" ? "#facc15" :
+                            "white",
+                          borderBottom: certTheme === "parchment" ? "1px solid rgba(0,0,0,0.1)" : "1px solid rgba(255,255,255,0.1)",
+                          display: "inline-block",
+                          paddingBottom: "2px",
+                          marginBottom: "8px",
+                          width: "80%"
+                        }}>
+                          {certName || "JOHNATHAN TITAN"}
+                        </div>
+                        
+                        <div style={{ fontSize: "7px", letterSpacing: "1px", fontStyle: "italic", opacity: 0.6, marginBottom: "6px" }}>
+                          SUCCESSFULLY BROKE THE STANDING WORLD RECORD FOR
+                        </div>
+                        
+                        <div style={{ 
+                          fontSize: "12px", 
+                          fontWeight: "900", 
+                          letterSpacing: "0.5px", 
+                          lineHeight: "1.2",
+                          width: "90%",
+                          margin: "0 auto 6px",
+                          textTransform: "uppercase"
+                        }}>
+                          {certRecord || "BENCH PRESS RECORD ATTEMPT"}
+                        </div>
+
+                        <div style={{ fontSize: "7px", letterSpacing: "1px", fontStyle: "italic", opacity: 0.6, marginBottom: "2px" }}>
+                          WITH AN OFFICIAL REGISTERED VALUE OF
+                        </div>
+                        <div style={{ 
+                          fontSize: "24px", 
+                          fontWeight: "950", 
+                          color: 
+                            certTheme === "parchment" ? "#8a6d3b" :
+                            certTheme === "gold" ? "#d4af37" :
+                            certTheme === "glacial" ? "#38bdf8" :
+                            "#FF6A00"
+                        }}>
+                          {certValue || "500.00 KG"}
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", zIndex: 2, padding: "0 16px 8px" }}>
+                        <div style={{ width: "120px", textAlign: "center" }}>
+                          <div style={{ 
+                            fontSize: "11px", 
+                            fontFamily: "'Brush Script MT', 'cursive', 'Georgia'", 
+                            color: certTheme === "parchment" ? "#555" : "rgba(255,255,255,0.8)",
+                            lineHeight: "1",
+                            marginBottom: "2px"
+                          }}>
+                            {certAdjudicator || "Chief Marshall"}
+                          </div>
+                          <div style={{ borderTop: certTheme === "parchment" ? "1px solid #222" : "1px solid rgba(255,255,255,0.4)", width: "100%", height: "1px" }} />
+                          <div style={{ fontSize: "6px", fontWeight: "900", opacity: 0.5, marginTop: "2px", letterSpacing: "0.5px" }}>
+                            VERIFYING ADJUDICATOR
+                          </div>
+                        </div>
+
+                        <div style={{
+                          position: "relative",
+                          width: "48px",
+                          height: "48px",
+                          background: "radial-gradient(circle, #ffe259 0%, #ffa751 100%)",
+                          borderRadius: "50%",
+                          boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
+                          border: "1px dashed #d4af37",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          transform: "scale(1.1)"
+                        }}>
+                          <div style={{ fontSize: "16px" }}>⭐</div>
+                          <div style={{ position: "absolute", width: "12px", height: "30px", background: "rgba(212,175,55,0.8)", bottom: "-20px", left: "6px", transform: "rotate(20deg)", zIndex: -1, borderBottom: "3px solid transparent" }} />
+                          <div style={{ position: "absolute", width: "12px", height: "30px", background: "rgba(212,175,55,0.8)", bottom: "-20px", right: "6px", transform: "rotate(-20deg)", zIndex: -1, borderBottom: "3px solid transparent" }} />
+                        </div>
+
+                        <div style={{ width: "120px", textAlign: "center" }}>
+                          <div style={{ fontSize: "8px", fontWeight: "900", marginBottom: "3px" }}>
+                            {certDate}
+                          </div>
+                          <div style={{ borderTop: certTheme === "parchment" ? "1px solid #222" : "1px solid rgba(255,255,255,0.4)", width: "100%", height: "1px" }} />
+                          <div style={{ fontSize: "6px", fontWeight: "900", opacity: 0.5, marginTop: "2px", letterSpacing: "0.5px" }}>
+                            DATE REGISTERED
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: THEME TEMPLATES MANAGER */}
+              {adminSubTab === "templates" && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px" }}>
+                  {[
+                    { id: "onyx", title: "ROGUE ONYX PREMIUM", desc: "Dark Slate with carbon fiber textures & vibrant orange border line accents.", tags: "MOST POPULAR" },
+                    { id: "parchment", title: "CLASSIC IVORY PARCHMENT", desc: "Elegant linen ivory finish with sepia classical framing & cursive styling.", tags: "TRADITIONAL" },
+                    { id: "gold", title: "TITAN GOLD ARENA", desc: "Solid gold foil speckled frames with deep obsidian text borders.", tags: "CHAMPION" },
+                    { id: "glacial", title: "GLACIAL SUB-ZERO", desc: "Alpine sub-zero endurance frost-blue gradient frame styling.", tags: "ENDURANCE" }
+                  ].map(style => (
+                    <div 
+                      key={style.id} 
+                      onClick={() => {
+                        setCertTheme(style.id);
+                        setAdminSubTab("generator");
+                        showToast(`Theme changed to: ${style.title}`);
+                      }}
+                      style={{
+                        background: "rgba(255,255,255,0.02)",
+                        border: "1px solid rgba(255,255,255,0.05)",
+                        borderRadius: "20px",
+                        padding: "24px",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.borderColor = "#FF6A00";
+                        e.currentTarget.style.transform = "translateY(-4px)";
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                        e.currentTarget.style.transform = "none";
+                      }}
+                    >
+                      <div style={{ background: "rgba(255,255,255,0.05)", height: "80px", borderRadius: "12px", marginBottom: "16px", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <span style={{ fontSize: "20px" }}>
+                          {style.id === "onyx" ? "🖤" : style.id === "parchment" ? "📜" : style.id === "gold" ? "🏆" : "❄️"}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: "8px", fontWeight: "900", background: "rgba(255,106,0,0.15)", color: "#FF6A00", padding: "2px 8px", borderRadius: "4px" }}>
+                        {style.tags}
+                      </span>
+                      <h4 style={{ fontSize: "14px", fontWeight: "900", color: "white", marginTop: "12px", marginBottom: "6px" }}>{style.title}</h4>
+                      <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", margin: 0, lineHeight: "1.4" }}>{style.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* TAB 3: AWARD CREATOR */}
+              {adminSubTab === "medal-creator" && (
+                <form onSubmit={handleCreateAwardProduct} style={{ maxWidth: "800px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "20px" }}>
+                  <h4 style={{ fontSize: "15px", fontWeight: "950", color: "white", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>
+                    🏅 INJECT NEW MEDAL OR PLAQUE PRODUCT INTO SHOP CATALOG
+                  </h4>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1.5fr 0.5fr", gap: "16px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>AWARD NAME</label>
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="e.g. SOLID PLATINUM ADJUDICATION TROPHY"
+                        value={awardName}
+                        onChange={e => setAwardName(e.target.value)}
+                        style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>PRICE ($ USD)</label>
+                      <input 
+                        type="number" 
+                        step="0.01"
+                        required
+                        placeholder="150.00"
+                        value={awardPrice}
+                        onChange={e => setAwardPrice(e.target.value)}
+                        style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>PRODUCT DESCRIPTION</label>
+                    <textarea 
+                      placeholder="Laser-etched high precision core with solid engraving specs..."
+                      value={awardDesc}
+                      onChange={e => setAwardDesc(e.target.value)}
+                      style={{ width: "100%", height: "80px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none", resize: "none" }}
+                    />
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>CATALOG STOCK COUNT</label>
+                      <input 
+                        type="number" 
+                        value={awardStock}
+                        onChange={e => setAwardStock(e.target.value)}
+                        style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>PRODUCT CATEGORY</label>
+                      <select 
+                        value={awardCategory}
+                        onChange={e => setAwardCategory(e.target.value)}
+                        style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px", color: "white", fontSize: "13px", outline: "none", cursor: "pointer" }}
+                      >
+                        <option value="CERTIFICATES">CERTIFICATES</option>
+                        <option value="HARDWARE">HARDWARE</option>
+                        <option value="LIMITED DROP">LIMITED DROP</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>AWARD PHOTO / THUMBNAIL URL</label>
+                      <input 
+                        type="text" 
+                        placeholder="Paste image URL here..."
+                        value={awardImg}
+                        onChange={e => setAwardImg(e.target.value)}
+                        style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                      />
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit"
+                    style={{
+                      background: "#FF6A00",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "100px",
+                      padding: "16px 40px",
+                      fontSize: "12px",
+                      fontWeight: "900",
+                      textTransform: "uppercase",
+                      cursor: "pointer",
+                      alignSelf: "flex-start",
+                      marginTop: "10px",
+                      boxShadow: "0 10px 20px rgba(255,106,0,0.2)"
+                    }}
+                  >
+                    🏅 CREATE SHOP AWARD PRODUCT
+                  </button>
+                </form>
+              )}
+
+              {/* TAB 4: FRAMED ORDERS LEDGER */}
+              {adminSubTab === "orders" && (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                    <div style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "1px" }}>
+                      IN-COMMEMORATIVE FRAMING DISPATCH LOGS
+                    </div>
+                    <span style={{ fontSize: "11px", color: "#FF6A00", fontWeight: "800" }}>
+                      TOTAL COMPLETED FRAMINGS: {awardOrders.filter(o => o.status === "shipped").length}
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    {awardOrders.map((ord) => (
+                      <div 
+                        key={ord.id}
+                        style={{
+                          background: "rgba(255,255,255,0.01)",
+                          border: "1px solid rgba(255,255,255,0.04)",
+                          borderRadius: "16px",
+                          padding: "20px 28px",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center"
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <span style={{ fontSize: "15px", fontWeight: "900", color: "white" }}>{ord.name}</span>
+                            <span style={{ fontSize: "9px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)", padding: "2px 8px", borderRadius: "4px", fontWeight: "800" }}>
+                              {ord.frameType}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: "12px", color: "#FF6A00", fontWeight: "700", marginTop: "4px" }}>
+                            Product: <span style={{ color: "white", fontWeight: "500" }}>{ord.product}</span>
+                          </div>
+                          <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", margin: "6px 0 0 0", fontStyle: "italic" }}>
+                            {ord.customDetails}
+                          </p>
+                        </div>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                          <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.3)", fontWeight: "700" }}>Ordered: {ord.date}</span>
+                          
+                          <span style={{
+                            fontSize: "10px",
+                            fontWeight: "900",
+                            padding: "4px 12px",
+                            borderRadius: "100px",
+                            background: ord.status === "shipped" ? "rgba(34, 197, 94, 0.15)" : "rgba(239, 68, 68, 0.12)",
+                            color: ord.status === "shipped" ? "#22C55E" : "#EF4444",
+                            textTransform: "uppercase"
+                          }}>
+                            {ord.status === "shipped" ? "Framed & Shipped" : "Processing Frame"}
+                          </span>
+
+                          <button
+                            onClick={() => handlePrintSheet(ord)}
+                            style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "8px 16px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer" }}
+                          >
+                            🖨️ PRINT SHEET
+                          </button>
+
+                          <button
+                            onClick={() => handleToggleShipping(ord.id)}
+                            style={{
+                              background: ord.status === "shipped" ? "rgba(239, 68, 68, 0.1)" : "rgba(34, 197, 94, 0.1)",
+                              border: ord.status === "shipped" ? "1px solid rgba(239, 68, 68, 0.3)" : "1px solid rgba(34, 197, 94, 0.3)",
+                              color: ord.status === "shipped" ? "#EF4444" : "#22C55E",
+                              padding: "8px 16px",
+                              borderRadius: "8px",
+                              fontSize: "11px",
+                              fontWeight: "900",
+                              textTransform: "uppercase",
+                              cursor: "pointer"
+                            }}
+                          >
+                            {ord.status === "shipped" ? "Mark Processing" : "Mark Shipped"}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+          </div>
+        )}
 
         {/* PRODUCT GRID */}
         <section style={{ padding: "0 5% 100px", maxWidth: "1400px", margin: "0 auto" }}>

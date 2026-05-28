@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -11,12 +11,18 @@ import {
   Users, 
   Zap, 
   ArrowRight,
-  BarChart3
+  BarChart3,
+  Edit3,
+  Plus,
+  Trash2
 } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ScrollReveal from "../components/ScrollReveal";
+import { useAuth } from "../context/AuthContext";
+import { apiCall } from "../utils/api";
+
 const eventsData = [
   {
     id: "summit-lift",
@@ -93,10 +99,342 @@ const eventsData = [
 ];
 
 const Events = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("LIVE");
-  const filteredEvents = eventsData.filter(event => event.status === activeTab);
+  const [dbEvents, setDbEvents] = useState([]);
+  const [toast, setToast] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalType, setModalType] = useState("create"); // "create" | "edit"
+  const [selectedEventId, setSelectedEventId] = useState(null);
+
+  // Form Fields
+  const [formFields, setFormFields] = useState({
+    title: "",
+    description: "",
+    date: "",
+    location: "",
+    imageUrl: "",
+    isLive: false,
+    streamUrl: "",
+    isPaid: false,
+    ticketPrice: "49.00",
+    competitors: "",
+    judges: "",
+    category: "WORLD RECORD"
+  });
+
+  // Ticket Scanning Station States
+  const [adminTickets, setAdminTickets] = useState([]);
+  const [selectedAdminTicket, setSelectedAdminTicket] = useState(null);
+  const [scannerActive, setScannerActive] = useState(false);
+  const [manualCode, setManualCode] = useState("");
+  const [scanResult, setScanResult] = useState(null); // { type: 'success' | 'vip' | 'duplicate' | 'error', message: string, user?: object, event?: object, lastScanned?: string }
+  const [scanTelemetry, setScanTelemetry] = useState({ totalScanned: 0, vipVerified: 0, duplicateBlocks: 0 });
+  const [scanHistoryLogs, setScanHistoryLogs] = useState([]);
+  const [ticketsLoading, setTicketsLoading] = useState(false);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 4000);
+  };
+
+  const fetchAdminTickets = async () => {
+    if (!user || !user.isAdmin || !user.token) return;
+    setTicketsLoading(true);
+    try {
+      const data = await apiCall("/tickets/admin/list", "GET", null, user.token);
+      if (data && data.length > 0) {
+        setAdminTickets(data);
+        if (!selectedAdminTicket) {
+          setSelectedAdminTicket(data[0]);
+        }
+      } else {
+        throw new Error("No tickets returned");
+      }
+    } catch (err) {
+      console.warn("Failed to load live tickets list. Using rich mock tickets list.", err);
+      // Pre-seed high-fidelity mock tickets for simulation
+      const mockTickets = [
+        { id: "tick-1", accessCode: "usr-1-evt-1-98247", ticketType: "vip", status: "active", user: { name: "John Doe", email: "john@rogue.com" }, event: { title: "THE SUMMIT LIFT: FINALS" } },
+        { id: "tick-2", accessCode: "usr-2-evt-1-84729", ticketType: "spectator", status: "active", user: { name: "Jane Smith", email: "jane@rogue.com" }, event: { title: "THE SUMMIT LIFT: FINALS" } },
+        { id: "tick-3", accessCode: "usr-3-evt-2-72648", ticketType: "vip", status: "active", user: { name: "LeBron James", email: "lebron@lakers.com" }, event: { title: "RETRO TETRIS WORLD FINAL" } },
+        { id: "tick-4", accessCode: "usr-4-evt-1-10294", ticketType: "spectator", status: "used", scan_count: 1, last_scanned_at: new Date(Date.now() - 3600000).toISOString(), user: { name: "Bob Miller", email: "bob@miller.com" }, event: { title: "THE SUMMIT LIFT: FINALS" } },
+        { id: "tick-5", accessCode: "usr-5-evt-3-46294", ticketType: "spectator", status: "revoked", user: { name: "Spammy McSpam", email: "spam@bot.com" }, event: { title: "THE 100M DASH FINAL" } }
+      ];
+      setAdminTickets(mockTickets);
+      if (!selectedAdminTicket) {
+        setSelectedAdminTicket(mockTickets[0]);
+      }
+    } finally {
+      setTicketsLoading(false);
+    }
+  };
+
+  const handleScanTicket = async (accessCodeToScan) => {
+    const code = (accessCodeToScan || "").trim();
+    if (!code) {
+      showToast("Please enter or select a ticket code to scan.");
+      return;
+    }
+
+    setScannerActive(true);
+    setScanResult(null);
+
+    // Simulate scanning delay for high-fidelity laser visuals
+    setTimeout(async () => {
+      try {
+        let res;
+        // Offline / Simulation Fallback Check
+        const mockTicket = adminTickets.find(t => t.accessCode === code);
+        if (!user || !user.token) {
+          // No logged-in token (offline simulation sandbox mode)
+          if (!mockTicket) {
+            throw new Error("Invalid ticket access code - Access Denied");
+          }
+          res = mockTicket;
+        } else {
+          // Try backend verification API
+          try {
+            res = await apiCall("/tickets/scan", "POST", { accessCode: code }, user.token);
+          } catch (apiErr) {
+            console.warn("Backend scanning API unavailable. Using robust frontend simulator.", apiErr);
+            if (!mockTicket) {
+              throw new Error("Invalid ticket access code - Access Denied");
+            }
+            res = mockTicket;
+          }
+        }
+
+        // Processing scan results
+        if (res.duplicate || res.status === "used" || (res.ticket && res.ticket.status === "used")) {
+          const t = res.ticket || mockTicket;
+          setScanResult({
+            type: "duplicate",
+            message: "DUPLICATE SCAN ATTEMPT - TICKET ALREADY SCANNED!",
+            user: t.user || { name: "Unknown", email: "n/a" },
+            event: t.event || { title: "Unknown Event" },
+            lastScanned: res.scannedAt || t.last_scanned_at || new Date().toISOString()
+          });
+          setScanTelemetry(prev => ({ ...prev, duplicateBlocks: prev.duplicateBlocks + 1 }));
+          addScanLog(t.user?.name || "Unknown", code, "DUPLICATE", t.ticketType || "spectator");
+          showToast("🚫 DUPLICATE SCAN DETECTED - ADMISSION DENIED!");
+        } else if (res.status === "revoked" || res.revoked) {
+          setScanResult({
+            type: "error",
+            message: "TICKET REVOKED - ACCESS DENIED!",
+            user: res.user || { name: "Purged Account", email: "n/a" }
+          });
+          addScanLog(res.user?.name || "Banned Chatter", code, "REVOKED", "spectator");
+          showToast("❌ BANNED/REVOKED TICKET!");
+        } else {
+          // Success scan (verify VIP access)
+          const ticketObj = res.ticket || res;
+          const isVip = ticketObj.ticketType === "vip";
+          
+          setScanResult({
+            type: isVip ? "vip" : "success",
+            message: isVip ? "⭐ VIP PASS VERIFIED - ACCESS GRANTED!" : "🎫 PASS VERIFIED - ADMISSION GRANTED!",
+            user: ticketObj.user || { name: "Spectator", email: "n/a" },
+            event: ticketObj.event || { title: "Live Event" }
+          });
+
+          setScanTelemetry(prev => ({
+            ...prev,
+            totalScanned: prev.totalScanned + 1,
+            vipVerified: prev.vipVerified + (isVip ? 1 : 0)
+          }));
+
+          // Mark standard local state mock ticket as used so next scans of same code triggers duplication block!
+          setAdminTickets(prev => prev.map(t => t.accessCode === code ? { ...t, status: "used", last_scanned_at: new Date().toISOString() } : t));
+
+          addScanLog(ticketObj.user?.name || "Spectator", code, isVip ? "VIP APPROVED" : "APPROVED", ticketObj.ticketType || "spectator");
+          showToast(isVip ? "🌟 VIP PASS ACCESS GRANTED!" : "✅ TICKET SCANNED & ADMITTED!");
+        }
+      } catch (err) {
+        setScanResult({
+          type: "error",
+          message: err.message || "Invalid ticket access code - Access Denied"
+        });
+        addScanLog("Guest", code, "INVALID CODE", "spectator");
+        showToast("❌ INVALID TICKET CODE!");
+      } finally {
+        setScannerActive(false);
+      }
+    }, 1500);
+  };
+
+  const handleResetTicket = async (ticket) => {
+    if (!user || !user.token) {
+      // Local state simulation reset
+      setAdminTickets(prev => prev.map(t => t.id === ticket.id ? { ...t, status: "active", last_scanned_at: null, scan_count: 0 } : t));
+      showToast("🔄 Ticket scanning state reset locally!");
+      return;
+    }
+
+    try {
+      await apiCall(`/tickets/${ticket.id}/reset`, "PUT", null, user.token);
+      showToast("🔄 Ticket scanning state reset successfully!");
+      fetchAdminTickets();
+    } catch (err) {
+      console.warn("Failed to reset ticket in database, resetting locally.", err);
+      setAdminTickets(prev => prev.map(t => t.id === ticket.id ? { ...t, status: "active", last_scanned_at: null, scan_count: 0 } : t));
+      showToast("🔄 Ticket scanning state reset locally!");
+    }
+  };
+
+  const addScanLog = (name, code, status, tier) => {
+    const newLog = {
+      id: Date.now(),
+      name,
+      code,
+      time: new Date().toLocaleTimeString(),
+      status,
+      tier
+    };
+    setScanHistoryLogs(prev => [newLog, ...prev.slice(0, 4)]);
+  };
+
+  const fetchEvents = async () => {
+    try {
+      const data = await apiCall("/events", "GET");
+      if (data && data.length > 0) {
+        const formatted = data.map(item => {
+          const isPast = new Date(item.date) < new Date();
+          const status = item.isLive ? "LIVE" : (isPast ? "PAST" : "UPCOMING");
+          return {
+            id: item.id || item._id,
+            status,
+            title: item.title,
+            category: item.category || "WORLD RECORD",
+            time: status === "LIVE" ? "LIVE NOW" : new Date(item.date).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }).toUpperCase(),
+            athletes: item.competitors || "CONTESTANTS SELECTED",
+            judges: item.judges || "Rogue Marshal Team",
+            viewers: "24,850+",
+            img: item.imageUrl || item.image || "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1600&q=80",
+            desc: item.description,
+            isFeatured: true,
+            isPaid: item.isPaid,
+            ticketPrice: item.ticketPrice,
+            streamUrl: item.streamUrl,
+            rawDate: item.date,
+            location: item.location
+          };
+        });
+        setDbEvents(formatted);
+      } else {
+        setDbEvents([]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch events:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents();
+    if (user && user.isAdmin) {
+      fetchAdminTickets();
+    }
+  }, [user]);
+
+  const finalEvents = dbEvents.length > 0 ? dbEvents : eventsData;
+  const filteredEvents = finalEvents.filter(event => event.status === activeTab);
   const featuredEvent = filteredEvents.find(e => e.isFeatured) || filteredEvents[0];
   const otherEvents = filteredEvents.filter(e => e.id !== (featuredEvent?.id || ""));
+
+  const openModal = (type, event = null) => {
+    setModalType(type);
+    if (type === "edit" && event) {
+      setSelectedEventId(event.id);
+      
+      // Convert rawDate to datetime-local format
+      let formattedDate = "";
+      if (event.rawDate) {
+        const d = new Date(event.rawDate);
+        const pad = (num) => num.toString().padStart(2, '0');
+        formattedDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }
+
+      setFormFields({
+        title: event.title || "",
+        description: event.desc || "",
+        date: formattedDate,
+        location: event.location || "",
+        imageUrl: event.img || "",
+        isLive: event.status === "LIVE",
+        streamUrl: event.streamUrl || "",
+        isPaid: event.isPaid || false,
+        ticketPrice: event.ticketPrice ? event.ticketPrice.toString() : "49.00",
+        competitors: event.athletes === "CONTESTANTS SELECTED" ? "" : event.athletes,
+        judges: event.judges === "Rogue Marshal Team" ? "" : event.judges,
+        category: event.category || "WORLD RECORD"
+      });
+    } else {
+      setSelectedEventId(null);
+      setFormFields({
+        title: "",
+        description: "",
+        date: "",
+        location: "",
+        imageUrl: "",
+        isLive: activeTab === "LIVE",
+        streamUrl: "",
+        isPaid: false,
+        ticketPrice: "49.00",
+        competitors: "",
+        judges: "",
+        category: "WORLD RECORD"
+      });
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleSaveEvent = async (e) => {
+    e.preventDefault();
+    if (!user || !user.token) return;
+
+    try {
+      const payload = {
+        title: formFields.title,
+        description: formFields.description,
+        date: new Date(formFields.date).toISOString(),
+        location: formFields.location,
+        imageUrl: formFields.imageUrl,
+        isLive: formFields.isLive,
+        streamUrl: formFields.streamUrl,
+        isPaid: formFields.isPaid,
+        ticketPrice: formFields.isPaid ? parseFloat(formFields.ticketPrice) : 0,
+        competitors: formFields.competitors,
+        judges: formFields.judges,
+        category: formFields.category
+      };
+
+      if (modalType === "create") {
+        await apiCall("/events", "POST", payload, user.token);
+        showToast("🌟 Live Event Created Successfully!");
+      } else {
+        await apiCall(`/events/${selectedEventId}`, "PUT", payload, user.token);
+        showToast("⚡ Live Event Settings Updated!");
+      }
+
+      setIsModalOpen(false);
+      fetchEvents();
+    } catch (err) {
+      showToast(`Error: ${err.message || "Failed to save event"}`);
+    }
+  };
+
+  const handleDelete = async (eventId) => {
+    if (!user || !user.token) return;
+    if (!window.confirm("Are you sure you want to permanently delete this event? This action is irreversible.")) return;
+
+    try {
+      await apiCall(`/events/${eventId}`, "DELETE", null, user.token);
+      showToast("🗑️ Live Event Deleted Successfully!");
+      fetchEvents();
+    } catch (err) {
+      showToast(`Error: ${err.message || "Failed to delete event"}`);
+    }
+  };
 
   return (
     <PageTransition>
@@ -104,6 +442,225 @@ const Events = () => {
         
         {/* NAVBAR */}
         <Navbar />
+
+        {/* TOAST ALERT */}
+        {toast && (
+          <div style={{
+            position: "fixed",
+            top: "140px",
+            right: "5%",
+            zIndex: 9999,
+            background: "rgba(255, 106, 0, 0.15)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 106, 0, 0.4)",
+            padding: "16px 28px",
+            borderRadius: "16px",
+            color: "white",
+            fontSize: "14px",
+            fontWeight: "800",
+            boxShadow: "0 20px 40px rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            animation: "slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)"
+          }}>
+            <div style={{ width: "8px", height: "8px", background: "#FF6A00", borderRadius: "50%", animation: "pulse 1s infinite" }}></div>
+            {toast}
+          </div>
+        )}
+
+        {/* DYNAMIC EDIT / CREATE EVENT MODAL */}
+        {isModalOpen && (
+          <div style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0, 0, 0, 0.85)",
+            backdropFilter: "blur(15px)",
+            padding: "20px"
+          }}>
+            <div style={{
+              background: "linear-gradient(135deg, #161616 0%, #0c0c0c 100%)",
+              border: "1px solid rgba(255, 106, 0, 0.25)",
+              borderRadius: "32px",
+              padding: "40px",
+              maxWidth: "680px",
+              width: "100%",
+              boxShadow: "0 30px 60px rgba(255, 106, 0, 0.15)",
+              position: "relative",
+              overflowY: "auto",
+              maxHeight: "90vh"
+            }}>
+              <h3 style={{ fontSize: "24px", fontWeight: "950", textTransform: "uppercase", marginBottom: "24px", letterSpacing: "-0.02em" }}>
+                {modalType === "create" ? "CREATE NEW LIVE EVENT" : "EDIT EVENT DETAILS"}
+              </h3>
+
+              <form onSubmit={handleSaveEvent} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>EVENT TITLE</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={formFields.title}
+                      onChange={e => setFormFields({...formFields, title: e.target.value})}
+                      placeholder="e.g. THE SUMMIT LIFT: FINALS"
+                      style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>EVENT CATEGORY</label>
+                    <input 
+                      type="text" 
+                      value={formFields.category}
+                      onChange={e => setFormFields({...formFields, category: e.target.value})}
+                      placeholder="e.g. STRENGTH"
+                      style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>DESCRIPTION</label>
+                  <textarea 
+                    required
+                    value={formFields.description}
+                    onChange={e => setFormFields({...formFields, description: e.target.value})}
+                    placeholder="Enter event highlights and description..."
+                    style={{ width: "100%", height: "80px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none", resize: "none" }}
+                  />
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>DATE & START TIME</label>
+                    <input 
+                      type="datetime-local" 
+                      required
+                      value={formFields.date}
+                      onChange={e => setFormFields({...formFields, date: e.target.value})}
+                      style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>LOCATION</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={formFields.location}
+                      onChange={e => setFormFields({...formFields, location: e.target.value})}
+                      placeholder="e.g. Olympic Hub, CA"
+                      style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>COMPETITORS SUMMARY</label>
+                    <input 
+                      type="text" 
+                      value={formFields.competitors}
+                      onChange={e => setFormFields({...formFields, competitors: e.target.value})}
+                      placeholder="e.g. 12 HEAVYWEIGHT ATHLETES"
+                      style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>JUDGING OFFICIALS</label>
+                    <input 
+                      type="text" 
+                      value={formFields.judges}
+                      onChange={e => setFormFields({...formFields, judges: e.target.value})}
+                      placeholder="e.g. Rogue Official Marshal Team"
+                      style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>BANNER / THUMBNAIL URL</label>
+                    <input 
+                      type="text" 
+                      value={formFields.imageUrl}
+                      onChange={e => setFormFields({...formFields, imageUrl: e.target.value})}
+                      placeholder="https://images.unsplash.com/..."
+                      style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>STREAM VIDEO SOURCE URL</label>
+                    <input 
+                      type="text" 
+                      value={formFields.streamUrl}
+                      onChange={e => setFormFields({...formFields, streamUrl: e.target.value})}
+                      placeholder="e.g. https://example.com/stream"
+                      style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <input 
+                      type="checkbox" 
+                      id="isLive"
+                      checked={formFields.isLive}
+                      onChange={e => setFormFields({...formFields, isLive: e.target.checked})}
+                      style={{ accentColor: "#FF6A00", width: "16px", height: "16px" }}
+                    />
+                    <label htmlFor="isLive" style={{ fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>EVENT IS LIVE NOW</label>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <input 
+                      type="checkbox" 
+                      id="isPaid"
+                      checked={formFields.isPaid}
+                      onChange={e => setFormFields({...formFields, isPaid: e.target.checked})}
+                      style={{ accentColor: "#FF6A00", width: "16px", height: "16px" }}
+                    />
+                    <label htmlFor="isPaid" style={{ fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>PAID SPECTATOR PASS</label>
+                  </div>
+
+                  {formFields.isPaid && (
+                    <div>
+                      <label style={{ display: "block", fontSize: "9px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "4px" }}>TICKET PRICE ($ USD)</label>
+                      <input 
+                        type="number" 
+                        step="0.01"
+                        required={formFields.isPaid}
+                        value={formFields.ticketPrice}
+                        onChange={e => setFormFields({...formFields, ticketPrice: e.target.value})}
+                        style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none" }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: "flex", gap: "16px", marginTop: "16px" }}>
+                  <button 
+                    type="submit"
+                    style={{ flex: 1, background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 36px", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer" }}
+                  >
+                    ⚡ SAVE CONFIGURATION
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    style={{ background: "rgba(255, 255, 255, 0.05)", color: "rgba(255, 255, 255, 0.6)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "100px", padding: "16px 36px", fontSize: "13px", fontWeight: "800", textTransform: "uppercase", cursor: "pointer" }}
+                  >
+                    CANCEL
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         <div style={{ padding: "60px 5% 60px", flex: 1 }}>
         
@@ -136,6 +693,445 @@ const Events = () => {
             ))}
           </div>
         </div>
+
+        {/* INLINE ADMIN EVENT CONTROLS */}
+        {user && user.isAdmin && (
+          <div style={{
+            background: "rgba(255, 106, 0, 0.06)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 106, 0, 0.2)",
+            borderRadius: "24px",
+            padding: "24px 32px",
+            marginBottom: "40px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            maxWidth: "1200px",
+            width: "100%",
+            margin: "0 auto 40px"
+          }}>
+            <div>
+              <h4 style={{ fontSize: "16px", fontWeight: "950", color: "white", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>
+                ⚡ ADMIN EVENT CONTROLS
+              </h4>
+              <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", margin: 0 }}>
+                Manage live spectator cards, competitors, and livestream schedules instantly from the page.
+              </p>
+            </div>
+            <button
+              onClick={() => openModal("create")}
+              style={{
+                background: "#FF6A00",
+                color: "white",
+                border: "none",
+                borderRadius: "100px",
+                padding: "12px 28px",
+                fontSize: "12px",
+                fontWeight: "900",
+                textTransform: "uppercase",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                boxShadow: "0 10px 20px rgba(255,106,0,0.2)"
+              }}
+            >
+              <Plus size={16} /> CREATE LIVE EVENT
+            </button>
+          </div>
+        )}
+
+        {/* TICKET SCANNING & VERIFICATION STATION */}
+        {user && user.isAdmin && (
+          <div style={{
+            background: "rgba(20, 20, 20, 0.4)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 106, 0, 0.15)",
+            borderRadius: "32px",
+            padding: "40px",
+            marginBottom: "60px",
+            maxWidth: "1200px",
+            width: "100%",
+            margin: "0 auto 60px",
+            boxShadow: "0 30px 60px rgba(0,0,0,0.4)"
+          }}>
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "24px", marginBottom: "32px" }}>
+              <div>
+                <h3 style={{ fontSize: "20px", fontWeight: "950", color: "white", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "6px", display: "flex", alignItems: "center", gap: "8px" }}>
+                  🎟️ TICKET SCANNING & VERIFICATION STATION
+                </h3>
+                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)", margin: 0 }}>
+                  Generate attendee passes, simulate high-definition scanner camera laser checks, detect duplicate scans, and verify VIP seating.
+                </p>
+              </div>
+              <div style={{ background: "rgba(255, 106, 0, 0.1)", border: "1px solid rgba(255, 106, 0, 0.3)", color: "#FF6A00", padding: "6px 16px", borderRadius: "100px", fontSize: "11px", fontWeight: "900", letterSpacing: "0.05em" }}>
+                🔴 SECURE VERIFICATION MODE
+              </div>
+            </div>
+
+            {/* Split Grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "400px 1fr", gap: "32px" }}>
+              
+              {/* Left Pane: Holographic Laser Scanner Simulator */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                
+                {/* Select Attendee Ticket Widget */}
+                <div>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px", letterSpacing: "0.05em" }}>SELECT ATTENDEE PASS FOR SIMULATION</label>
+                  <select 
+                    value={selectedAdminTicket ? selectedAdminTicket.id : ""}
+                    onChange={e => {
+                      const t = adminTickets.find(x => x.id === e.target.value);
+                      if (t) setSelectedAdminTicket(t);
+                    }}
+                    style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px", color: "white", fontSize: "13px", outline: "none", cursor: "pointer" }}
+                  >
+                    {ticketsLoading ? (
+                      <option>Loading passes...</option>
+                    ) : (
+                      adminTickets.map(t => (
+                        <option key={t.id} value={t.id}>
+                          {t.user?.name || "Unknown"} ({t.ticketType?.toUpperCase()}) - {t.status?.toUpperCase()}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+
+                {/* Simulated Scanner Device viewport */}
+                <div style={{
+                  position: "relative",
+                  height: "260px",
+                  background: "#000",
+                  borderRadius: "24px",
+                  border: "2px solid rgba(255, 106, 0, 0.3)",
+                  overflow: "hidden",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: scannerActive ? "0 0 30px rgba(255, 106, 0, 0.25)" : "none",
+                  transition: "all 0.3s"
+                }}>
+                  {/* Grid overlay for camera matrix look */}
+                  <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)", backgroundSize: "16px 16px", pointerEvents: "none" }} />
+                  
+                  {/* Corner Targets */}
+                  <div style={{ position: "absolute", top: "16px", left: "16px", width: "16px", height: "16px", borderTop: "2px solid #FF6A00", borderLeft: "2px solid #FF6A00" }} />
+                  <div style={{ position: "absolute", top: "16px", right: "16px", width: "16px", height: "16px", borderTop: "2px solid #FF6A00", borderRight: "2px solid #FF6A00" }} />
+                  <div style={{ position: "absolute", bottom: "16px", left: "16px", width: "16px", height: "16px", borderBottom: "2px solid #FF6A00", borderLeft: "2px solid #FF6A00" }} />
+                  <div style={{ position: "absolute", bottom: "16px", right: "16px", width: "16px", height: "16px", borderBottom: "2px solid #FF6A00", borderRight: "2px solid #FF6A00" }} />
+
+                  {/* Interactive Laser Scanning Line */}
+                  {scannerActive && (
+                    <div style={{
+                      position: "absolute",
+                      left: 0,
+                      right: 0,
+                      height: "3px",
+                      background: "linear-gradient(90deg, transparent, #FF6A00, #ff8c3b, #FF6A00, transparent)",
+                      boxShadow: "0 0 15px #FF6A00",
+                      animation: "laserMove 1.5s infinite ease-in-out",
+                      zIndex: 3
+                    }} />
+                  )}
+
+                  {/* Visual SVG QR Pass Generator Mockup */}
+                  {selectedAdminTicket ? (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", zIndex: 2, transition: "opacity 0.2s", opacity: scannerActive ? 0.6 : 1 }}>
+                      <svg width="120" height="120" viewBox="0 0 120 120" style={{ background: "white", padding: "8px", borderRadius: "12px", boxShadow: "0 10px 20px rgba(0,0,0,0.5)" }}>
+                        <rect x="0" y="0" width="30" height="30" fill="black" />
+                        <rect x="5" y="5" width="20" height="20" fill="white" />
+                        <rect x="10" y="10" width="10" height="10" fill="black" />
+
+                        <rect x="90" y="0" width="30" height="30" fill="black" />
+                        <rect x="95" y="5" width="20" height="20" fill="white" />
+                        <rect x="100" y="10" width="10" height="10" fill="black" />
+
+                        <rect x="0" y="90" width="30" height="30" fill="black" />
+                        <rect x="5" y="95" width="20" height="20" fill="white" />
+                        <rect x="10" y="100" width="10" height="10" fill="black" />
+
+                        {Array.from({ length: 12 }).map((_, i) => (
+                          <rect 
+                            key={i} 
+                            x={40 + (i % 4) * 12} 
+                            y={40 + Math.floor(i / 4) * 16} 
+                            width={(selectedAdminTicket.accessCode.charCodeAt(i % selectedAdminTicket.accessCode.length) % 2 === 0) ? "8" : "4"}
+                            height={(selectedAdminTicket.accessCode.charCodeAt((i + 2) % selectedAdminTicket.accessCode.length) % 2 === 0) ? "8" : "4"} 
+                            fill="black" 
+                          />
+                        ))}
+                        
+                        <rect x="90" y="90" width="15" height="15" fill="black" />
+                        <rect x="105" y="105" width="15" height="15" fill="black" />
+                      </svg>
+                      <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", fontFamily: "monospace", letterSpacing: "1px" }}>
+                        {selectedAdminTicket.accessCode}
+                      </span>
+                    </div>
+                  ) : (
+                    <div style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px", textAlign: "center" }}>
+                      No pass generated.<br />Select a user above.
+                    </div>
+                  )}
+                </div>
+
+                {/* Device Actions */}
+                <div style={{ display: "flex", gap: "12px" }}>
+                  <button
+                    onClick={() => handleScanTicket(selectedAdminTicket ? selectedAdminTicket.accessCode : "")}
+                    disabled={scannerActive || !selectedAdminTicket}
+                    style={{
+                      flex: 1,
+                      background: "#FF6A00",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "100px",
+                      padding: "14px 20px",
+                      fontSize: "12px",
+                      fontWeight: "900",
+                      textTransform: "uppercase",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      boxShadow: "0 10px 20px rgba(255,106,0,0.2)",
+                      opacity: (scannerActive || !selectedAdminTicket) ? 0.6 : 1,
+                      transition: "transform 0.2s"
+                    }}
+                    onMouseEnter={e => !scannerActive && (e.currentTarget.style.transform = "translateY(-2px)")}
+                    onMouseLeave={e => !scannerActive && (e.currentTarget.style.transform = "translateY(0)")}
+                  >
+                    {scannerActive ? "SCANNING PASSPORT..." : "⚡ SCAN PRESENTED QR PASS"}
+                  </button>
+                  
+                  {selectedAdminTicket && (
+                    <button
+                      onClick={() => handleResetTicket(selectedAdminTicket)}
+                      style={{
+                        background: "rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        color: "white",
+                        borderRadius: "50%",
+                        width: "45px",
+                        height: "45px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        fontSize: "16px"
+                      }}
+                      title="Reset scan state for testing duplicate alerts"
+                    >
+                      🔄
+                    </button>
+                  )}
+                </div>
+
+              </div>
+
+              {/* Right & Center Pane: Scan Verification Engine & Logs */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                
+                {/* Manual Code entry panel */}
+                <div style={{ display: "flex", gap: "12px" }}>
+                  <div style={{ flex: 1, position: "relative" }}>
+                    <input 
+                      type="text" 
+                      value={manualCode}
+                      onChange={e => setManualCode(e.target.value)}
+                      placeholder="Paste or type access code (e.g. usr-1-evt-1-98247)"
+                      style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "100px", padding: "14px 24px", color: "white", fontSize: "13px", outline: "none" }}
+                    />
+                  </div>
+                  <button 
+                    onClick={() => handleScanTicket(manualCode)}
+                    disabled={scannerActive}
+                    style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", color: "white", borderRadius: "100px", padding: "0 28px", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer" }}
+                  >
+                    VERIFY CODE
+                  </button>
+                </div>
+
+                {/* Telemetry Counter Widgets */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "16px" }}>
+                    <div style={{ fontSize: "9px", color: "rgba(255,255,255,0.4)", fontWeight: "900", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>TOTAL SCANS</div>
+                    <div style={{ fontSize: "24px", fontWeight: "950", color: "#FF6A00" }}>{scanTelemetry.totalScanned}</div>
+                  </div>
+                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "16px" }}>
+                    <div style={{ fontSize: "9px", color: "rgba(255,255,255,0.4)", fontWeight: "900", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>VIP VERIFIED</div>
+                    <div style={{ fontSize: "24px", fontWeight: "950", color: "#a855f7" }}>{scanTelemetry.vipVerified}</div>
+                  </div>
+                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "16px" }}>
+                    <div style={{ fontSize: "9px", color: "rgba(255,255,255,0.4)", fontWeight: "900", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>DUPLICATE BLOCKS</div>
+                    <div style={{ fontSize: "24px", fontWeight: "950", color: "#EF4444" }}>{scanTelemetry.duplicateBlocks}</div>
+                  </div>
+                </div>
+
+                {/* Outcome Display card */}
+                <div style={{ minHeight: "130px", display: "flex", alignItems: "stretch" }}>
+                  {scanResult ? (
+                    <div 
+                      style={{
+                        flex: 1,
+                        borderRadius: "20px",
+                        padding: "24px",
+                        display: "flex",
+                        gap: "20px",
+                        alignItems: "center",
+                        background: 
+                          scanResult.type === "success" ? "rgba(34, 197, 94, 0.05)" :
+                          scanResult.type === "vip" ? "linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(236, 72, 153, 0.05) 100%)" :
+                          scanResult.type === "duplicate" ? "rgba(239, 68, 68, 0.05)" :
+                          "rgba(255, 255, 255, 0.03)",
+                        border: 
+                          scanResult.type === "success" ? "1px solid rgba(34, 197, 94, 0.3)" :
+                          scanResult.type === "vip" ? "1px solid rgba(168, 85, 247, 0.4)" :
+                          scanResult.type === "duplicate" ? "1px solid rgba(239, 68, 68, 0.4)" :
+                          "1px solid rgba(255, 255, 255, 0.1)",
+                        boxShadow: 
+                          scanResult.type === "success" ? "0 0 20px rgba(34, 197, 94, 0.1)" :
+                          scanResult.type === "vip" ? "0 0 25px rgba(168, 85, 247, 0.2)" :
+                          scanResult.type === "duplicate" ? "0 0 20px rgba(239, 68, 68, 0.1)" :
+                          "none"
+                      }}
+                    >
+                      {/* Icon */}
+                      <div style={{ 
+                        width: "56px", 
+                        height: "56px", 
+                        borderRadius: "50%", 
+                        display: "flex", 
+                        alignItems: "center", 
+                        justifyContent: "center",
+                        fontSize: "24px",
+                        background: 
+                          scanResult.type === "success" ? "rgba(34, 197, 94, 0.15)" :
+                          scanResult.type === "vip" ? "rgba(168, 85, 247, 0.25)" :
+                          scanResult.type === "duplicate" ? "rgba(239, 68, 68, 0.15)" :
+                          "rgba(255, 255, 255, 0.05)",
+                        color:
+                          scanResult.type === "success" ? "#22C55E" :
+                          scanResult.type === "vip" ? "#c084fc" :
+                          scanResult.type === "duplicate" ? "#EF4444" :
+                          "white"
+                      }}>
+                        {scanResult.type === "success" && "✓"}
+                        {scanResult.type === "vip" && "👑"}
+                        {scanResult.type === "duplicate" && "🚫"}
+                        {scanResult.type === "error" && "❌"}
+                      </div>
+
+                      {/* Metadata */}
+                      <div style={{ flex: 1 }}>
+                        <div style={{ 
+                          fontSize: "12px", 
+                          fontWeight: "900", 
+                          letterSpacing: "1px", 
+                          textTransform: "uppercase",
+                          color:
+                            scanResult.type === "success" ? "#22C55E" :
+                            scanResult.type === "vip" ? "#d8b4fe" :
+                            scanResult.type === "duplicate" ? "#F87171" :
+                            "#9CA3AF",
+                          marginBottom: "4px"
+                        }}>
+                          {scanResult.message}
+                        </div>
+                        {scanResult.user && (
+                          <div style={{ fontSize: "16px", fontWeight: "900", color: "white" }}>
+                            {scanResult.user.name} <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", fontWeight: "500" }}>({scanResult.user.email})</span>
+                          </div>
+                        )}
+                        {scanResult.event && (
+                          <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.6)", marginTop: "4px", fontWeight: "600" }}>
+                            Event: <span style={{ color: "white" }}>{scanResult.event.title}</span>
+                          </div>
+                        )}
+                        {scanResult.lastScanned && (
+                          <div style={{ fontSize: "11px", color: "#EF4444", marginTop: "6px", fontWeight: "700" }}>
+                            Original Scan: {new Date(scanResult.lastScanned).toLocaleString()}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{
+                      flex: 1,
+                      border: "1px dashed rgba(255,255,255,0.1)",
+                      borderRadius: "20px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "rgba(255,255,255,0.25)",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      textAlign: "center"
+                    }}>
+                      [ Awaiting device scan input or manual code validation... ]
+                    </div>
+                  )}
+                </div>
+
+                {/* Audit Ledger */}
+                <div>
+                  <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "12px" }}>
+                    LIVE AUDIT LOGS (LAST 5 TRANSACTIONS)
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {scanHistoryLogs.length > 0 ? (
+                      scanHistoryLogs.map((log) => (
+                        <div key={log.id} style={{
+                          background: "rgba(255,255,255,0.01)",
+                          border: "1px solid rgba(255,255,255,0.03)",
+                          borderRadius: "10px",
+                          padding: "10px 16px",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          fontSize: "12px"
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <span style={{ fontWeight: "800", color: "white" }}>{log.name}</span>
+                            <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.3)", fontFamily: "monospace" }}>{log.code}</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                            <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.3)", fontWeight: "700" }}>{log.time}</span>
+                            <span style={{
+                              fontSize: "9px",
+                              fontWeight: "900",
+                              padding: "2px 8px",
+                              borderRadius: "4px",
+                              background: 
+                                log.status.includes("APPROVED") ? "rgba(34, 197, 94, 0.15)" :
+                                log.status.includes("DUPLICATE") ? "rgba(239, 68, 68, 0.15)" :
+                                "rgba(255,255,255,0.08)",
+                              color:
+                                log.status.includes("APPROVED") ? "#22C55E" :
+                                log.status.includes("DUPLICATE") ? "#EF4444" :
+                                "white"
+                            }}>
+                              {log.status}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.2)", fontStyle: "italic", textAlign: "center", padding: "16px" }}>
+                        No scan transactions logged in this session.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        )}
 
         {/* DYNAMIC EVENTS CONTENT SECTION */}
         <AnimatePresence mode="wait">
@@ -205,23 +1201,43 @@ const Events = () => {
                     </p>
                   )}
                   
-                  {featuredEvent.status === "LIVE" ? (
-                    <Link to={`/stream/${featuredEvent.id}`} style={{ textDecoration: "none" }}>
-                      <button style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 36px", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.3)", transition: "all 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}>
-                        WATCH STREAM <Play size={16} fill="white" />
+                  <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                    {featuredEvent.status === "LIVE" ? (
+                      <Link to={`/stream/${featuredEvent.id}`} style={{ textDecoration: "none" }}>
+                        <button style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 36px", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.3)", transition: "all 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}>
+                          WATCH STREAM <Play size={16} fill="white" />
+                        </button>
+                      </Link>
+                    ) : featuredEvent.status === "UPCOMING" ? (
+                      <Link to="/schedule" style={{ textDecoration: "none" }}>
+                        <button style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 36px", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.3)" }}>
+                          VIEW SCHEDULE <ArrowRight size={16} />
+                        </button>
+                      </Link>
+                    ) : (
+                      <button style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "none", borderRadius: "100px", padding: "16px 36px", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "10px" }}>
+                        EVENT COMPLETED
                       </button>
-                    </Link>
-                  ) : featuredEvent.status === "UPCOMING" ? (
-                    <Link to="/schedule" style={{ textDecoration: "none" }}>
-                      <button style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 36px", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.3)" }}>
-                        VIEW SCHEDULE <ArrowRight size={16} />
-                      </button>
-                    </Link>
-                  ) : (
-                    <button style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "none", borderRadius: "100px", padding: "16px 36px", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "10px" }}>
-                      EVENT COMPLETED
-                    </button>
-                  )}
+                    )}
+
+                    {/* ADMIN ACTION TOGGLES FOR FEATURED */}
+                    {user && user.isAdmin && dbEvents.length > 0 && (
+                      <div style={{ display: "flex", gap: "12px" }}>
+                        <button
+                          onClick={() => openModal("edit", featuredEvent)}
+                          style={{ background: "rgba(255,255,255,0.1)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "100px", padding: "14px 28px", fontSize: "12px", fontWeight: "900", color: "white", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}
+                        >
+                          <Edit3 size={14} /> EDIT EVENT
+                        </button>
+                        <button
+                          onClick={() => handleDelete(featuredEvent.id)}
+                          style={{ background: "rgba(239, 68, 68, 0.2)", backdropFilter: "blur(10px)", border: "1px solid rgba(239, 68, 68, 0.4)", borderRadius: "100px", padding: "14px 28px", fontSize: "12px", fontWeight: "900", color: "#EF4444", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}
+                        >
+                          <Trash2 size={14} /> DELETE
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -234,9 +1250,28 @@ const Events = () => {
                 </h3>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "24px" }}>
                   {otherEvents.map((item) => (
-                    <div key={item.id} style={{ position: "relative", borderRadius: "24px", overflow: "hidden", height: "240px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <div key={item.id} style={{ position: "relative", borderRadius: "24px", overflow: "hidden", height: "260px", border: "1px solid rgba(255,255,255,0.05)" }}>
                       <img src={item.img} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.4 }} />
                       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.95), transparent 70%)" }} />
+                      
+                      {/* ADMIN ROW CONTROL DOTS ON OTHER CARDS */}
+                      {user && user.isAdmin && dbEvents.length > 0 && (
+                        <div style={{ position: "absolute", top: "16px", right: "16px", display: "flex", gap: "8px", zIndex: 10 }}>
+                          <button
+                            onClick={() => openModal("edit", item)}
+                            style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "50%", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "white" }}
+                          >
+                            <Edit3 size={12} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            style={{ background: "rgba(239,68,68,0.2)", backdropFilter: "blur(10px)", border: "1px solid rgba(239,68,68,0.4)", borderRadius: "50%", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#EF4444" }}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      )}
+
                       <div style={{ position: "absolute", left: "24px", bottom: "24px", right: "24px" }}>
                         <div style={{ color: "#FF6A00", fontSize: "10px", fontWeight: "900", marginBottom: "8px", textTransform: "uppercase" }}>
                           {item.category}
@@ -274,7 +1309,7 @@ const Events = () => {
         </AnimatePresence>
 
         {/* BOTTOM SECTION */}
-        <div style={{ maxWidth: "1200px", margin: "0 auto", display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "24px" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "24px", width: "100%" }}>
           {/* TREND CHART */}
           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "32px", padding: "40px", position: "relative", overflow: "hidden" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
@@ -345,6 +1380,15 @@ const Events = () => {
             0% { transform: scale(1); opacity: 1; }
             50% { transform: scale(1.5); opacity: 0.5; }
             100% { transform: scale(1); opacity: 1; }
+          }
+          @keyframes slideIn {
+            from { transform: translateY(-20px) scale(0.95); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+          }
+          @keyframes laserMove {
+            0% { top: 0%; }
+            50% { top: 98%; }
+            100% { top: 0%; }
           }
         `}</style>
 
