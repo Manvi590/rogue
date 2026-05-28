@@ -205,7 +205,7 @@ const getAllUsers = async (req, res) => {
 // @route   POST /api/admin/users
 // @access  Private/Admin
 const createUser = async (req, res) => {
-  const { name, email, password, username, country, gender, dob, phone, city, isAdmin } = req.body;
+  const { name, email, password, username, country, gender, dob, phone, city, role, membershipType, accountStatus } = req.body;
 
   try {
     if (!name || !email || !password) {
@@ -213,6 +213,8 @@ const createUser = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const assignedRole = role || 'athlete';
+    const computedIsAdmin = assignedRole === 'system_admin';
 
     const { data: user, error } = await supabase
       .from('users')
@@ -226,7 +228,10 @@ const createUser = async (req, res) => {
         dob: dob ? dob : null,
         phone,
         city,
-        is_admin: isAdmin || false
+        role: assignedRole,
+        membership_type: membershipType || 'free_athlete',
+        account_status: accountStatus || 'active',
+        is_admin: computedIsAdmin
       })
       .select();
 
@@ -245,7 +250,7 @@ const createUser = async (req, res) => {
 // @route   PUT /api/admin/users/:id
 // @access  Private/Admin
 const updateUser = async (req, res) => {
-  const { name, email, username, country, gender, dob, phone, city, isAdmin, accountStatus } = req.body;
+  const { name, email, username, country, gender, dob, phone, city, role, membershipType, accountStatus } = req.body;
 
   try {
     const updateData = {};
@@ -257,7 +262,11 @@ const updateUser = async (req, res) => {
     if (dob) updateData.dob = dob;
     if (phone) updateData.phone = phone;
     if (city) updateData.city = city;
-    if (typeof isAdmin !== 'undefined') updateData.is_admin = isAdmin;
+    if (role) {
+      updateData.role = role;
+      updateData.is_admin = role === 'system_admin';
+    }
+    if (membershipType) updateData.membership_type = membershipType;
     if (accountStatus) updateData.account_status = accountStatus;
 
     const { data: user, error } = await supabase

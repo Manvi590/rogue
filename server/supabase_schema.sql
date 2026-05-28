@@ -1,17 +1,20 @@
 -- 1. Users Table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL,
   is_admin BOOLEAN DEFAULT FALSE,
+  role TEXT DEFAULT 'athlete',
+  membership_type TEXT DEFAULT 'free_athlete',
+  account_status TEXT DEFAULT 'active',
   profile_image TEXT DEFAULT '',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 2. Records Table
-CREATE TABLE records (
+CREATE TABLE IF NOT EXISTS records (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   athlete_id TEXT,
@@ -33,7 +36,7 @@ CREATE TABLE records (
 );
 
 -- 3. Events Table
-CREATE TABLE events (
+CREATE TABLE IF NOT EXISTS events (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   title TEXT NOT NULL,
   description TEXT NOT NULL,
@@ -45,7 +48,7 @@ CREATE TABLE events (
 );
 
 -- 4. Products Table
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT NOT NULL,
@@ -58,7 +61,7 @@ CREATE TABLE products (
 );
 
 -- 5. Contact Messages Table
-CREATE TABLE contact_messages (
+CREATE TABLE IF NOT EXISTS contact_messages (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   email TEXT NOT NULL,
@@ -68,7 +71,7 @@ CREATE TABLE contact_messages (
 );
 
 -- 6. Videos Table
-CREATE TABLE videos (
+CREATE TABLE IF NOT EXISTS videos (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   record_id UUID REFERENCES records(id) ON DELETE CASCADE,
   attempt_id UUID,
@@ -89,7 +92,7 @@ CREATE TABLE videos (
 );
 
 -- 7. Evidence Table
-CREATE TABLE evidence (
+CREATE TABLE IF NOT EXISTS evidence (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   record_id UUID NOT NULL REFERENCES records(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -108,18 +111,18 @@ CREATE TABLE evidence (
 );
 
 -- 8. Create Indexes for Better Query Performance
-CREATE INDEX idx_videos_record_id ON videos(record_id);
-CREATE INDEX idx_videos_user_id ON videos(user_id);
-CREATE INDEX idx_videos_video_type ON videos(video_type);
-CREATE INDEX idx_videos_source ON videos(source);
-CREATE INDEX idx_videos_is_published ON videos(is_published);
-CREATE INDEX idx_videos_created_at ON videos(created_at);
+CREATE INDEX IF NOT EXISTS idx_videos_record_id ON videos(record_id);
+CREATE INDEX IF NOT EXISTS idx_videos_user_id ON videos(user_id);
+CREATE INDEX IF NOT EXISTS idx_videos_video_type ON videos(video_type);
+CREATE INDEX IF NOT EXISTS idx_videos_source ON videos(source);
+CREATE INDEX IF NOT EXISTS idx_videos_is_published ON videos(is_published);
+CREATE INDEX IF NOT EXISTS idx_videos_created_at ON videos(created_at);
 
-CREATE INDEX idx_evidence_record_id ON evidence(record_id);
-CREATE INDEX idx_evidence_user_id ON evidence(user_id);
-CREATE INDEX idx_evidence_status ON evidence(status);
-CREATE INDEX idx_evidence_evidence_type ON evidence(evidence_type);
-CREATE INDEX idx_evidence_created_at ON evidence(created_at);
+CREATE INDEX IF NOT EXISTS idx_evidence_record_id ON evidence(record_id);
+CREATE INDEX IF NOT EXISTS idx_evidence_user_id ON evidence(user_id);
+CREATE INDEX IF NOT EXISTS idx_evidence_status ON evidence(status);
+CREATE INDEX IF NOT EXISTS idx_evidence_evidence_type ON evidence(evidence_type);
+CREATE INDEX IF NOT EXISTS idx_evidence_created_at ON evidence(created_at);
 
 -- ========================================================
 -- 9. ADD MISSING COLUMNS TO EXISTING EVENTS TABLE
@@ -224,3 +227,18 @@ CREATE INDEX IF NOT EXISTS idx_tickets_user_id ON tickets(user_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_event_id ON tickets(event_id);
 CREATE INDEX IF NOT EXISTS idx_record_meta_record_id ON record_meta(record_id);
 
+-- ========================================================
+-- 16. DISABLE ROW LEVEL SECURITY (RLS) FOR BACKEND ACCESS
+-- ========================================================
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE records DISABLE ROW LEVEL SECURITY;
+ALTER TABLE events DISABLE ROW LEVEL SECURITY;
+ALTER TABLE products DISABLE ROW LEVEL SECURITY;
+ALTER TABLE contact_messages DISABLE ROW LEVEL SECURITY;
+ALTER TABLE videos DISABLE ROW LEVEL SECURITY;
+ALTER TABLE evidence DISABLE ROW LEVEL SECURITY;
+ALTER TABLE categories DISABLE ROW LEVEL SECURITY;
+ALTER TABLE age_groups DISABLE ROW LEVEL SECURITY;
+ALTER TABLE memberships DISABLE ROW LEVEL SECURITY;
+ALTER TABLE tickets DISABLE ROW LEVEL SECURITY;
+ALTER TABLE record_meta DISABLE ROW LEVEL SECURITY;
