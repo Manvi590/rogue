@@ -10,6 +10,9 @@ export default function RecordDetailPage() {
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
   const [videoError, setVideoError] = useState(false);
+  const [shareMessage, setShareMessage] = useState('');
+
+  const recordVideoUrl = record?.evidence_url || record?.video_url || record?.videoUrl || '';
 
   useEffect(() => {
     fetchRecord();
@@ -18,12 +21,66 @@ export default function RecordDetailPage() {
   const fetchRecord = async () => {
     try {
       setLoading(true);
+      setVideoError(false);
       const data = await apiCall(`/records/${recordId}`, 'GET');
       setRecord(data);
     } catch (error) {
       console.error('Error fetching record:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadVideo = async () => {
+    if (!recordVideoUrl) {
+      alert('No video available to download');
+      return;
+    }
+    
+    try {
+      const response = await fetch(recordVideoUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${record.title.replace(/\s+/g, '_')}.mp4`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('Could not download video. It might be a YouTube link.');
+    }
+  };
+
+  const handleShareRecord = async () => {
+    const shareUrl = `${window.location.origin}/record/${recordId}`;
+    const shareText = `Check out this amazing record: "${record?.title}" - ${record?.value} ${record?.unit}`;
+
+    // Check if Web Share API is available
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: record?.title,
+          text: shareText,
+          url: shareUrl
+        });
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('Share failed:', err);
+        }
+      }
+    } else {
+      // Fallback: Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+        setShareMessage('✅ Record link copied to clipboard!');
+        setTimeout(() => setShareMessage(''), 2000);
+      } catch (err) {
+        console.error('Copy to clipboard failed:', err);
+        alert('Could not copy to clipboard');
+      }
     }
   };
 
@@ -86,13 +143,13 @@ export default function RecordDetailPage() {
           <div>
             {/* Video Player */}
             <div style={{ background: '#000', borderRadius: '16px', overflow: 'hidden', marginBottom: '24px', aspectRatio: '16/9', position: 'relative' }}>
-              {record.evidence_url && !videoError ? (
+              {recordVideoUrl && !videoError ? (
                 <video
                   controls
                   style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                   onError={() => setVideoError(true)}
                 >
-                  <source src={record.evidence_url} />
+                  <source src={recordVideoUrl} />
                   Your browser does not support the video tag.
                 </video>
               ) : (
@@ -188,6 +245,13 @@ export default function RecordDetailPage() {
             {/* Record Details */}
             <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '24px', marginBottom: '32px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: '900', color: 'white', marginBottom: '16px' }}>Record Details</h3>
+
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "20px", marginBottom: "24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                <h3 style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", fontWeight: "900", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "8px" }}>OFFICIAL TRACKING NUMBER</h3>
+                <div style={{ fontSize: "24px", fontWeight: "950", color: "#FF6A00", letterSpacing: "2px" }}>
+                  {record.tracking_number || `RWR-${record.id?.split('-')[0].toUpperCase()}${record.id?.split('-')[1]?.toUpperCase()}`}
+                </div>
+              </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
                 <div>
@@ -311,6 +375,7 @@ export default function RecordDetailPage() {
             {/* Actions */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <button
+                onClick={handleDownloadVideo}
                 style={{
                   background: 'transparent',
                   border: '1px solid rgba(255,85,0,0.3)',
@@ -323,12 +388,16 @@ export default function RecordDetailPage() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '6px'
+                  gap: '6px',
+                  transition: 'all 0.3s ease'
                 }}
+                onMouseEnter={(e) => e.target.style.background = 'rgba(255,85,0,0.1)'}
+                onMouseLeave={(e) => e.target.style.background = 'transparent'}
               >
                 <Download size={16} /> Download Video
               </button>
               <button
+                onClick={handleShareRecord}
                 style={{
                   background: 'transparent',
                   border: '1px solid rgba(255,255,255,0.1)',
@@ -341,11 +410,19 @@ export default function RecordDetailPage() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '6px'
+                  gap: '6px',
+                  transition: 'all 0.3s ease'
                 }}
+                onMouseEnter={(e) => { e.target.style.background = 'rgba(255,255,255,0.05)'; e.target.style.color = '#FFF'; }}
+                onMouseLeave={(e) => { e.target.style.background = 'transparent'; e.target.style.color = '#888'; }}
               >
                 <Share2 size={16} /> Share Record
               </button>
+              {shareMessage && (
+                <div style={{ textAlign: 'center', color: '#4ade80', fontSize: '12px', fontWeight: '600' }}>
+                  {shareMessage}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -11,7 +11,7 @@ const getAllUsers = async (req, res) => {
   try {
     const { data: users, error } = await supabase
       .from('users')
-      .select('id, name, email, is_admin, role, account_status, membership_type, profile_image, username, phone, gender, dob, weight, weight_unit, height, height_unit, country, city, street_address, apartment, state, zip_code, created_at, member_number')
+      .select('id, name, email, is_admin, role, account_status, membership_type, profile_image, username, phone, gender, dob, weight, weight_unit, height, height_unit, country, city, street_address, state, zip_code, created_at, member_number')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -1302,9 +1302,8 @@ const getHomepageRecords = async (req, res) => {
   try {
     const { data: allVerified, error } = await supabase
       .from('records')
-      .select('id, title, category, value, unit, thumbnail_url, evidence_url, homepage_section, homepage_order, created_at, user_id, status')
-      .eq('status', 'verified')
-      .order('homepage_order', { ascending: true });
+      .select('id, title, category, value, unit, thumbnail_url, evidence_url, created_at, user_id, status')
+      .eq('status', 'verified');
 
     if (error) throw error;
 
@@ -1339,8 +1338,6 @@ const updateRecordHomepageSection = async (req, res) => {
     const { data: updatedRecord, error } = await supabase
       .from('records')
       .update({
-        homepage_section: homepageSection || null,
-        homepage_order: parseInt(homepageOrder) || 0,
         updated_at: new Date()
       })
       .eq('id', req.params.id)
@@ -1362,8 +1359,6 @@ const removeRecordFromHomepage = async (req, res) => {
     const { data: updatedRecord, error } = await supabase
       .from('records')
       .update({
-        homepage_section: null,
-        homepage_order: 0,
         updated_at: new Date()
       })
       .eq('id', req.params.id)

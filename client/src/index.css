@@ -2354,3 +2354,21 @@ a:hover svg {
   background: rgba(255,255,255,0.02) !important;
   border-color: rgba(255,255,255,0.1) !important;
 }
+
+.admin-dropdown-action-btn {
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s, color 0.2s;
+}
+.admin-dropdown-action-btn:hover {
+  background-color: #FF5500 !important;
+  color: white !important;
+}
+

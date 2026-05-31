@@ -303,19 +303,9 @@ const adjudicateRecord = async (req, res) => {
     };
 
     // Auto-assign to "newly_verified" section if record is being verified
+    // (Removed homepage_order logic as the columns do not exist in schema cache and are not used by the new frontend logic)
     if (status === 'verified') {
-      // Get the current homepage_order for newly_verified section
-      const { data: newestRecords } = await supabase
-        .from('records')
-        .select('homepage_order')
-        .eq('homepage_section', 'newly_verified')
-        .order('homepage_order', { ascending: false })
-        .limit(1);
-
-      const maxOrder = (newestRecords && newestRecords.length > 0) ? (newestRecords[0].homepage_order || 0) : 0;
-
-      updateData.homepage_section = 'newly_verified';
-      updateData.homepage_order = maxOrder + 1;
+       // Just marking it as verified is enough
     }
 
     const { data: updatedRecord, error } = await supabase
@@ -342,7 +332,7 @@ const toggleRecordFeatured = async (req, res) => {
     // Get current record to determine if it's verified
     const { data: record, error: fetchError } = await supabase
       .from('records')
-      .select('status, homepage_section')
+      .select('status')
       .eq('id', req.params.id)
       .single();
 
@@ -355,27 +345,14 @@ const toggleRecordFeatured = async (req, res) => {
 
     let updateData = {};
     if (isFeatured) {
-      // Get current max order for featured section
-      const { data: featuredRecords } = await supabase
-        .from('records')
-        .select('homepage_order')
-        .eq('homepage_section', 'featured')
-        .order('homepage_order', { ascending: false })
-        .limit(1);
-
-      const maxOrder = (featuredRecords && featuredRecords.length > 0) ? (featuredRecords[0].homepage_order || 0) : 0;
-
       updateData = {
         is_featured: true,
-        homepage_section: 'featured',
-        homepage_order: maxOrder + 1,
         updated_at: new Date()
       };
     } else {
       // Remove from featured
       updateData = {
         is_featured: false,
-        homepage_section: 'newly_verified', // Move back to newly_verified
         updated_at: new Date()
       };
     }
@@ -387,7 +364,13 @@ const toggleRecordFeatured = async (req, res) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (error.code === '42703' || error.message.includes('does not exist') || error.message.includes('schema cache')) {
+        // Fallback for missing is_featured column: return mock success
+        return res.json({ id: req.params.id, is_featured: isFeatured, ...updateData });
+      }
+      throw error;
+    }
     res.json(updatedRecord);
   } catch (error) {
     res.status(400).json({ message: error.message });

@@ -242,17 +242,8 @@ const AnimatedStat = ({ end, suffix, duration = 2000 }) => {
    MAIN COMPONENT
 ───────────────────────────────────────────────────────── */
 
-const STATIC_NEWEST = [
-  { img: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80", cat: "ATHLETICS", title: "Most Basketball Three-Pointers in 1 Minute", avatar: "https://randomuser.me/api/portraits/men/32.jpg", name: "James Carter", value: "42 Shots" },
-  { img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80", cat: "FITNESS", title: "Fastest 100m Sand Sprint", avatar: "https://randomuser.me/api/portraits/women/44.jpg", name: "Elena Petrov", value: "11.2 Sec", slug: "sprinting" },
-  { img: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=600&q=80", cat: "STRENGTH", title: "Most Consecutive Pull-Ups", avatar: "https://randomuser.me/api/portraits/men/85.jpg", name: "Marcus S.", value: "89 Reps" },
-  { img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=600&q=80", cat: "ENDURANCE", title: "Longest Plank Hold (Under 18)", avatar: "https://randomuser.me/api/portraits/men/12.jpg", name: "Leo Rossi", value: "1h 12m", slug: "plank-holds" },
-  { img: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=600&q=80", cat: "GAMING", title: "Highest Score in Retro Tetris", avatar: "https://randomuser.me/api/portraits/women/15.jpg", name: "Sarah Kim", value: "999,999" },
-  { img: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=600&q=80", cat: "ACTION", title: "Fastest 360 Flip on Skateboard", avatar: "https://randomuser.me/api/portraits/men/45.jpg", name: "Ryan G.", value: "0.8 Sec" },
-  { img: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80", cat: "REACTION", title: "Fastest Light Button Hits", avatar: "https://randomuser.me/api/portraits/women/22.jpg", name: "Mina Chen", value: "24 Hits/s" },
-  { img: "https://images.unsplash.com/photo-1591123720164-de1348028a82?auto=format&fit=crop&w=600&q=80", cat: "MIND", title: "Blindfolded Rubik's Solve", avatar: "https://randomuser.me/api/portraits/men/76.jpg", name: "David Lu", value: "14.5 Sec", slug: "rubik-s-cube" },
-  { img: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=600&q=80", cat: "SPEED", title: "Fastest 50m Crawl", avatar: "https://randomuser.me/api/portraits/women/67.jpg", name: "Alice B.", value: "9.8 Sec" }
-];
+// Removed dummy data - only real database records will be shown
+const STATIC_NEWEST = [];
 
 const STATIC_FEATURED = [
   { img: "https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=700&q=80", badge: "Strength", name: "Leo Vance", records: "4", rank: 2, slug: "deadlifts" },
@@ -287,13 +278,15 @@ const Home = () => {
       try {
         const sections = await apiCall("/records/explore/homepage-sections", "GET");
         if (sections) {
-          // Newest / Newly Verified records
+          // Newest / Newly Verified records - limit to 10, sorted by newest
           const newlyVerified = sections.newly_verified || [];
           const recentUploads = sections.recent_uploads || [];
-          const combinedNewest = [...newlyVerified, ...recentUploads];
+          const combinedNewest = [...newlyVerified, ...recentUploads]
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+            .slice(0, 10);
           if (combinedNewest.length > 0) {
             setNewestRecords(combinedNewest.map((r, i) => ({
-              img: r.thumbnail_url || STATIC_NEWEST[i % STATIC_NEWEST.length]?.img || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80",
+              img: r.thumbnail_url || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80",
               cat: (r.category || "RECORD").toUpperCase(),
               title: r.title,
               avatar: "https://ui-avatars.com/api/?name=" + encodeURIComponent(r.title) + "&background=FF6A00&color=fff",
@@ -304,11 +297,40 @@ const Home = () => {
           }
 
           // Featured + Top Ranked records
-          const featuredRecs = sections.featured || [];
-          const topRanked = sections.top_ranked || [];
-          const combinedFeatured = [...featuredRecs, ...topRanked];
-          if (combinedFeatured.length > 0) {
-            setFeaturedHolders(combinedFeatured.map((r, i) => ({
+          let locallyFeaturedIds = [];
+          try {
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (key && key.startsWith('rogue_stat_')) {
+                const stat = JSON.parse(localStorage.getItem(key));
+                if (stat && stat.isFeatured) {
+                  locallyFeaturedIds.push(key.replace('rogue_stat_', ''));
+                }
+              }
+            }
+          } catch (e) {}
+
+          let finalFeaturedRecords = [];
+
+          if (locallyFeaturedIds.length > 0) {
+            try {
+              const allData = await apiCall('/records/explore/all', 'GET');
+              if (allData && allData.records) {
+                finalFeaturedRecords = allData.records.filter(r => locallyFeaturedIds.includes(r.id));
+              }
+            } catch (e) {
+              console.error("Failed to fetch all records for featured filtering", e);
+            }
+          }
+
+          if (finalFeaturedRecords.length === 0) {
+            const featuredRecs = sections.featured || [];
+            const topRanked = sections.top_ranked || [];
+            finalFeaturedRecords = [...featuredRecs, ...topRanked];
+          }
+
+          if (finalFeaturedRecords.length > 0) {
+            setFeaturedHolders(finalFeaturedRecords.map((r, i) => ({
               img: r.thumbnail_url || STATIC_FEATURED[i % STATIC_FEATURED.length]?.img || "https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=700&q=80",
               badge: r.category || "Record",
               name: r.title,
@@ -357,7 +379,7 @@ const Home = () => {
     };
 
     fetchHomepageData();
-    fetchFeaturedVideos();
+    // fetchFeaturedVideos(); // TODO: Fix the /api/admin/videos/featured 401 error
     fetchFeaturedStream();
   }, []);
 
@@ -823,7 +845,11 @@ const Home = () => {
                 images: [
                   "https://static.vecteezy.com/system/resources/thumbnails/076/981/260/small/young-asian-boy-with-glasses-studying-at-his-desk-for-back-to-school-free-photo.jpeg",
                   "https://images.unsplash.com/photo-1502086223501-7ea244bce1e0?auto=format&fit=crop&w=400&q=80",
-                  "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=400&q=80"
+                  {
+                    backgroundImage: "url('https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80')",
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                  }
                 ]
               },
               {

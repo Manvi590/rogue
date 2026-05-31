@@ -1,4 +1,4 @@
-const { supabase } = require('../config/supabase');
+const supabase = require('../config/supabase');
 
 // @desc    Get all reports (with mock fallback)
 // @route   GET /api/admin/reports

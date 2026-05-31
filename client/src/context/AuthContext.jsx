@@ -8,9 +8,15 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const userInfo = JSON.parse(sessionStorage.getItem('userInfo'));
+    // Try localStorage first, then sessionStorage for backward compat
+    const userInfo = JSON.parse(localStorage.getItem('userInfo') || sessionStorage.getItem('userInfo') || 'null');
     if (userInfo) {
       setUser(userInfo);
+      // Migrate old sessionStorage data to localStorage if needed
+      if (!localStorage.getItem('userInfo') && sessionStorage.getItem('userInfo')) {
+        localStorage.setItem('userInfo', sessionStorage.getItem('userInfo'));
+        sessionStorage.removeItem('userInfo');
+      }
     }
     setLoading(false);
   }, []);
@@ -18,28 +24,28 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const data = await apiCall('/auth/login', 'POST', { email, password });
     setUser(data);
-    sessionStorage.setItem('userInfo', JSON.stringify(data));
+    localStorage.setItem('userInfo', JSON.stringify(data));
     return data;
   };
 
   const signup = async (signupData) => {
     const data = await apiCall('/auth/register', 'POST', signupData);
     setUser(data);
-    sessionStorage.setItem('userInfo', JSON.stringify(data));
+    localStorage.setItem('userInfo', JSON.stringify(data));
     return data;
   };
 
   const updateProfile = async (profileData) => {
     const data = await apiCall('/auth/profile', 'PUT', profileData, user.token);
     setUser(data);
-    sessionStorage.setItem('userInfo', JSON.stringify(data));
+    localStorage.setItem('userInfo', JSON.stringify(data));
     return data;
   };
 
   const logout = () => {
     setUser(null);
-    sessionStorage.removeItem('userInfo');
     localStorage.removeItem('userInfo');
+    sessionStorage.removeItem('userInfo');
     sessionStorage.setItem('awr_logout_message', 'You have successfully logged out.');
     window.location.href = '/';
   };
@@ -52,3 +58,4 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
+

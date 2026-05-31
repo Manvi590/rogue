@@ -431,7 +431,7 @@ const Verify = () => {
         return false;
       }
       if (!formData.resultScore || !formData.resultScore.trim()) {
-        setValidationError("Result / Score value is required.");
+        setValidationError("Result of New Attempt value is required.");
         return false;
       }
       if (!formData.streetAddress || !formData.streetAddress.trim()) {
@@ -1171,7 +1171,7 @@ const Verify = () => {
                           {/* PERFORMANCE DATA */}
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
                             <div>
-                              <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>RESULT / SCORE</label>
+                              <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>RESULT OF NEW ATTEMPT</label>
                               <input 
                                 type="text" 
                                 placeholder="E.G. 502.5" 
@@ -1258,8 +1258,14 @@ const Verify = () => {
                           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "24px", padding: "32px" }}>
                             <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "#FF6A00", marginBottom: "20px", textTransform: "uppercase", letterSpacing: "0.1em" }}>ATTEMPT LOGISTICS</label>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "20px" }}>
-                              <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} required style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
-                              <input type="time" value={formData.time} onChange={(e) => setFormData({...formData, time: e.target.value})} required style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
+                              <div>
+                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>DATE OF ATTEMPT</label>
+                                <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} required style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>TIME OF ATTEMPT</label>
+                                <input type="time" value={formData.time} onChange={(e) => setFormData({...formData, time: e.target.value})} required style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
+                              </div>
                             </div>
                             <input 
                               type="text" placeholder="VENUE / FACILITY NAME" value={formData.venueName} 
@@ -1951,7 +1957,9 @@ const Verify = () => {
                         </p>
                         <div style={{ display: "flex", gap: "48px" }}>
                            <div>
-                             <div style={{ fontSize: "24px", fontWeight: "950", color: "white" }}>0.002s</div>
+                             <div style={{ fontSize: "24px", fontWeight: "950", color: "white" }}>
+                               {formData.resultScore ? (parseFloat(formData.resultScore) * 0.00004 + 0.001).toFixed(4) + "s" : "0.002s"}
+                             </div>
                              <div style={{ fontSize: "10px", fontWeight: "900", color: "#FF6A00", textTransform: "uppercase" }}>LATENCY</div>
                            </div>
                            <div>
@@ -2060,7 +2068,7 @@ const Verify = () => {
                       <div style={{ textAlign: "center", marginBottom: "80px" }}>
                         <div style={{ color: "white", fontSize: "24px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "40px" }}>POST-SUBMISSION PREVIEW</div>
                         <div style={{ 
-                          background: "linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80')", 
+                          backgroundImage: "linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80')", 
                           backgroundSize: "cover", 
                           backgroundPosition: "center",
                           borderRadius: "40px", 

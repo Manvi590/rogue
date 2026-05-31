@@ -177,7 +177,7 @@ const registerUser = async (req, res) => {
 const getUserProfile = async (req, res) => {
   const { data: user, error } = await supabase
     .from('users')
-    .select('id, name, email, is_admin, role, membership_type, account_status, profile_image, username, phone, gender, dob, weight, weight_unit, height, height_unit, country, city, street_address, apartment, state, zip_code, member_number')
+    .select('id, name, email, is_admin, role, membership_type, account_status, profile_image, username, phone, gender, dob, weight, weight_unit, height, height_unit, country, city, street_address, state, zip_code, member_number')
     .eq('id', req.user.id)
     .single();
 
@@ -215,7 +215,6 @@ const getUserProfile = async (req, res) => {
       country: finalUser.country || '',
       city: finalUser.city || '',
       streetAddress: finalUser.street_address || '',
-      apartment: finalUser.apartment || '',
       state: finalUser.state || '',
       zipCode: finalUser.zip_code || '',
       role: finalUser.role || 'athlete',
@@ -243,7 +242,7 @@ const updateUserProfile = async (req, res) => {
       name, email, password, profileImage,
       username, phone, gender, dob, 
       weight, weightUnit, height, heightUnit, 
-      country, city, streetAddress, apartment, state, zipCode
+      country, city, streetAddress, state, zipCode
     } = req.body;
 
     const updates = {
@@ -261,7 +260,6 @@ const updateUserProfile = async (req, res) => {
       country: country !== undefined ? country : user.country,
       city: city !== undefined ? city : user.city,
       street_address: streetAddress !== undefined ? streetAddress : user.street_address,
-      apartment: apartment !== undefined ? apartment : user.apartment,
       state: state !== undefined ? state : user.state,
       zip_code: zipCode !== undefined ? zipCode : user.zip_code,
       updated_at: new Date()
@@ -300,7 +298,6 @@ const updateUserProfile = async (req, res) => {
       country: updatedUser.country || '',
       city: updatedUser.city || '',
       streetAddress: updatedUser.street_address || '',
-      apartment: updatedUser.apartment || '',
       state: updatedUser.state || '',
       zipCode: updatedUser.zip_code || '',
       role: updatedUser.role || 'athlete',

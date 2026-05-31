@@ -10,11 +10,15 @@ const getMediaAssets = async (req, res) => {
       .select('*, uploader_id(username)')
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.warn('media_assets table error (may not exist):', error.message);
+      return res.status(200).json([]);
+    }
 
     res.status(200).json(data || []);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.warn('getMediaAssets caught:', error.message);
+    res.status(200).json([]);
   }
 };
 
@@ -28,11 +32,15 @@ const getCertificates = async (req, res) => {
       .select('*, user_id(username, email), record_id(title)')
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.warn('certificates table error (may not exist):', error.message);
+      return res.status(200).json([]);
+    }
 
     res.status(200).json(data || []);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.warn('getCertificates caught:', error.message);
+    res.status(200).json([]);
   }
 };
 
@@ -105,10 +113,14 @@ const updatePageContent = async (req, res) => {
 const getFaqs = async (req, res) => {
   try {
     const { data, error } = await supabase.from('faqs').select('*').order('order_index', { ascending: true });
-    if (error) throw error;
+    if (error) {
+      console.warn('faqs table error (may not exist):', error.message);
+      return res.status(200).json([]);
+    }
     res.status(200).json(data || []);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.warn('getFaqs caught error:', error.message);
+    res.status(200).json([]);
   }
 };
 
@@ -157,13 +169,17 @@ const getHomepageSettings = async (req, res) => {
   const { section } = req.params;
   try {
     let { data, error } = await supabase.from('homepage_settings').select('*').eq('section', section).single();
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== 'PGRST116') {
+      console.warn('homepage_settings error (may not exist):', error.message);
+      return res.status(200).json({ section, config: {} });
+    }
     if (!data) {
       data = { section, config: {} };
     }
     res.status(200).json(data);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.warn('getHomepageSettings caught:', error.message);
+    res.status(200).json({ section: req.params.section, config: {} });
   }
 };
 

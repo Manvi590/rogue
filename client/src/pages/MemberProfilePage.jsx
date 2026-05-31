@@ -12,6 +12,17 @@ export default function MemberProfilePage() {
   const [pointsHistory, setPointsHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      alert("Failed to copy URL");
+    }
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -166,10 +177,10 @@ export default function MemberProfilePage() {
                 </div>
               )}
               <button
-                onClick={() => alert('Sharing profile!')}
-                style={{ background: '#FF5500', border: 'none', color: 'white', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '700' }}
+                onClick={handleShare}
+                style={{ background: copied ? '#4ade80' : '#FF5500', border: 'none', color: copied ? 'black' : 'white', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '700', transition: 'all 0.3s' }}
               >
-                <Share2 size={14} /> Share
+                <Share2 size={14} /> {copied ? 'Copied URL!' : 'Share'}
               </button>
             </div>
           </div>
@@ -177,7 +188,7 @@ export default function MemberProfilePage() {
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px', overflowX: 'auto' }}>
-          {['overview', 'achievements'].map(tab => (
+          {['overview', 'achievements', 'videos'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -196,6 +207,7 @@ export default function MemberProfilePage() {
             >
               {tab === 'overview' && '📊 Overview'}
               {tab === 'achievements' && '⭐ Achievements'}
+              {tab === 'videos' && '🎥 Videos'}
             </button>
           ))}
         </div>
@@ -262,6 +274,48 @@ export default function MemberProfilePage() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {activeTab === 'videos' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', overflow: 'hidden' }}>
+              <div style={{ width: '100%', position: 'relative', paddingTop: '56.25%', background: '#000' }}>
+                <iframe
+                  src="https://www.youtube.com/embed/ScMzIvxBSi4?autoplay=0"
+                  title="Featured Record Video"
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
+              <div style={{ padding: '16px' }}>
+                <div style={{ background: '#FF5500', color: 'white', display: 'inline-block', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '900', marginBottom: '8px' }}>FEATURED RECORD</div>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '900', color: 'white' }}>World Record Performance</h3>
+                <p style={{ margin: 0, fontSize: '13px', color: '#888', lineHeight: '1.5' }}>
+                  Watch the amazing performance that secured the world record. Verified by ROGUE officials.
+                </p>
+              </div>
+            </div>
+            
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', overflow: 'hidden' }}>
+              <div style={{ width: '100%', position: 'relative', paddingTop: '56.25%', background: '#000' }}>
+                <iframe
+                  src="https://www.youtube.com/embed/jNQXAC9IVRw?autoplay=0"
+                  title="Training Video"
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
+              <div style={{ padding: '16px' }}>
+                <div style={{ background: '#333', color: 'white', display: 'inline-block', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '900', marginBottom: '8px' }}>TRAINING</div>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '900', color: 'white' }}>Behind The Scenes</h3>
+                <p style={{ margin: 0, fontSize: '13px', color: '#888', lineHeight: '1.5' }}>
+                  A look into the intense training regimen required to break records.
+                </p>
+              </div>
+            </div>
           </div>
         )}
       </div>

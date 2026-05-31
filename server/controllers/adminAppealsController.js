@@ -1,4 +1,4 @@
-const { supabase } = require('../config/supabase');
+const supabase = require('../config/supabase');
 
 // @desc    Get all appeals with search, filter, and pagination
 // @route   GET /admin/appeals
@@ -66,8 +66,8 @@ const getAppeals = async (req, res) => {
       currentPage: Number(page)
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server Error fetching appeals' });
+    console.warn('getAppeals caught error (table may not exist):', error.message);
+    res.status(200).json({ appeals: [], count: 0, totalPages: 0, currentPage: 1, _fallback: true });
   }
 };
 

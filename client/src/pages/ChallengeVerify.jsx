@@ -1402,7 +1402,7 @@ const ChallengeVerify = () => {
                       <div style={{ textAlign: "center", marginBottom: "80px" }}>
                         <div style={{ color: "white", fontSize: "24px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "40px" }}>POST-SUBMISSION PREVIEW</div>
                         <div style={{ 
-                          background: "linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80')", 
+                          backgroundImage: "linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80')", 
                           backgroundSize: "cover", 
                           backgroundPosition: "center",
                           borderRadius: "40px", 

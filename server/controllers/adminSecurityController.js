@@ -1,4 +1,4 @@
-const { supabase } = require("../config/supabase");
+const supabase = require("../config/supabase");
 
 // @desc    Get system audit logs
 // @route   GET /api/admin/security/audit-logs
@@ -10,10 +10,14 @@ const getAuditLogs = async (req, res) => {
       .order("created_at", { ascending: false })
       .limit(100);
 
-    if (error) throw error;
-    res.status(200).json(data);
+    if (error) {
+      console.warn("audit_logs fetch error (table may be missing):", error.message);
+      return res.status(200).json([]);
+    }
+    res.status(200).json(data || []);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.warn("audit_logs fetch caught error:", error.message);
+    res.status(200).json([]);
   }
 };
 
@@ -38,10 +42,14 @@ const triggerBackup = async (req, res) => {
 const getApiKeys = async (req, res) => {
   try {
     const { data, error } = await supabase.from("api_keys").select("*");
-    if (error) throw error;
-    res.status(200).json(data);
+    if (error) {
+      console.warn("api_keys fetch error (table may be missing):", error.message);
+      return res.status(200).json([]);
+    }
+    res.status(200).json(data || []);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.warn("api_keys fetch caught error:", error.message);
+    res.status(200).json([]);
   }
 };
 

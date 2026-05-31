@@ -9,6 +9,18 @@ import ScrollReveal from "../components/ScrollReveal";
 const Streams = () => {
   const [activeFilter, setActiveFilter] = React.useState("ALL LIVE");
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [localStreams, setLocalStreams] = React.useState([]);
+
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem('rogue_live_streams');
+      if (stored) {
+        setLocalStreams(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   const allStreams = [
     {
@@ -45,7 +57,9 @@ const Streams = () => {
     }
   ];
 
-  const filteredStreams = allStreams.filter(stream => {
+  const combinedStreams = [...localStreams, ...allStreams];
+
+  const filteredStreams = combinedStreams.filter(stream => {
     const matchesFilter = activeFilter === "ALL LIVE" || stream.category === activeFilter;
     const matchesSearch = stream.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           stream.athlete.toLowerCase().includes(searchQuery.toLowerCase());
@@ -110,12 +124,22 @@ const Streams = () => {
                   <div style={{ background: "#161616", borderRadius: "32px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)", transition: "all 0.3s ease" }} onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-10px)"; e.currentTarget.style.borderColor = "rgba(255,106,0,0.3)"; }} onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)"; }}>
                     <div style={{ position: "relative", height: "240px" }}>
                       <img src={stream.img} alt={stream.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      <div style={{ position: "absolute", top: "20px", left: "20px", background: "#ef4444", color: "white", padding: "6px 14px", borderRadius: "8px", fontWeight: "900", fontSize: "12px", display: "flex", alignItems: "center", gap: "8px", boxShadow: "0 4px 12px rgba(239,68,68,0.4)" }}>
-                        <Play size={12} fill="white" /> LIVE
+                      <div style={{ position: "absolute", top: "20px", left: "20px", background: stream.streamType === 'schedule' ? "#FF5500" : "#ef4444", color: "white", padding: "6px 14px", borderRadius: "8px", fontWeight: "900", fontSize: "12px", display: "flex", alignItems: "center", gap: "8px", boxShadow: stream.streamType === 'schedule' ? "0 4px 12px rgba(255,85,0,0.4)" : "0 4px 12px rgba(239,68,68,0.4)" }}>
+                        {stream.streamType === 'schedule' ? <Timer size={12} /> : <Play size={12} fill="white" />} 
+                        {stream.streamType === 'schedule' ? "SCHEDULED" : "LIVE"}
                       </div>
-                      <div style={{ position: "absolute", top: "20px", right: "20px", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", color: "white", padding: "6px 14px", borderRadius: "8px", fontWeight: "900", fontSize: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
-                        <Eye size={14} /> {stream.viewers}
-                      </div>
+                      
+                      {stream.pricing === 'paid' && (
+                        <div style={{ position: "absolute", top: "20px", right: stream.viewers ? "100px" : "20px", background: "#FFaa00", color: "#000", padding: "6px 14px", borderRadius: "8px", fontWeight: "900", fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}>
+                          PAID (${stream.ticketPrice})
+                        </div>
+                      )}
+                      
+                      {stream.viewers && (
+                        <div style={{ position: "absolute", top: "20px", right: "20px", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", color: "white", padding: "6px 14px", borderRadius: "8px", fontWeight: "900", fontSize: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
+                          <Eye size={14} /> {stream.viewers}
+                        </div>
+                      )}
                     </div>
                     <div style={{ padding: "32px" }}>
                       <div style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", marginBottom: "12px", letterSpacing: "0.1em" }}>{stream.category} • {stream.athlete}</div>

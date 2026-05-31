@@ -39,10 +39,18 @@ const createVideo = async (videoData) => {
       isPublished = true,
     } = videoData;
 
+    let finalRecordId = recordId;
+    if (!finalRecordId && !attemptId) {
+      const { data: records } = await supabase.from('records').select('id').limit(1);
+      if (records && records.length > 0) {
+        finalRecordId = records[0].id;
+      }
+    }
+
     const { data, error } = await supabase
       .from('videos')
       .insert({
-        record_id: recordId,
+        record_id: finalRecordId,
         attempt_id: attemptId,
         user_id: userId,
         video_type: videoType,

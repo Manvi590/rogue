@@ -43,8 +43,8 @@ const createRecordVideo = async (req, res) => {
       isPublished,
     } = req.body;
 
-    if (!recordId || !videoUrl) {
-      return res.status(400).json({ message: 'recordId and videoUrl are required' });
+    if (!videoUrl) {
+      return res.status(400).json({ message: 'videoUrl is required' });
     }
 
     const { data, error } = await Video.createVideo({
@@ -291,8 +291,8 @@ const createNewestRecordVideo = async (req, res) => {
       duration,
     } = req.body;
 
-    if (!recordId || !videoUrl) {
-      return res.status(400).json({ message: 'recordId and videoUrl are required' });
+    if (!videoUrl) {
+      return res.status(400).json({ message: 'videoUrl is required' });
     }
 
     const { data, error } = await Video.createVideo({
