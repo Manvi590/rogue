@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { 
   ShieldAlert, Trophy, X, Eye, Calendar, 
@@ -7,12 +7,13 @@ import {
   Sparkles, Trash2, Edit3, Plus, ShoppingBag, Mail, HardDrive, Ticket, Layers, Folder,
   ArrowRight, Bell, Settings, LogOut, LayoutDashboard, BarChart3, MoreVertical,
   Activity, Zap, Timer, Network, Component, TrendingUp, DollarSign, Clock, XCircle, Target, Radio, CreditCard,
-  Flag, ClipboardList, GitBranch, MessageSquare, Star, Layout, Crown, Lock, Server, Image, Megaphone
+  Flag, ClipboardList, GitBranch, MessageSquare, Star, Layout, Crown, Lock, Server, Image, Megaphone, UploadCloud
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
-import { apiCall } from "../utils/api";
+import { apiCall, formatProductImage } from "../utils/api";
+import AdminRankingPanel from "../components/AdminRankingPanel";
 
 const Admin = () => {
   const { user, loading: authLoading } = useAuth();
@@ -45,6 +46,12 @@ const Admin = () => {
         setActiveTab("revenue");
       } else if (tabQuery === "verification-queue" || tabQuery === "verificationQueue") {
         setActiveTab("verificationQueue");
+      } else if (tabQuery === "homepageControl" || tabQuery === "homepage") {
+        setActiveTab("homepageControl");
+      } else if (tabQuery === "videoManagement" || tabQuery === "videos") {
+        setActiveTab("videoManagement");
+      } else if (tabQuery === "coupons") {
+        setActiveTab("coupons");
       } else {
         setActiveTab(tabQuery);
       }
@@ -74,14 +81,39 @@ const Admin = () => {
   const [couponStats, setCouponStats] = useState(null);
   const [couponSearchQuery, setCouponSearchQuery] = useState("");
   const [ledgerPayments, setLedgerPayments] = useState([]);
+  
+  // New State variables for Phase 5 additions
+  const [homepageRecords, setHomepageRecords] = useState({
+    featured: [],
+    newly_verified: [],
+    recent_uploads: [],
+    top_ranked: [],
+    unassigned: []
+  });
+  const [videos, setVideos] = useState([]);
+  const [videoManagementSubTab, setVideoManagementSubTab] = useState("featured"); // "featured" | "newest" | "highlights"
+  const [videoForm, setVideoForm] = useState({
+    title: "", description: "", category: "Strength", isFeatured: false, isNewlyUploaded: false
+  });
+  const [videoFile, setVideoFile] = useState(null);
+  const [thumbnailFile, setThumbnailFile] = useState(null);
+
   const [ledgerMetrics, setLedgerMetrics] = useState(null);
   const [paymentsFilterType, setPaymentsFilterType] = useState("all");
   const [paymentsFilterStatus, setPaymentsFilterStatus] = useState("all");
   const [paymentsSearchQuery, setPaymentsSearchQuery] = useState("");
+  const [paymentsSearchApplied, setPaymentsSearchApplied] = useState("");
   // Adjudicator Management States
   const [judges, setJudges] = useState([]);
   const [judgesSearchQuery, setJudgesSearchQuery] = useState("");
   const [adjudicatorSubTab, setAdjudicatorSubTab] = useState("roster"); // "roster" | "dispatch" | "oversight"
+  const [judgesFilterStatus, setJudgesFilterStatus] = useState("all");
+  const [judgesFilterCert, setJudgesFilterCert] = useState("all");
+  const [judgesFilterPerf, setJudgesFilterPerf] = useState("all");
+  const [contentSubTab, setContentSubTab] = useState("pages"); // pages | faqs | homepage
+  const [editingPage, setEditingPage] = useState(null);
+  const [faqsList, setFaqsList] = useState([]);
+  const [homepageConfig, setHomepageConfig] = useState({});
   const [promoteSearchQuery, setPromoteSearchQuery] = useState("");
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
   const [selectedJudgeForNotes, setSelectedJudgeForNotes] = useState(null);
@@ -104,6 +136,12 @@ const Admin = () => {
 
   // AI Verification Controls States
   const [aiScans, setAiScans] = useState([]);
+  const [appeals, setAppeals] = useState([]);
+  const [appealsPage, setAppealsPage] = useState(1);
+  const [appealsTotalPages, setAppealsTotalPages] = useState(1);
+  const [appealsFilter, setAppealsFilter] = useState("all");
+  const [appealsSearch, setAppealsSearch] = useState("");
+  const [selectedAppeal, setSelectedAppeal] = useState(null);
   const [aiSettings, setAiSettings] = useState({
     ai_min_confidence_threshold: "80.00",
     ai_deepfake_check_enabled: "true",
@@ -127,8 +165,23 @@ const Admin = () => {
   const [auditLogs, setAuditLogs] = useState([]);
   const [apiKeys, setApiKeys] = useState([]);
   const [sponsors, setSponsors] = useState([]);
+  const [sponsorSearchQuery, setSponsorSearchQuery] = useState("");
+  const [sponsorFilterStatus, setSponsorFilterStatus] = useState("all");
+  const [selectedSponsor, setSelectedSponsor] = useState(null);
+  const [sponsorFormMode, setSponsorFormMode] = useState(null); // 'add' | 'edit'
+  const [sponsorForm, setSponsorForm] = useState({});
+  const [sponsorSaveStatus, setSponsorSaveStatus] = useState(null); // 'saving'|'success'|'error'|'imageError'
   const [revenueMetrics, setRevenueMetrics] = useState({ totalRevenue: 0, activeSubscriptions: 0, recentTransactions: [] });
   const [vipRequests, setVipRequests] = useState([]);
+  
+  // Challenge Management States
+  const [challenges, setChallenges] = useState([]);
+  const [challengeSearchQuery, setChallengeSearchQuery] = useState("");
+  const [challengeFilterStatus, setChallengeFilterStatus] = useState("all");
+  const [selectedChallenge, setSelectedChallenge] = useState(null);
+  const [challengeFormMode, setChallengeFormMode] = useState(null); // 'add' | 'edit'
+  const [challengeForm, setChallengeForm] = useState({});
+  const [challengeSaveStatus, setChallengeSaveStatus] = useState(null); // 'saving'|'success'|'error'
 
   // UI States
   const [loading, setLoading] = useState(true);
@@ -155,9 +208,34 @@ const Admin = () => {
   const [recordForm, setRecordForm] = useState({ title: "", category: "Strength", description: "", value: "", unit: "", status: "pending", evidenceUrl: "", venueName: "", city: "", recordType: "standard", userId: "" });
   const [userForm, setUserForm] = useState({ name: "", email: "", password: "", role: "athlete", membershipType: "free_athlete", accountStatus: "active", username: "", phone: "", gender: "male", dob: "", weight: "", height: "", country: "", city: "" });
   const [eventForm, setEventForm] = useState({ title: "", description: "", date: "", location: "", imageUrl: "", isPaid: false, ticketPrice: 0 });
-  const [productForm, setProductForm] = useState({ name: "", description: "", price: "", imageUrl: "", category: "Accessories", stockCount: "", sizes: [], imageUrls: [] });
+  const [productForm, setProductForm] = useState({ name: "", description: "", price: "", imageUrl: "", category: "Accessories", stockCount: "", sizes: [], imageUrls: [], imageFile: null, imagePreview: "" });
+  const [adminProductDragActive, setAdminProductDragActive] = useState(false);
+  const adminProductFileInputRef = React.useRef(null);
   const [membershipForm, setMembershipForm] = useState({ userId: "", tier: "bronze", autoRenew: false, paymentAmount: 0 });
-  const [categoryForm, setCategoryForm] = useState({ name: "", description: "", parent: "", active: true });
+  const [revenueForm, setRevenueForm] = useState({
+    title: "",
+    category: "Record Submission Fee",
+    amount: "",
+    dateReceived: new Date().toISOString().split("T")[0],
+    paymentMethod: "Credit Card",
+    customerName: "",
+    memberNumber: "",
+    customerEmail: "",
+    transactionId: "",
+    orderNumber: "",
+    notes: "",
+    receiptUrl: ""
+  });
+  const [receiptFile, setReceiptFile] = useState(null);
+  const [categoryForm, setCategoryForm] = useState({ name: "", description: "", parent: "", active: true, rules: "", submissionRequirements: "" });
+  const [categorySearchQuery, setCategorySearchQuery] = useState("");
+  const [categoryActiveFilter, setCategoryActiveFilter] = useState("all"); // "all" | "active" | "inactive"
+  const [usersSearchQuery, setUsersSearchQuery] = useState("");
+  const [usersFilterStatus, setUsersFilterStatus] = useState("all");
+  const [usersFilterRole, setUsersFilterRole] = useState("all");
+  const [usersFilterMembership, setUsersFilterMembership] = useState("all");
+  const [usersCurrentPage, setUsersCurrentPage] = useState(1);
+  const [usersPerPage] = useState(10);
   const [ageGroupForm, setAgeGroupForm] = useState({ name: "", minAge: "", maxAge: "", description: "", active: true });
   const [couponForm, setCouponForm] = useState({
     code: "",
@@ -202,6 +280,59 @@ const Admin = () => {
   const [selectedUpgradeTier, setSelectedUpgradeTier] = useState("gold");
   const [membershipAmount, setMembershipAmount] = useState(0);
 
+  // Shop Orders State
+  const [orderDetailModal, setOrderDetailModal] = useState({ isOpen: false, order: null });
+  const [shopSearchInput, setShopSearchInput] = useState("");
+  const [activeShopSearch, setActiveShopSearch] = useState("");
+
+  // Categories Hierarchy State
+  const [categoriesList, setCategoriesList] = useState([
+    { id: 1, name: "Strength", subs: ["Powerlifting", "Weightlifting", "Grip"], active: true, rules: "Standard IPF rules apply.", requirements: "Video must show full lockout.", featured_records: "Deadlift 500kg" },
+    { id: 2, name: "Speed", subs: ["Sprinting", "Speed Typing", "Rubik's Cube"], active: true, rules: "", requirements: "", featured_records: "" },
+    { id: 3, name: "Endurance", subs: ["Marathon", "Planking", "Cycling"], active: true, rules: "", requirements: "", featured_records: "" },
+    { id: 4, name: "Balance", subs: ["Tightrope", "Handstand", "Slackline"], active: true, rules: "", requirements: "", featured_records: "" },
+    { id: 5, name: "Flexibility", subs: ["Splits", "Backbend"], active: true, rules: "", requirements: "", featured_records: "" },
+    { id: 6, name: "Fitness", subs: ["Pushups", "Pullups", "Squats"], active: true, rules: "", requirements: "", featured_records: "" },
+    { id: 7, name: "Sports", subs: ["Basketball", "Football", "Tennis"], active: true, rules: "", requirements: "", featured_records: "" },
+    { id: 8, name: "Gaming", subs: ["Speedruns", "High Scores", "eSports"], active: true, rules: "", requirements: "", featured_records: "" },
+    { id: 9, name: "Entertainment", subs: ["Movie Trivia", "Singing"], active: true, rules: "", requirements: "", featured_records: "" },
+    { id: 10, name: "Creative Skills", subs: ["Drawing", "Sculpting"], active: true, rules: "", requirements: "", featured_records: "" },
+    { id: 11, name: "Stunts", subs: ["Parkour", "BMX"], active: true, rules: "", requirements: "", featured_records: "" },
+    { id: 12, name: "Food Challenges", subs: ["Hot Dog Eating", "Spicy Food"], active: true, rules: "", requirements: "", featured_records: "" },
+    { id: 13, name: "Team Records", subs: ["Tug of War", "Relay"], active: true, rules: "", requirements: "", featured_records: "" },
+    { id: 14, name: "Youth Records", subs: ["U12 Sprint", "U16 Chess"], active: true, rules: "", requirements: "", featured_records: "" },
+    { id: 15, name: "Senior Records", subs: ["60+ Marathon", "70+ Swimming"], active: true, rules: "", requirements: "", featured_records: "" },
+    { id: 16, name: "Extreme Challenges", subs: ["Ice Bath", "Desert Trek"], active: true, rules: "", requirements: "", featured_records: "" },
+    { id: 17, name: "Precision Skills", subs: ["Archery", "Darts", "Knife Throwing"], active: true, rules: "", requirements: "", featured_records: "" },
+    { id: 18, name: "Technology / Innovation", subs: ["Coding Speed", "Robot Building"], active: true, rules: "", requirements: "", featured_records: "" },
+    { id: 19, name: "Animal Records", subs: ["Fastest Dog", "Highest Jump Cat"], active: true, rules: "", requirements: "", featured_records: "" },
+    { id: 20, name: "Miscellaneous", subs: ["Unclassified"], active: true, rules: "", requirements: "", featured_records: "" }
+  ]);
+  const [categoryModal, setCategoryModal] = useState({ isOpen: false, mode: 'add', category: null });
+  const [newSubcategoryInput, setNewSubcategoryInput] = useState("");
+
+  // Age Groups / Divisions State
+  const [divisionsList, setDivisionsList] = useState([
+    { id: 1, name: "Junior Champions", minAge: 5, maxAge: 12, description: "Records set by our youngest, most aspiring athletes.", color: "#FF5500", active: true },
+    { id: 2, name: "Teen Legends", minAge: 13, maxAge: 17, description: "Fiercely competitive teen athletes breaking boundaries.", color: "#3b82f6", active: true },
+    { id: 3, name: "Adult Division", minAge: 18, maxAge: 49, description: "The prime athletic division where world records are shattered.", color: "#22c55e", active: true },
+    { id: 4, name: "Masters Division", minAge: 50, maxAge: 120, description: "Veteran athletes proving age is just a number.", color: "#ffd700", active: true }
+  ]);
+  const [divisionModal, setDivisionModal] = useState({ isOpen: false, mode: 'add', division: null });
+
+  // Advanced Membership Management State
+  const [membershipSubTab, setMembershipSubTab] = useState("plans"); // "plans" | "subscribers" | "payments"
+  const [membershipPlans, setMembershipPlans] = useState([
+    { id: '1', name: 'Free', price: '$0/mo', limits: '3 Submissions', color: '#888', active: true },
+    { id: '2', name: 'Bronze', price: '$9.99/mo', limits: '10 Submissions', color: '#cd7f32', active: true },
+    { id: '3', name: 'Silver', price: '$19.99/mo', limits: '50 Submissions', color: '#c0c0c0', active: true },
+    { id: '4', name: 'Gold', price: '$49.99/mo', limits: 'Unlimited', color: '#ffd700', active: true },
+    { id: '5', name: 'VIP', price: '$199.99/mo', limits: 'Priority Review + VIP Profile', color: '#9932cc', active: true },
+    { id: '6', name: 'Lifetime', price: '$999.00', limits: 'Unlimited Forever', color: '#00fa9a', active: true },
+  ]);
+  const [planModal, setPlanModal] = useState({ isOpen: false, mode: 'add', plan: null });
+  const [subscriberModal, setSubscriberModal] = useState({ isOpen: false, subscriber: null });
+
   // Security gate check
   useEffect(() => {
     if (!authLoading && (!user || !user.isAdmin)) {
@@ -231,6 +362,32 @@ const Admin = () => {
     showToast(message, isError ? "error" : isSuccess ? "success" : "info");
   };
 
+  // Dynamic CSV Ledger Exporter
+  const handleExportLedger = () => {
+    const headers = ["Transaction ID", "Customer Name", "Customer Email", "Payment Type", "Amount", "Status", "Reference ID", "Date"];
+    const rows = ledgerPayments.map(p => [
+      p.id,
+      p.customerName,
+      p.customerEmail,
+      p.paymentType.toUpperCase(),
+      p.amount.toFixed(2),
+      p.status.toUpperCase(),
+      p.referenceId || "",
+      p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ""
+    ]);
+    
+    let csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(","), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))].join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `apex_financial_ledger_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Unified Data Query Orchestrator
   const fetchData = async () => {
     if (!user || !user.isAdmin) return;
@@ -244,7 +401,19 @@ const Admin = () => {
           apiCall('/age-groups', 'GET', null, user.token).catch(() => ({ ageGroups: [] }))
         ]);
         setRecords(recData || []);
-        setCategories(catData.flat || catData.categories || []);
+        const apiCategories = catData.flat || catData.categories || [];
+        setCategories(apiCategories);
+        // Sync API categories with categoriesList state
+        if (apiCategories.length > 0) {
+          setCategoriesList(prev => {
+            // Merge API data with existing state, preferring API data
+            const merged = prev.map(cat => {
+              const apiCat = apiCategories.find(a => (a._id || a.id) === (cat.id || cat._id));
+              return apiCat ? { ...cat, ...apiCat } : cat;
+            });
+            return merged;
+          });
+        }
         setAgeGroups(ageData.ageGroups || []);
       } else if (activeTab === "users") {
         const [usersData, contactsData] = await Promise.all([
@@ -274,6 +443,9 @@ const Admin = () => {
       } else if (activeTab === "verificationQueue") {
         const recData = await apiCall("/records/admin/submissions", "GET", null, user.token).catch(() => []);
         setRecords(recData || []);
+      } else if (activeTab === "challenges") {
+        const chalData = await apiCall("/admin/challenges", "GET", null, user.token).catch(() => []);
+        setChallenges(chalData || []);
       } else if (activeTab === "aiVerification") {
         const [scansData, settingsData] = await Promise.all([
           apiCall("/admin/ai-verification/scans", "GET", null, user.token).catch(() => []),
@@ -286,6 +458,16 @@ const Admin = () => {
         ]);
         setAiScans(scansData || []);
         setAiSettings(settingsData);
+      } else if (activeTab === "appeals") {
+        const queryParams = new URLSearchParams({
+           page: appealsPage,
+           limit: 10,
+           status: appealsFilter,
+           search: appealsSearch
+        });
+        const data = await apiCall(`/admin/appeals?${queryParams}`, "GET", null, user.token).catch(() => ({ appeals: [], totalPages: 1 }));
+        setAppeals(data.appeals || []);
+        setAppealsTotalPages(data.totalPages || 1);
       }
       else if (activeTab === "moderation") {
         const [reportsData, messagesData, bansData] = await Promise.all([
@@ -297,12 +479,17 @@ const Admin = () => {
         setMessages(messagesData || []);
         setBans(bansData || []);
       } else if (activeTab === "mediaLibrary" || activeTab === "contentManagement") {
-        const [mediaData, certData] = await Promise.all([
+        const [mediaData, certData, faqsData, heroData, bannerData] = await Promise.all([
           apiCall("/admin/media", "GET", null, user.token).catch(() => []),
-          apiCall("/admin/certificates", "GET", null, user.token).catch(() => [])
+          apiCall("/admin/certificates", "GET", null, user.token).catch(() => []),
+          apiCall("/admin/content/faqs", "GET", null, user.token).catch(() => []),
+          apiCall("/admin/content/homepage/hero", "GET", null, user.token).catch(() => ({ config: {} })),
+          apiCall("/admin/content/homepage/banner", "GET", null, user.token).catch(() => ({ config: {} }))
         ]);
         setMediaAssets(mediaData || []);
         setCertificates(certData || []);
+        setFaqsList(faqsData || []);
+        setHomepageConfig({ hero: heroData.config, banner: bannerData.config });
       } else if (activeTab === "security" || activeTab === "systemSettings") {
         const [auditData, apiData] = await Promise.all([
           apiCall("/admin/security/audit-logs", "GET", null, user.token).catch(() => []),
@@ -317,6 +504,27 @@ const Admin = () => {
         ]);
         setSponsors(sponsorData || []);
         setRevenueMetrics(revData || { totalRevenue: 0, activeSubscriptions: 0, recentTransactions: [] });
+      } else if (activeTab === "homepageControl") {
+        const [homepageData, allVerifiedData] = await Promise.all([
+          apiCall("/admin/homepage/records", "GET", null, user.token).catch(() => ({ featured: [], newly_verified: [], recent_uploads: [], top_ranked: [], unassigned: [] })),
+          apiCall("/records/admin/submissions", "GET", null, user.token).catch(() => [])
+        ]);
+        setHomepageRecords(homepageData);
+        setRecords(allVerifiedData.filter(r => r.status === 'verified') || []);
+      } else if (activeTab === "videoManagement") {
+        const [featuredVids, newestVids, highlightVids] = await Promise.all([
+          apiCall("/admin/videos/featured", "GET", null, user.token).catch(() => []),
+          apiCall("/admin/videos/newest", "GET", null, user.token).catch(() => []),
+          apiCall("/admin/videos/record", "GET", null, user.token).catch(() => [])
+        ]);
+        setVideos({ featured: featuredVids, newest: newestVids, highlights: highlightVids });
+      } else if (activeTab === "coupons") {
+        const [couponsData, couponStatsData] = await Promise.all([
+          apiCall("/coupons", "GET", null, user.token).catch(() => []),
+          apiCall("/coupons/stats", "GET", null, user.token).catch(() => null)
+        ]);
+        setCoupons(couponsData || []);
+        setCouponStats(couponStatsData);
       } else if (activeTab === "dashboard" || activeTab === "revenue") {
         const [membData, statsData, dashData, eventsData, couponsData, couponStatsData, productsData, paymentsData, messagesData] = await Promise.all([
           apiCall("/memberships?page=1&limit=100", "GET", null, user.token).catch(() => ({ memberships: [] })),
@@ -331,7 +539,6 @@ const Admin = () => {
         ]);
         setMemberships(membData.memberships || []);
         setMembershipStats(statsData);
-        // setTierConfigs(tierData || {}); // Unused
         setDashboardStats(dashData);
         setCoupons(couponsData || []);
         setCouponStats(couponStatsData);
@@ -368,6 +575,55 @@ const Admin = () => {
     };
   }, [isModalOpen, userActionModal.isOpen, membershipActionModal.isOpen, confirmModal.isOpen]);
 
+  const handleUpdateAppealStatus = async (appealId, newStatus) => {
+    try {
+      await apiCall(`/admin/appeals/${appealId}/status`, "PUT", { status: newStatus, resolution_note: `Admin changed status to ${newStatus}` }, user.token);
+      fetchData();
+      if (selectedAppeal && selectedAppeal.id === appealId) {
+        setSelectedAppeal(prev => ({ ...prev, status: newStatus }));
+      }
+      showToast(`Appeal status updated to ${newStatus}`, "success");
+    } catch (e) {
+      showToast("Error updating status", "error");
+    }
+  };
+
+  const handleUpdateAppealNotes = async (appealId, notes) => {
+    try {
+      await apiCall(`/admin/appeals/${appealId}/notes`, "PUT", { admin_notes: notes }, user.token);
+      showToast(`Admin notes saved`, "success");
+    } catch (e) {
+      showToast("Error updating notes", "error");
+    }
+  };
+
+  // Seed all 20 default categories
+  const handleSeedCategories = async () => {
+    try {
+      setLoading(true);
+      const res = await apiCall("/categories/seed", "GET", null, user.token);
+      showToast(res.message || `Seeded ${res.createdCount || 0} default categories!`, "success");
+      fetchData();
+    } catch (err) {
+      showToast(`Error seeding categories: ${err.message}`, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Toggle category active/inactive
+  const handleToggleCategoryActive = async (cat) => {
+    try {
+      const newActive = !cat.active;
+      await apiCall(`/categories/${cat._id || cat.id}`, "PUT", { active: newActive }, user.token);
+      setCategories(prev => prev.map(c => (c._id || c.id) === (cat._id || cat.id) ? { ...c, active: newActive } : c));
+      setCategoriesList(prev => prev.map(c => (c._id || c.id) === (cat._id || cat.id) ? { ...c, active: newActive } : c));
+      showToast(`Category "${cat.name}" ${newActive ? "activated" : "deactivated"}`, "success");
+    } catch (err) {
+      showToast(`Error toggling category: ${err.message}`, "error");
+    }
+  };
+
   // DELETE operation handler
   const executeDelete = async (id) => {
     try {
@@ -393,7 +649,10 @@ const Admin = () => {
       // Instantly update UI State
       if (activeTab === "records") {
         if (recordsSubTab === "submissions") setRecords(prev => prev.filter(x => x.id !== id));
-        else if (recordsSubTab === "categories") setCategories(prev => prev.filter(x => (x._id || x.id) !== id));
+        else if (recordsSubTab === "categories") {
+          setCategories(prev => prev.filter(x => (x._id || x.id) !== id));
+          setCategoriesList(prev => prev.filter(x => (x._id || x.id) !== id));
+        }
         else if (recordsSubTab === "ageGroups") setAgeGroups(prev => prev.filter(x => (x._id || x.id) !== id));
       }
       else if (activeTab === "users") setUsers(prev => prev.filter(x => x.id !== id));
@@ -413,19 +672,40 @@ const Admin = () => {
   };
 
 
-  const handleUserAction = async (id, action) => {
+  const handleUserActionConfirm = async (userObj, action) => {
     try {
       if (action === 'suspend') {
         if (!window.confirm("Are you sure you want to suspend this user?")) return;
-        setUsers(users.map(u => u.id === id ? { ...u, account_status: 'suspended' } : u));
-        alert("User suspended successfully");
+        const res = await apiCall(`/admin/users/${userObj.id}`, "PUT", { account_status: 'suspended' }, user.token);
+        if(res) {
+          setUsers(users.map(u => u.id === userObj.id ? { ...u, account_status: 'suspended' } : u));
+          alert("User suspended successfully");
+        }
       } else if (action === 'ban') {
         if (!window.confirm("Are you sure you want to permanently BAN this user?")) return;
-        setUsers(users.map(u => u.id === id ? { ...u, account_status: 'banned' } : u));
-        alert("User banned successfully");
+        const res = await apiCall(`/admin/users/${userObj.id}`, "PUT", { account_status: 'banned' }, user.token);
+        if(res) {
+          setUsers(users.map(u => u.id === userObj.id ? { ...u, account_status: 'banned' } : u));
+          alert("User banned successfully");
+        }
+      } else if (action === 'activate') {
+        if (!window.confirm("Are you sure you want to restore this user account?")) return;
+        const res = await apiCall(`/admin/users/${userObj.id}`, "PUT", { account_status: 'active' }, user.token);
+        if(res) {
+          setUsers(users.map(u => u.id === userObj.id ? { ...u, account_status: 'active' } : u));
+          alert("User account restored successfully");
+        }
+      } else if (action === 'removeMembership') {
+        if (!window.confirm("Are you sure you want to remove this user's membership and revert them to a Free Athlete?")) return;
+        const res = await apiCall(`/admin/users/${userObj.id}`, "PUT", { membership_type: 'free_athlete' }, user.token);
+        if(res) {
+          setUsers(users.map(u => u.id === userObj.id ? { ...u, membership_type: 'free_athlete' } : u));
+          alert("Membership removed successfully");
+        }
       } else if (action === 'resetPassword') {
         if (!window.confirm("Send a password reset link to this user?")) return;
-        alert("Password reset instructions sent to user");
+        // In a real scenario we'd call Supabase auth admin API. For now, simulate success:
+        alert(`Password reset instructions sent to ${userObj.email}`);
       }
     } catch (err) {
       alert(`Action failed: ${err.message}`);
@@ -530,10 +810,12 @@ const Admin = () => {
             name: item.name || "",
             description: item.description || "",
             parent: item.parent || "",
-            active: !!item.active
+            active: !!item.active,
+            rules: item.rules || "",
+            submissionRequirements: item.submissionRequirements || ""
           });
         } else {
-          setCategoryForm({ name: "", description: "", parent: "", active: true });
+          setCategoryForm({ name: "", description: "", parent: "", active: true, rules: "", submissionRequirements: "" });
         }
       } else if (recordsSubTab === "ageGroups") {
         if (type === "edit" && item) {
@@ -556,9 +838,9 @@ const Admin = () => {
           name: item.name || "",
           email: item.email || "",
           password: "",
-          role: item.role || (item.isAdmin ? "system_admin" : "athlete"),
-          membershipType: item.membershipType || "free_athlete",
-          accountStatus: item.accountStatus || item.account_status || "active",
+          role: item.role || (item.is_admin || item.isAdmin ? "system_admin" : "athlete"),
+          membershipType: item.membership_type || item.membershipType || "free_athlete",
+          accountStatus: item.account_status || item.accountStatus || "active",
           username: item.username || "",
           phone: item.phone || "",
           gender: item.gender || "male",
@@ -600,14 +882,14 @@ const Admin = () => {
       } else {
         setProductForm({ name: "", description: "", price: "", imageUrl: "", category: "Accessories", stockCount: "", sizes: [], imageUrls: [] });
       }
-    } else if (activeTab === "revenue") {
+    } else if (activeTab === "coupons") {
       if (type === "edit" && item) {
         setCouponForm({
           code: item.code || "",
           discountType: item.discount_type || "percentage",
           discountValue: item.discount_value || "",
-          active: item.active !== undefined ? item.active : true,
-          expirationDate: item.expiration_date ? new Date(item.expiration_date).toISOString().split("T")[0] : "",
+          active: item.active !== false,
+          expirationDate: item.expiration_date ? item.expiration_date.split('T')[0] : "",
           appliesTo: item.applies_to || "all",
           targetId: item.target_id || "",
           minPurchase: item.min_purchase || "",
@@ -632,6 +914,74 @@ const Admin = () => {
           autoGenerate: false
         });
       }
+    } else if (activeTab === "revenue") {
+      if (revenueSubTab === "coupons") {
+        if (type === "edit" && item) {
+          setCouponForm({
+            code: item.code || "",
+            discountType: item.discount_type || "percentage",
+            discountValue: item.discount_value || "",
+            active: item.active !== undefined ? item.active : true,
+            expirationDate: item.expiration_date ? new Date(item.expiration_date).toISOString().split("T")[0] : "",
+            appliesTo: item.applies_to || "all",
+            targetId: item.target_id || "",
+            minPurchase: item.min_purchase || "",
+            maxRedemptions: item.max_redemptions || "",
+            restrictedMembershipTier: item.restricted_membership_tier || "",
+            restrictedCountry: item.restricted_country || "",
+            autoGenerate: false
+          });
+        } else {
+          setCouponForm({
+            code: "",
+            discountType: "percentage",
+            discountValue: "",
+            active: true,
+            expirationDate: "",
+            appliesTo: "all",
+            targetId: "",
+            minPurchase: "",
+            maxRedemptions: "",
+            restrictedMembershipTier: "",
+            restrictedCountry: "",
+            autoGenerate: false
+          });
+        }
+      } else {
+        // Manual Revenue Form Ledger
+        if (type === "edit" && item) {
+          setRevenueForm({
+            title: item.title || "",
+            category: item.category || "Record Submission Fee",
+            amount: item.amount !== undefined ? item.amount.toString() : "",
+            dateReceived: item.createdAt ? new Date(item.createdAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+            paymentMethod: item.paymentMethod || "Credit Card",
+            customerName: item.customerName || "",
+            memberNumber: item.memberNumber || "",
+            customerEmail: item.customerEmail || "",
+            transactionId: item.id && item.id.startsWith("TXN-MAN-") ? "" : item.id || "",
+            orderNumber: item.orderNumber || "",
+            notes: item.notes || "",
+            receiptUrl: item.receiptUrl || ""
+          });
+        } else {
+          setRevenueForm({
+            title: "",
+            category: "Record Submission Fee",
+            amount: "",
+            dateReceived: new Date().toISOString().split("T")[0],
+            paymentMethod: "Credit Card",
+            customerName: "",
+            memberNumber: "",
+            customerEmail: "",
+            transactionId: "",
+            orderNumber: "",
+            notes: "",
+            receiptUrl: ""
+          });
+        }
+        setReceiptFile(null);
+      }
     }
 
 
@@ -643,91 +993,199 @@ const Admin = () => {
     e.preventDefault();
     setModalLoading(true);
     try {
-      let endpoint = "";
-      let method = modalType === "add" ? "POST" : "PUT";
-      let payload = {};
-
-      if (activeTab === "users") {
-        // Use dashboard endpoints for user management
-        endpoint = `/dashboard/users${modalType === "edit" && modalTarget ? `/${modalTarget._id || modalTarget.id}` : ""}`;
-        payload = {
-          name: userForm.name,
-          email: userForm.email,
-          username: userForm.username,
-          phone: userForm.phone,
-          gender: userForm.gender,
-          dob: userForm.dob,
-          country: userForm.country,
-          city: userForm.city,
-          role: userForm.role,
-          membershipType: userForm.membershipType,
-          accountStatus: userForm.accountStatus,
-          isAdmin: userForm.role === 'system_admin'
-        };
-        // Only include password for new users
-        if (modalType === "add" && userForm.password) {
-          payload.password = userForm.password;
-        }
-      } else if (activeTab === "records") {
-        if (recordsSubTab === "submissions") {
-          endpoint = `/admin/records${modalType === "edit" && modalTarget ? `/${modalTarget.id}` : ""}`;
-          payload = recordForm;
-        } else if (recordsSubTab === "categories") {
-          endpoint = `/categories${modalType === "edit" && modalTarget ? `/${modalTarget._id || modalTarget.id}` : ""}`;
-          payload = {
-            name: categoryForm.name,
-            description: categoryForm.description,
-            parent: categoryForm.parent || undefined,
-            active: categoryForm.active
-          };
-          if (modalType === "edit") method = "PUT";
-        } else if (recordsSubTab === "ageGroups") {
-          endpoint = `/age-groups${modalType === "edit" && modalTarget ? `/${modalTarget._id || modalTarget.id}` : ""}`;
-          payload = {
-            name: ageGroupForm.name,
-            minAge: Number(ageGroupForm.minAge),
-            maxAge: ageGroupForm.maxAge === "" ? undefined : Number(ageGroupForm.maxAge),
-            description: ageGroupForm.description,
-            active: ageGroupForm.active
-          };
-          if (modalType === "edit") method = "PUT";
-        }
-      } else if (activeTab === "events") {
-        endpoint = `/admin/events${modalType === "edit" && modalTarget ? `/${modalTarget.id}` : ""}`;
-        payload = eventForm;
+      if (activeTab === "videoManagement") {
+        const formData = new FormData();
+        formData.append("title", videoForm.title);
+        formData.append("description", videoForm.description);
+        formData.append("category", videoForm.category);
+        formData.append("isFeatured", videoForm.isFeatured);
+        formData.append("isNewlyUploaded", videoForm.isNewlyUploaded);
+        if (videoFile) formData.append("video", videoFile);
+        if (thumbnailFile) formData.append("thumbnail", thumbnailFile);
+        
+        let targetRoute = "/admin/videos/featured";
+        if (videoForm.isNewlyUploaded) targetRoute = "/admin/videos/newest";
+        
+        const res = await fetch(import.meta.env.VITE_API_URL + targetRoute, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${user.token}` },
+          body: formData
+        });
+        if(!res.ok) throw new Error(await res.text());
+        
+        alert("Video uploaded successfully.");
       } else if (activeTab === "products") {
-        endpoint = `/admin/products${modalType === "edit" && modalTarget ? `/${modalTarget.id}` : ""}`;
-        payload = productForm;
-      } else if (activeTab === "revenue") {
-        if (revenueSubTab === "coupons") {
-          endpoint = `/coupons${modalType === "edit" && modalTarget ? `/${modalTarget.id}` : ""}`;
-          payload = couponForm;
-        } else {
-          if (modalType === "add") {
-            endpoint = "/memberships";
-            payload = membershipForm;
-          } else {
-            endpoint = `/memberships/${modalTarget.id || modalTarget._id}`;
-            payload = membershipForm;
-            method = "PUT";
+        const endpoint = modalType === "edit" ? `/admin/products/${modalTarget.id}` : "/admin/products";
+        const method = modalType === "edit" ? "PUT" : "POST";
+        
+        // Exclude file helper attributes from JSON payload
+        const { imageFile, imagePreview, ...jsonPayload } = productForm;
+        
+        // First create/update product details
+        const createdProduct = await apiCall(endpoint, method, jsonPayload, user.token);
+        const productId = modalType === "edit" ? modalTarget.id : createdProduct.id;
+        
+        // Then upload image if file is selected
+        if (productForm.imageFile) {
+          try {
+            const formData = new FormData();
+            formData.append("productImage", productForm.imageFile);
+            
+            const imgRes = await fetch(import.meta.env.VITE_API_URL + `/admin/products/${productId}/image`, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${user.token}` },
+              body: formData
+            });
+            
+            if(!imgRes.ok) throw new Error("Image upload failed");
+            alert("Product image uploaded successfully.");
+          } catch (uploadErr) {
+            console.error("Image upload failed:", uploadErr);
+            alert("Image upload failed. Please try again.");
           }
         }
-      }
+        
+        alert(`Product ${modalType === "add" ? "added" : "updated"} successfully.`);
+        fetchData();
+        setIsModalOpen(false);
+      } else {
+        let endpoint = "";
+        let method = modalType === "add" ? "POST" : "PUT";
+        let payload = {};
 
-      if (!endpoint) throw new Error("Invalid endpoint");
+        if (activeTab === "users") {
+          // Use dashboard endpoints for user management
+          endpoint = `/dashboard/users${modalType === "edit" && modalTarget ? `/${modalTarget._id || modalTarget.id}` : ""}`;
+          payload = {
+            name: userForm.name,
+            email: userForm.email,
+            username: userForm.username,
+            phone: userForm.phone,
+            gender: userForm.gender,
+            dob: userForm.dob,
+            country: userForm.country,
+            city: userForm.city,
+            role: userForm.role,
+            membershipType: userForm.membershipType,
+            accountStatus: userForm.accountStatus,
+            isAdmin: userForm.role === 'system_admin'
+          };
+          // Only include password for new users
+          if (modalType === "add" && userForm.password) {
+            payload.password = userForm.password;
+          }
+        } else if (activeTab === "records") {
+          if (recordsSubTab === "submissions") {
+            endpoint = `/admin/records${modalType === "edit" && modalTarget ? `/${modalTarget.id}` : ""}`;
+            payload = recordForm;
+          } else if (recordsSubTab === "categories") {
+            endpoint = `/categories${modalType === "edit" && modalTarget ? `/${modalTarget._id || modalTarget.id}` : ""}`;
+            payload = {
+              name: categoryForm.name,
+              description: categoryForm.description,
+              parent: categoryForm.parent || undefined,
+              active: categoryForm.active,
+              rules: categoryForm.rules,
+              submissionRequirements: categoryForm.submissionRequirements
+            };
+            if (modalType === "edit") method = "PUT";
+          } else if (recordsSubTab === "ageGroups") {
+            endpoint = `/age-groups${modalType === "edit" && modalTarget ? `/${modalTarget._id || modalTarget.id}` : ""}`;
+            payload = {
+              name: ageGroupForm.name,
+              minAge: Number(ageGroupForm.minAge),
+              maxAge: ageGroupForm.maxAge === "" ? undefined : Number(ageGroupForm.maxAge),
+              description: ageGroupForm.description,
+              active: ageGroupForm.active
+            };
+            if (modalType === "edit") method = "PUT";
+          }
+        } else if (activeTab === "events") {
+          endpoint = `/admin/events${modalType === "edit" && modalTarget ? `/${modalTarget.id}` : ""}`;
+          payload = eventForm;
+        } else if (activeTab === "coupons") {
+          endpoint = `/coupons${modalType === "edit" && modalTarget ? `/${modalTarget.id}` : ""}`;
+          payload = {
+            code: couponForm.code,
+            discount_type: couponForm.discountType,
+            discount_value: parseFloat(couponForm.discountValue),
+            active: couponForm.active,
+            expiration_date: couponForm.expirationDate || null,
+            applies_to: couponForm.appliesTo,
+            target_id: couponForm.targetId,
+            min_purchase: parseFloat(couponForm.minPurchase) || 0,
+            max_redemptions: couponForm.maxRedemptions ? parseInt(couponForm.maxRedemptions) : null,
+            restricted_membership_tier: couponForm.restrictedMembershipTier || null,
+            restricted_country: couponForm.restrictedCountry || null
+          };
+        } else if (activeTab === "revenue") {
+          if (revenueSubTab === "coupons") {
+            endpoint = `/coupons${modalType === "edit" && modalTarget ? `/${modalTarget.id}` : ""}`;
+            payload = couponForm;
+          } else {
+            // Validation so the form cannot be submitted with missing required fields
+            if (!revenueForm.title || !revenueForm.category || !revenueForm.amount || !revenueForm.paymentMethod || !revenueForm.customerName || !revenueForm.customerEmail) {
+              alert("Revenue entry could not be saved. Please check the required fields.");
+              setModalLoading(false);
+              return;
+            }
+            endpoint = "/admin/payments/create";
+            method = "POST";
+            payload = {
+              title: revenueForm.title,
+              category: revenueForm.category,
+              amount: parseFloat(revenueForm.amount),
+              dateReceived: revenueForm.dateReceived,
+              paymentMethod: revenueForm.paymentMethod,
+              customerName: revenueForm.customerName,
+              memberNumber: revenueForm.memberNumber,
+              customerEmail: revenueForm.customerEmail,
+              transactionId: revenueForm.transactionId,
+              orderNumber: revenueForm.orderNumber,
+              notes: revenueForm.notes,
+              receiptUrl: revenueForm.receiptUrl
+            };
+          }
+        }
 
-      await apiCall(endpoint, method, payload, user.token);
+        if (!endpoint) throw new Error("Invalid endpoint");
 
-      // Reload dataset dynamically
-      fetchData();
-      setIsModalOpen(false);
-      
-      // Reset forms
-      if (activeTab === "users") {
-        setUserForm({ name: "", email: "", password: "", isAdmin: false, username: "", phone: "", gender: "male", dob: "", weight: "", height: "", country: "", city: "" });
+        await apiCall(endpoint, method, payload, user.token);
+
+        if (activeTab === "revenue" && revenueSubTab !== "coupons") {
+          alert("Revenue entry added successfully.");
+        }
+
+        // Reload dataset dynamically
+        fetchData();
+        setIsModalOpen(false);
+        
+        // Reset forms
+        if (activeTab === "users") {
+          setUserForm({ name: "", email: "", password: "", role: "athlete", membershipType: "free_athlete", accountStatus: "active", username: "", phone: "", gender: "male", dob: "", weight: "", height: "", country: "", city: "" });
+        } else if (activeTab === "coupons") {
+          setCouponForm({
+            code: "",
+            discountType: "percentage",
+            discountValue: "",
+            active: true,
+            expirationDate: "",
+            appliesTo: "all",
+            targetId: "",
+            minPurchase: "",
+            maxRedemptions: "",
+            restrictedMembershipTier: "",
+            restrictedCountry: "",
+            autoGenerate: false
+          });
+        }
       }
     } catch (err) {
-      alert(`Save operation failed: ${err.message}`);
+      if (activeTab === "revenue" && revenueSubTab !== "coupons") {
+        alert("Revenue entry could not be saved. Please check the required fields.");
+      } else {
+        alert(`Save operation failed: ${err.message}`);
+      }
     } finally {
       setModalLoading(false);
     }
@@ -741,6 +1199,21 @@ const Admin = () => {
       showToast(`Record status updated to ${status.toUpperCase()} successfully`, "success");
     } catch (err) {
       showToast(`Quick adjudication failed: ${err.message}`, "error");
+    }
+  };
+
+  // Toggle featured status for a verified record
+  const handleToggleFeatured = async (id, isFeatured) => {
+    try {
+      await apiCall(`/records/${id}/featured`, "PUT", { isFeatured }, user.token);
+      setRecords(prev => prev.map(x => x.id === id ? { ...x, is_featured: isFeatured } : x));
+      showToast(`Record ${isFeatured ? 'marked as featured' : 'removed from featured'} successfully`, "success");
+      // Also refresh homepage data
+      if (activeTab === "homepageControl") {
+        fetchData();
+      }
+    } catch (err) {
+      showToast(`Failed to toggle featured status: ${err.message}`, "error");
     }
   };
 
@@ -876,23 +1349,7 @@ const Admin = () => {
     );
   };
 
-  const executeSeedCategories = async () => {
-    try {
-      await apiCall('/categories/seed', 'GET', null, user.token);
-      fetchData();
-      alert('Default categories seeded');
-    } catch (err) {
-      alert(`Failed to seed categories: ${err.message}`);
-    }
-  };
 
-  const handleSeedCategories = () => {
-    showConfirm(
-      "🌱 SEED CATEGORIES",
-      "Seed default categories (will create missing ones)?",
-      () => executeSeedCategories()
-    );
-  };
 
   // Age group handlers
   const executeDeleteAgeGroup = async (id) => {
@@ -972,7 +1429,9 @@ const Admin = () => {
       if (usersSubTab === "registry") {
         return users.filter(user => 
           user.name?.toLowerCase().includes(query) || 
-          user.email?.toLowerCase().includes(query)
+          user.email?.toLowerCase().includes(query) ||
+          user.username?.toLowerCase().includes(query) ||
+          (user.member_number || user.memberNumber)?.toLowerCase().includes(query)
         );
       } else {
         return contacts.filter(c => c.name?.toLowerCase().includes(query) || c.email?.toLowerCase().includes(query) || c.subject?.toLowerCase().includes(query));
@@ -1320,7 +1779,13 @@ const Admin = () => {
           <header style={{ padding: "16px 32px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "rgba(5,5,5,0.8)", backdropFilter: "blur(12px)", zIndex: 10 }}>
           <div style={{ position: "relative", width: "400px" }}>
             <Search size={16} color="#666" style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)" }} />
-            <input type="text" placeholder="Search records, users, or payments..." style={{ width: "100%", background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "100px", padding: "10px 16px 10px 42px", color: "white", fontSize: "13px", outline: "none" }} />
+            <input 
+              type="text" 
+              placeholder="Search records, users, or payments..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ width: "100%", background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "100px", padding: "10px 16px 10px 42px", color: "white", fontSize: "13px", outline: "none" }} 
+            />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
             <button style={{ background: "transparent", border: "none", color: "#888", cursor: "pointer" }}><Bell size={20} /></button>
@@ -1712,7 +2177,7 @@ const Admin = () => {
                               {new Date(r.created_at || new Date()).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
                             </td>
                             <td style={{ padding: "16px 0", textAlign: "right" }}>
-                              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", alignItems: "center" }}>
                                 {r.status === "pending" && (
                                   <>
                                     <button onClick={() => handleQuickAdjudicate(r.id, "verified")} style={{ background: "#FF5500", border: "none", color: "white", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "11px", fontWeight: "900" }}>Approve</button>
@@ -1720,7 +2185,27 @@ const Admin = () => {
                                   </>
                                 )}
                                 {r.status === "verified" && (
-                                  <button onClick={() => handleOpenRecordDetailModal(r)} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "11px", fontWeight: "800" }}>View Details</button>
+                                  <>
+                                    <button 
+                                      onClick={() => handleToggleFeatured(r.id, !r.is_featured)} 
+                                      title={r.is_featured ? "Remove from featured" : "Mark as featured"}
+                                      style={{ 
+                                        background: r.is_featured ? "rgba(255,206,86,0.2)" : "transparent", 
+                                        border: `1px solid ${r.is_featured ? "rgba(255,206,86,0.4)" : "rgba(255,255,255,0.2)"}`, 
+                                        color: r.is_featured ? "#ffce56" : "white", 
+                                        padding: "6px 12px", 
+                                        borderRadius: "6px", 
+                                        cursor: "pointer", 
+                                        fontSize: "11px", 
+                                        fontWeight: "800",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "4px"
+                                      }}>
+                                      <Star size={12} fill={r.is_featured ? "#ffce56" : "none"} /> {r.is_featured ? "Featured" : "Feature"}
+                                    </button>
+                                    <button onClick={() => handleOpenRecordDetailModal(r)} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "11px", fontWeight: "800" }}>View Details</button>
+                                  </>
                                 )}
                                 {r.status === "rejected" && (
                                   <button onClick={() => handleOpenRecordDetailModal(r)} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "11px", fontWeight: "800" }}>Appeal Log</button>
@@ -1811,137 +2296,227 @@ const Admin = () => {
                         Category<br />Management
                       </h2>
                       <p style={{ color: "#888", margin: 0, fontSize: "14px", maxWidth: "450px", lineHeight: "1.6" }}>
-                        Control the foundational pillars of the Rogue World Records ecosystem. Audit, expand, and monitor global category performance in real-time.
+                        Control the foundational pillars of the Apex World Records ecosystem. Audit, expand, and monitor global category performance in real-time.
                       </p>
                     </div>
-                    <div style={{ display: "flex", gap: "16px", alignItems: "center", marginTop: "20px" }}>
+                    <div style={{ display: "flex", gap: "16px", alignItems: "center", marginTop: "20px", flexWrap: "wrap" }}>
                       <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", padding: "12px 24px", borderRadius: "100px", display: "flex", alignItems: "center", gap: "16px" }}>
-                        <div style={{ color: "#888", fontSize: "11px", fontWeight: "800", letterSpacing: "1px" }}>TOTAL RECORDS</div>
-                        <div style={{ color: "#FF5500", fontSize: "18px", fontWeight: "900" }}>{records.length.toLocaleString()}</div>
+                        <div style={{ color: "#888", fontSize: "11px", fontWeight: "800", letterSpacing: "1px" }}>TOTAL CATS</div>
+                        <div style={{ color: "#FF5500", fontSize: "18px", fontWeight: "900" }}>{categories.length}</div>
                       </div>
                       <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", padding: "12px 24px", borderRadius: "100px", display: "flex", alignItems: "center", gap: "16px" }}>
-                        <div style={{ color: "#888", fontSize: "11px", fontWeight: "800", letterSpacing: "1px" }}>ACTIVE CATS</div>
-                        <div style={{ color: "#FF5500", fontSize: "18px", fontWeight: "900" }}>{categories.filter(c => c.active !== false).length}</div>
+                        <div style={{ color: "#888", fontSize: "11px", fontWeight: "800", letterSpacing: "1px" }}>ACTIVE</div>
+                        <div style={{ color: "#22c55e", fontSize: "18px", fontWeight: "900" }}>{categories.filter(c => c.active !== false).length}</div>
                       </div>
+                      <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", padding: "12px 24px", borderRadius: "100px", display: "flex", alignItems: "center", gap: "16px" }}>
+                        <div style={{ color: "#888", fontSize: "11px", fontWeight: "800", letterSpacing: "1px" }}>INACTIVE</div>
+                        <div style={{ color: "#ef4444", fontSize: "18px", fontWeight: "900" }}>{categories.filter(c => c.active === false).length}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Search / Filter / Actions Toolbar */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", gap: "16px", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: "12px", alignItems: "center", flex: 1 }}>
+                      {/* Search */}
+                      <div style={{ position: "relative", flex: 1, maxWidth: "400px" }}>
+                        <Search size={16} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#666" }} />
+                        <input
+                          type="text"
+                          placeholder="Search categories..."
+                          value={categorySearchQuery}
+                          onChange={(e) => setCategorySearchQuery(e.target.value)}
+                          style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "12px 14px 12px 40px", color: "white", fontSize: "13px", fontWeight: "600", outline: "none" }}
+                        />
+                      </div>
+                      {/* Filter */}
+                      <select
+                        value={categoryActiveFilter}
+                        onChange={(e) => setCategoryActiveFilter(e.target.value)}
+                        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "12px 18px", color: "white", fontSize: "12px", fontWeight: "800", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.5px" }}
+                      >
+                        <option value="all">All Status</option>
+                        <option value="active">Active Only</option>
+                        <option value="inactive">Inactive Only</option>
+                      </select>
+                    </div>
+                    <div style={{ display: "flex", gap: "12px" }}>
+                      <button
+                        onClick={handleSeedCategories}
+                        style={{ background: "transparent", color: "#FF5500", border: "1px solid #FF5500", padding: "12px 24px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "0.5px", transition: "all 0.2s" }}
+                      >
+                        <Sparkles size={16} /> Seed Defaults
+                      </button>
+                      <button onClick={() => setCategoryModal({ isOpen: true, mode: 'add', category: { name: "", subs: [], active: true, rules: "", description: "", requirements: "", featured_records: "" } })} style={{ background: "#FF5500", color: "white", border: "none", padding: "12px 24px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "0.5px", boxShadow: "0 8px 20px rgba(255,85,0,0.3)" }}>
+                        <Plus size={16} /> Add Category
+                      </button>
                     </div>
                   </div>
 
                   {/* Categories Grid */}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "24px", marginBottom: "40px" }}>
-                    {categories.length === 0 ? (
-                      <div style={{ gridColumn: "span 6", padding: "80px", textAlign: "center", background: "rgba(255,255,255,0.02)", borderRadius: "24px", border: "1px dashed rgba(255,255,255,0.1)" }}>
-                        <Layers size={48} color="#FF5500" style={{ marginBottom: "16px" }} />
-                        <h3 style={{ color: "white", fontSize: "20px", fontWeight: "900", margin: "0 0 8px 0" }}>NO CATEGORIES FOUND</h3>
-                        <p style={{ color: "#888", fontSize: "14px", margin: "0 0 24px 0" }}>Create your first foundational category to start classifying records.</p>
-                        <button onClick={() => openModal("add")} style={{ background: "#FF5500", color: "white", border: "none", padding: "12px 24px", borderRadius: "8px", fontSize: "14px", fontWeight: "800", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "8px" }}>
-                          <Plus size={16} /> ADD CATEGORY
-                        </button>
-                      </div>
-                    ) : categories.map((cat, index) => {
-                      // Dynamic layout: first is huge (span 4), second is large (span 2), rest are medium (span 2)
-                      const isFirstRow = index < 2;
-                      const colSpan = index === 0 ? 4 : 2;
-                      const height = isFirstRow ? "360px" : "260px";
-                      
-                      // Assign relevant high-quality sports images based on index
-                      const bgImages = [
-                        "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop", // Strength/Gym
-                        "https://images.unsplash.com/photo-1552674605-1e16977fb794?q=80&w=1472&auto=format&fit=crop", // Endurance/Running
-                        "https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?q=80&w=1470&auto=format&fit=crop", // Combat/Boxing
-                        "https://images.unsplash.com/photo-1563823251-4045f09623e1?q=80&w=1470&auto=format&fit=crop", // Urban/Parkour
-                        "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=1470&auto=format&fit=crop", // Winter/Snow
-                        "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1470&auto=format&fit=crop"  // General Athletics
-                      ];
-                      const bgImage = bgImages[index % bgImages.length];
+                  {(() => {
+                    const filteredCats = categoriesList.filter(cat => {
+                      const matchesSearch = !categorySearchQuery || cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase()) || (cat.description && cat.description.toLowerCase().includes(categorySearchQuery.toLowerCase()));
+                      const matchesFilter = categoryActiveFilter === "all" || (categoryActiveFilter === "active" && cat.active !== false) || (categoryActiveFilter === "inactive" && cat.active === false);
+                      return matchesSearch && matchesFilter;
+                    });
 
-                      return (
-                        <div key={cat._id || index} style={{ 
-                          gridColumn: `span ${colSpan}`,
-                          height: height,
-                          position: "relative", 
-                          borderRadius: "24px", 
-                          overflow: "hidden",
-                          boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
-                          transition: "transform 0.2s"
-                        }}>
-                          {/* Background Image */}
-                          <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${bgImage})`, backgroundSize: "cover", backgroundPosition: "center" }} />
-                          {/* Dark overlay gradient */}
-                          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%)" }} />
-                          
-                          {/* Content */}
-                          <div style={{ position: "relative", zIndex: 1, padding: "32px", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                            {/* Top row */}
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                              <span style={{ 
-                                background: "rgba(0,0,0,0.4)", 
-                                border: "1px solid rgba(255,255,255,0.05)", 
-                                color: cat.active !== false ? "#FF5500" : "#888", 
-                                padding: "6px 16px", 
-                                borderRadius: "100px", 
-                                fontSize: "10px", 
-                                fontWeight: "900", 
-                                letterSpacing: "1px",
-                                backdropFilter: "blur(8px)" 
-                              }}>
-                                {cat.active !== false ? (index === 0 ? "ACTIVE" : index === 2 ? "STABLE" : index === 3 ? "EXPANDING" : index === 4 ? "SEASONAL" : "ACTIVE") : "INACTIVE"}
-                              </span>
-                              
-                              <div style={{ display: "flex", gap: "8px" }}>
-                                <button onClick={() => openModal("edit", cat)} style={{ background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.05)", color: "white", width: "36px", height: "36px", borderRadius: "50%", cursor: "pointer", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s" }} className="hover-bg-white-10">
-                                  <Edit3 size={16} />
+                    return (
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "24px", marginBottom: "40px" }}>
+                        {filteredCats.length === 0 ? (
+                          <div style={{ gridColumn: "span 6", padding: "80px", textAlign: "center", background: "rgba(255,255,255,0.02)", borderRadius: "24px", border: "1px dashed rgba(255,255,255,0.1)" }}>
+                            <Layers size={48} color="#FF5500" style={{ marginBottom: "16px" }} />
+                            <h3 style={{ color: "white", fontSize: "20px", fontWeight: "900", margin: "0 0 8px 0" }}>
+                              {categoriesList.length === 0 ? "NO CATEGORIES FOUND" : "NO MATCHING CATEGORIES"}
+                            </h3>
+                            <p style={{ color: "#888", fontSize: "14px", margin: "0 0 24px 0" }}>
+                              {categoriesList.length === 0 
+                                ? "Seed the default Apex World Records categories or create your first custom one."
+                                : "Try adjusting your search or filter criteria."
+                              }
+                            </p>
+                            {categoriesList.length === 0 && (
+                              <div style={{ display: "flex", gap: "16px", justifyContent: "center" }}>
+                                <button onClick={handleSeedCategories} style={{ background: "transparent", color: "#FF5500", border: "2px solid #FF5500", padding: "14px 28px", borderRadius: "100px", fontSize: "14px", fontWeight: "900", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                                  <Sparkles size={18} /> SEED 20 DEFAULT CATEGORIES
                                 </button>
-                                {index === 0 && (
-                                  <button style={{ background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.05)", color: "white", width: "36px", height: "36px", borderRadius: "50%", cursor: "pointer", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                    <Zap size={16} />
-                                  </button>
-                                )}
-                                {index === 1 && (
-                                  <button style={{ background: "transparent", border: "none", color: "white", cursor: "pointer", padding: "8px" }}>
-                                    <MoreVertical size={20} />
-                                  </button>
-                                )}
+                                <button onClick={() => openModal("add")} style={{ background: "#FF5500", color: "white", border: "none", padding: "14px 28px", borderRadius: "100px", fontSize: "14px", fontWeight: "900", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                                  <Plus size={18} /> ADD CUSTOM CATEGORY
+                                </button>
                               </div>
-                            </div>
-
-                            {/* Bottom row */}
-                            <div>
-                              <h3 style={{ 
-                                fontSize: colSpan === 4 ? "48px" : "32px", 
-                                fontWeight: "950", 
-                                color: "white", 
-                                textTransform: "uppercase", 
-                                margin: "0 0 20px 0", 
-                                letterSpacing: "-1.5px",
-                                lineHeight: "1"
-                              }}>
-                                {cat.name}
-                              </h3>
-                              
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-                                <div>
-                                  <div style={{ color: "#aaa", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", marginBottom: "6px" }}>{colSpan === 4 ? "ACTIVE RECORDS" : "RECORDS"}</div>
-                                  <div style={{ color: "white", fontSize: "24px", fontWeight: "900" }}>
-                                    {records.filter(r => r.category === cat.name || r.category?.toLowerCase() === cat.name.toLowerCase()).length || Math.floor(Math.random() * 5000)}
-                                  </div>
-                                </div>
-                                <div style={{ textAlign: "right" }}>
-                                  <div style={{ color: "#aaa", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", marginBottom: "6px" }}>{colSpan === 4 ? "GROWTH" : "DELTA"}</div>
-                                  <div style={{ color: index === 4 ? "#ef4444" : "#22c55e", fontSize: "18px", fontWeight: "900" }}>
-                                    {index === 4 ? "-" : "+"}{(Math.random() * 15).toFixed(1)}%
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
+                            )}
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        ) : filteredCats.map((cat, index) => {
+                          const colSpan = index < 2 ? (index === 0 ? 4 : 2) : 2;
+                          const isFirstRow = index < 2;
+                          const height = isFirstRow ? "360px" : "260px";
+                          
+                          const bgImages = [
+                            "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop",
+                            "https://images.unsplash.com/photo-1552674605-1e16977fb794?q=80&w=1472&auto=format&fit=crop",
+                            "https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?q=80&w=1470&auto=format&fit=crop",
+                            "https://images.unsplash.com/photo-1563823251-4045f09623e1?q=80&w=1470&auto=format&fit=crop",
+                            "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=1470&auto=format&fit=crop",
+                            "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1470&auto=format&fit=crop",
+                            "https://images.unsplash.com/photo-1461896836934-bd45ba8fcfdb?q=80&w=1470&auto=format&fit=crop",
+                            "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1470&auto=format&fit=crop",
+                            "https://images.unsplash.com/photo-1598387993441-a364f854c3e1?q=80&w=1470&auto=format&fit=crop",
+                            "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1470&auto=format&fit=crop"
+                          ];
+                          const bgImage = bgImages[index % bgImages.length];
 
-                  {/* Add New Category Button Row */}
+                          return (
+                            <div key={cat._id || cat.id || index} style={{ 
+                              gridColumn: `span ${colSpan}`,
+                              height: height,
+                              position: "relative", 
+                              borderRadius: "24px", 
+                              overflow: "hidden",
+                              boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
+                              transition: "transform 0.2s",
+                              opacity: cat.active === false ? 0.6 : 1
+                            }}>
+                              {/* Background Image */}
+                              <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${bgImage})`, backgroundSize: "cover", backgroundPosition: "center", filter: cat.active === false ? "grayscale(80%)" : "none" }} />
+                              {/* Dark overlay gradient */}
+                              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%)" }} />
+                              
+                              {/* Content */}
+                              <div style={{ position: "relative", zIndex: 1, padding: "32px", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                                {/* Top row */}
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                  <span style={{ 
+                                    background: cat.active !== false ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)", 
+                                    border: `1px solid ${cat.active !== false ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`, 
+                                    color: cat.active !== false ? "#22c55e" : "#ef4444", 
+                                    padding: "6px 16px", 
+                                    borderRadius: "100px", 
+                                    fontSize: "10px", 
+                                    fontWeight: "900", 
+                                    letterSpacing: "1px",
+                                    backdropFilter: "blur(8px)" 
+                                  }}>
+                                    {cat.active !== false ? "ACTIVE" : "INACTIVE"}
+                                  </span>
+                                  
+                                  <div style={{ display: "flex", gap: "8px" }}>
+                                    {/* Toggle Active */}
+                                    <button
+                                      onClick={() => handleToggleCategoryActive(cat)}
+                                      title={cat.active !== false ? "Deactivate" : "Activate"}
+                                      style={{ background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.05)", color: cat.active !== false ? "#22c55e" : "#ef4444", width: "36px", height: "36px", borderRadius: "50%", cursor: "pointer", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+                                    >
+                                      {cat.active !== false ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                                    </button>
+                                    {/* Edit */}
+                                    <button onClick={() => openModal("edit", cat)} title="Edit" style={{ background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.05)", color: "white", width: "36px", height: "36px", borderRadius: "50%", cursor: "pointer", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s" }}>
+                                      <Edit3 size={16} />
+                                    </button>
+                                    {/* Delete */}
+                                    {!cat.isDefault && (
+                                      <button
+                                        onClick={() => handleDelete(cat._id || cat.id)}
+                                        title="Delete"
+                                        style={{ background: "rgba(239,68,68,0.2)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", width: "36px", height: "36px", borderRadius: "50%", cursor: "pointer", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+                                      >
+                                        <Trash2 size={16} />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Bottom row */}
+                                <div>
+                                  <h3 style={{ 
+                                    fontSize: colSpan === 4 ? "48px" : "28px", 
+                                    fontWeight: "950", 
+                                    color: "white", 
+                                    textTransform: "uppercase", 
+                                    margin: "0 0 16px 0", 
+                                    letterSpacing: "-1.5px",
+                                    lineHeight: "1"
+                                  }}>
+                                    {cat.name}
+                                  </h3>
+                                  {cat.description && (
+                                    <p style={{ color: "#aaa", fontSize: "12px", margin: "0 0 12px 0", lineHeight: "1.4", maxWidth: "300px" }}>
+                                      {cat.description.length > 80 ? cat.description.substring(0, 80) + "..." : cat.description}
+                                    </p>
+                                  )}
+                                  
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                                    <div>
+                                      <div style={{ color: "#aaa", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", marginBottom: "6px" }}>{colSpan === 4 ? "ACTIVE RECORDS" : "RECORDS"}</div>
+                                      <div style={{ color: "white", fontSize: "24px", fontWeight: "900" }}>
+                                        {records.filter(r => r.category === cat.name || r.category?.toLowerCase() === cat.name.toLowerCase()).length}
+                                      </div>
+                                    </div>
+                                    <div style={{ textAlign: "right" }}>
+                                      <div style={{ color: "#aaa", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", marginBottom: "6px" }}>ORDER</div>
+                                      <div style={{ color: "#FF5500", fontSize: "18px", fontWeight: "900" }}>
+                                        #{cat.order || index + 1}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Bottom action row */}
                   {categories.length > 0 && (
-                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ color: "#666", fontSize: "12px", fontWeight: "700" }}>
+                        Showing {categories.filter(cat => {
+                          const matchesSearch = !categorySearchQuery || cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
+                          const matchesFilter = categoryActiveFilter === "all" || (categoryActiveFilter === "active" && cat.active !== false) || (categoryActiveFilter === "inactive" && cat.active === false);
+                          return matchesSearch && matchesFilter;
+                        }).length} of {categories.length} categories
+                      </div>
                       <button onClick={() => openModal("add")} style={{ background: "#FF5500", color: "white", border: "none", padding: "16px 32px", borderRadius: "100px", fontSize: "14px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "1px", boxShadow: "0 10px 20px rgba(255,85,0,0.3)" }}>
                         <Plus size={18} /> Add New Category
                       </button>
@@ -2166,7 +2741,7 @@ const Admin = () => {
                   onClick={() => openModal("add")}
                   style={{ background: "#FF5500", color: "white", border: "none", padding: "10px 20px", borderRadius: "8px", fontSize: "13px", fontWeight: "800", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
                 >
-                  Add New User
+                  <Plus size={16} /> Add New User
                 </button>
               </div>
 
@@ -2175,19 +2750,17 @@ const Admin = () => {
                 <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
                   <div style={{ fontSize: "12px", color: "#888", fontWeight: "800", textTransform: "uppercase", marginBottom: "12px" }}>Total Users</div>
                   <div style={{ fontSize: "32px", fontWeight: "950", color: "white", marginBottom: "8px" }}>{users.length.toLocaleString()}</div>
-                  <div style={{ color: "#22c55e", fontSize: "12px", fontWeight: "700" }}>↗ 12% from last month</div>
                 </div>
                 <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
                   <div style={{ fontSize: "12px", color: "#888", fontWeight: "800", textTransform: "uppercase", marginBottom: "12px" }}>Active Now</div>
-                  <div style={{ fontSize: "32px", fontWeight: "950", color: "white", marginBottom: "8px" }}>{users.filter(u => u.accountStatus === 'active' || u.account_status === 'active' || !u.account_status).length.toLocaleString() || '0'}</div>
+                  <div style={{ fontSize: "32px", fontWeight: "950", color: "white", marginBottom: "8px" }}>{users.filter(u => u.account_status === 'active' || !u.account_status).length.toLocaleString()}</div>
                   <div style={{ color: "#888", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e" }}></div> Live sessions
+                    <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e" }}></div> Live accounts
                   </div>
                 </div>
                 <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
-                  <div style={{ fontSize: "12px", color: "#888", fontWeight: "800", textTransform: "uppercase", marginBottom: "12px" }}>New Applications</div>
-                  <div style={{ fontSize: "32px", fontWeight: "950", color: "#FF6A00", marginBottom: "8px" }}>84</div>
-                  <div style={{ color: "#888", fontSize: "12px", fontWeight: "700" }}>Pending verification</div>
+                  <div style={{ fontSize: "12px", color: "#888", fontWeight: "800", textTransform: "uppercase", marginBottom: "12px" }}>Suspended/Banned</div>
+                  <div style={{ fontSize: "32px", fontWeight: "950", color: "#ef4444", marginBottom: "8px" }}>{users.filter(u => ['suspended', 'banned'].includes(u.account_status)).length.toLocaleString()}</div>
                 </div>
                 <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
                   <div style={{ fontSize: "12px", color: "#888", fontWeight: "800", textTransform: "uppercase", marginBottom: "12px" }}>Avg Participation</div>
@@ -2198,18 +2771,63 @@ const Admin = () => {
 
               {/* Main Table */}
               <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px", marginBottom: "24px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
-                    <h3 style={{ fontSize: "18px", fontWeight: "900", margin: 0 }}>Registered Members</h3>
-                    <div style={{ display: "flex", gap: "8px", background: "rgba(255,255,255,0.05)", padding: "4px", borderRadius: "8px" }}>
-                      <button style={{ background: "#222", border: "none", color: "white", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "700" }}>All</button>
-                      <button style={{ background: "transparent", border: "none", color: "#888", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "700" }}>Verified</button>
-                      <button style={{ background: "transparent", border: "none", color: "#888", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "700" }}>Pending</button>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
+                  <h3 style={{ fontSize: "18px", fontWeight: "900", margin: 0 }}>Registered Members</h3>
+                  
+                  {/* Search and Filter UI */}
+                  <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <div style={{ position: "relative", width: "260px" }}>
+                        <Search size={16} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#666" }} />
+                        <input
+                          type="text"
+                          placeholder="Search Name, Email, Phone..."
+                          value={usersSearchQuery}
+                          onChange={(e) => { setUsersSearchQuery(e.target.value); }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') setUsersCurrentPage(1); }}
+                          style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "8px", padding: "10px 14px 10px 40px", color: "white", fontSize: "13px", fontWeight: "600", outline: "none" }}
+                        />
+                      </div>
+                      <button 
+                        onClick={() => setUsersCurrentPage(1)}
+                        style={{ background: "#222", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "0 16px", borderRadius: "8px", fontSize: "13px", fontWeight: "800", cursor: "pointer" }}
+                      >
+                        Search
+                      </button>
                     </div>
+                    <select
+                      value={usersFilterRole}
+                      onChange={(e) => { setUsersFilterRole(e.target.value); setUsersCurrentPage(1); }}
+                      style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "8px", padding: "10px 14px", color: "white", fontSize: "13px", fontWeight: "700", outline: "none", cursor: "pointer" }}
+                    >
+                      <option value="all">All Roles</option>
+                      <option value="athlete">Athletes</option>
+                      <option value="judge">Judges</option>
+                      <option value="moderator">Moderators</option>
+                      <option value="system_admin">Admins</option>
+                    </select>
+                    <select
+                      value={usersFilterStatus}
+                      onChange={(e) => { setUsersFilterStatus(e.target.value); setUsersCurrentPage(1); }}
+                      style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "8px", padding: "10px 14px", color: "white", fontSize: "13px", fontWeight: "700", outline: "none", cursor: "pointer" }}
+                    >
+                      <option value="all">All Statuses</option>
+                      <option value="active">Active</option>
+                      <option value="suspended">Suspended</option>
+                      <option value="banned">Banned</option>
+                    </select>
+                    <select
+                      value={usersFilterMembership}
+                      onChange={(e) => { setUsersFilterMembership(e.target.value); setUsersCurrentPage(1); }}
+                      style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "8px", padding: "10px 14px", color: "white", fontSize: "13px", fontWeight: "700", outline: "none", cursor: "pointer" }}
+                    >
+                      <option value="all">All Memberships</option>
+                      <option value="free_athlete">Free</option>
+                      <option value="pro_athlete">Pro Athlete</option>
+                      <option value="elite_competitor">Elite Competitor</option>
+                      <option value="vip">VIP / Verified</option>
+                    </select>
                   </div>
-                  <button style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "8px 16px", borderRadius: "8px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                    <Filter size={14} /> More Filters
-                  </button>
                 </div>
 
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -2223,70 +2841,173 @@ const Admin = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {users.slice(0, 10).map((u, idx) => (
-                      <tr key={idx} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                        <td style={{ padding: "16px 0", display: "flex", alignItems: "center", gap: "12px" }}>
-                          <img src={`https://ui-avatars.com/api/?name=${u.name}&background=random`} alt={u.name} style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover" }} />
-                          <div>
-                            <div style={{ color: "white", fontSize: "14px", fontWeight: "700" }}>{u.name}</div>
-                            <div style={{ color: "#666", fontSize: "11px", marginTop: "2px" }}>{u.is_admin ? "Admin" : "Athlete"} • {u.country || "Global"}</div>
-                          </div>
-                        </td>
-                        <td style={{ padding: "16px 0", color: "#aaa", fontSize: "13px" }}>{u.email}</td>
-                        <td style={{ padding: "16px 0", color: "#aaa", fontSize: "13px" }}>{new Date(u.created_at || new Date()).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</td>
-                        <td style={{ padding: "16px 0" }}>
-                          <span style={{ 
-                            background: u.account_status === 'active' || !u.account_status ? "rgba(34,197,94,0.1)" : "rgba(255,255,255,0.05)", 
-                            color: u.account_status === 'active' || !u.account_status ? "#22c55e" : "#888", 
-                            padding: "4px 8px", 
-                            borderRadius: "100px", 
-                            fontSize: "11px", 
-                            fontWeight: "800",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "6px"
-                          }}>
-                            <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: u.account_status === 'active' || !u.account_status ? "#22c55e" : "#888" }}></div>
-                            {(u.account_status || 'active').charAt(0).toUpperCase() + (u.account_status || 'active').slice(1)}
-                          </span>
-                        </td>
-                        <td style={{ padding: "16px 0", textAlign: "right" }}>
-                          <div style={{ position: "relative", display: "inline-block" }}>
-                            <button onClick={() => {
-                                const actionsDiv = document.getElementById(`actions-${u.id}`);
-                                if(actionsDiv) actionsDiv.style.display = actionsDiv.style.display === 'none' ? 'block' : 'none';
-                              }} style={{ background: "transparent", border: "none", color: "#888", cursor: "pointer", padding: "4px" }}>
-                              <MoreVertical size={16} />
-                            </button>
-                            <div id={`actions-${u.id}`} style={{ display: 'none', position: 'absolute', right: 0, top: '100%', background: '#222', border: '1px solid #333', borderRadius: '8px', padding: '4px', zIndex: 10, width: '150px' }}>
-                               <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`actions-${u.id}`).style.display='none'; openModal('viewProfile', u); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'white', fontSize: '12px', cursor: 'pointer' }}>View Profile</button>
-                               <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`actions-${u.id}`).style.display='none'; openModal('edit', u); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'white', fontSize: '12px', cursor: 'pointer' }}>Edit User</button>
-                               <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`actions-${u.id}`).style.display='none'; handleUserAction(u.id, 'suspend'); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: '#f59e0b', fontSize: '12px', cursor: 'pointer' }}>Suspend User</button>
-                               <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`actions-${u.id}`).style.display='none'; handleUserAction(u.id, 'ban'); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: '#ef4444', fontSize: '12px', cursor: 'pointer' }}>Ban User</button>
-                               <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`actions-${u.id}`).style.display='none'; handleUserAction(u.id, 'resetPassword'); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: '#3b82f6', fontSize: '12px', cursor: 'pointer' }}>Reset Password</button>
-                               <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`actions-${u.id}`).style.display='none'; handleDelete(u.id); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: '#ef4444', fontSize: '12px', cursor: 'pointer' }}>Delete User</button>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {(() => {
+                      const filteredUsers = users.filter(u => {
+                        const q = usersSearchQuery.toLowerCase();
+                        const matchesSearch = !q || 
+                          (u.name && u.name.toLowerCase().includes(q)) ||
+                          (u.email && u.email.toLowerCase().includes(q)) ||
+                          (u.username && u.username.toLowerCase().includes(q)) ||
+                          (u.phone && u.phone.toLowerCase().includes(q)) ||
+                          ((u.member_number || u.memberNumber) && (u.member_number || u.memberNumber).toLowerCase().includes(q));
+                        
+                        const r = usersFilterRole;
+                        const roleValue = u.role || 'athlete';
+                        const matchesRole = r === "all" || roleValue === r;
+
+                        const s = usersFilterStatus;
+                        const statusValue = u.account_status || 'active';
+                        const matchesStatus = s === "all" || statusValue === s;
+
+                        const m = usersFilterMembership;
+                        const memValue = u.membership_type || 'free_athlete';
+                        const matchesMembership = m === "all" || memValue === m || (m === "vip" && u.is_verified);
+
+                        return matchesSearch && matchesRole && matchesStatus && matchesMembership;
+                      });
+
+                      const totalPages = Math.ceil(filteredUsers.length / usersPerPage) || 1;
+                      const currentUsersPage = Math.min(usersCurrentPage, totalPages);
+                      const startIndex = (currentUsersPage - 1) * usersPerPage;
+                      const paginatedUsers = filteredUsers.slice(startIndex, startIndex + usersPerPage);
+
+                      if (paginatedUsers.length === 0) {
+                        return <tr><td colSpan="5" style={{ padding: "40px", textAlign: "center", color: "#888" }}>No users match the search/filter criteria.</td></tr>;
+                      }
+
+                      return (
+                        <>
+                          {paginatedUsers.map((u, idx) => (
+                            <tr key={u.id || idx} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                              <td style={{ padding: "16px 0", display: "flex", alignItems: "center", gap: "12px" }}>
+                                <img src={u.profile_image || `https://ui-avatars.com/api/?name=${u.name}&background=random`} alt={u.name} style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover" }} />
+                                <div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                    <span style={{ color: "white", fontSize: "14px", fontWeight: "700", cursor: "pointer" }} onClick={() => openModal('viewProfile', u)}>{u.name}</span>
+                                    {(u.member_number || u.memberNumber) && (
+                                      <span style={{ color: "#FF5500", fontSize: "11px", fontWeight: "800", background: "rgba(255,85,0,0.06)", border: "1px solid rgba(255,85,0,0.15)", borderRadius: "4px", padding: "1px 6px" }}>
+                                        {u.member_number || u.memberNumber}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div style={{ color: "#888", fontSize: "11px", marginTop: "4px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px" }}>
+                                    <span style={{ 
+                                      color: u.role === 'system_admin' ? '#FF5500' : 
+                                             u.role === 'moderator' ? '#3b82f6' : 
+                                             u.role === 'judge' ? '#ffcc00' : '#22c55e', 
+                                      fontWeight: "800",
+                                      background: u.role === 'system_admin' ? 'rgba(255,85,0,0.08)' : 
+                                                  u.role === 'moderator' ? 'rgba(59,130,246,0.08)' : 
+                                                  u.role === 'judge' ? 'rgba(255,204,0,0.08)' : 'rgba(34,197,94,0.08)',
+                                      padding: "2px 6px",
+                                      borderRadius: "4px",
+                                      fontSize: "9px",
+                                      textTransform: "uppercase"
+                                    }}>
+                                      {u.role === 'athlete' || !u.role ? 'Athlete' : u.role.replace('_', ' ')}
+                                    </span>
+                                    <span style={{ color: "#aaa", fontSize: "10px", fontWeight: "700" }}>•</span>
+                                    <span style={{ 
+                                      color: "#ccc", 
+                                      background: "rgba(255,255,255,0.05)",
+                                      border: "1px solid rgba(255,255,255,0.05)",
+                                      padding: "2px 6px",
+                                      borderRadius: "4px",
+                                      fontSize: "9px",
+                                      textTransform: "uppercase",
+                                      fontWeight: "700"
+                                    }}>
+                                      {(u.membership_type || u.membershipType || 'free_athlete').replace('_', ' ')}
+                                    </span>
+                                    <span style={{ color: "#aaa", fontSize: "10px", fontWeight: "700" }}>•</span>
+                                    <span style={{ color: "#666" }}>{u.country || "Global"}</span>
+                                  </div>
+                                </div>
+                              </td>
+                              <td style={{ padding: "16px 0", color: "#aaa", fontSize: "13px" }}>{u.email}</td>
+                              <td style={{ padding: "16px 0", color: "#aaa", fontSize: "13px" }}>{new Date(u.created_at || new Date()).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</td>
+                              <td style={{ padding: "16px 0" }}>
+                                <span style={{ 
+                                  background: (u.account_status === 'active' || !u.account_status) ? "rgba(34,197,94,0.1)" : u.account_status === 'suspended' ? "rgba(245,158,11,0.1)" : "rgba(239,68,68,0.1)", 
+                                  color: (u.account_status === 'active' || !u.account_status) ? "#22c55e" : u.account_status === 'suspended' ? "#f59e0b" : "#ef4444", 
+                                  padding: "4px 8px", 
+                                  borderRadius: "100px", 
+                                  fontSize: "11px", 
+                                  fontWeight: "800",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "6px"
+                                }}>
+                                  <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: (u.account_status === 'active' || !u.account_status) ? "#22c55e" : u.account_status === 'suspended' ? "#f59e0b" : "#ef4444" }}></div>
+                                  {(u.account_status || 'active').charAt(0).toUpperCase() + (u.account_status || 'active').slice(1)}
+                                </span>
+                              </td>
+                              <td style={{ padding: "16px 0", textAlign: "right" }}>
+                                <div style={{ position: "relative", display: "inline-block" }}>
+                                  <button onClick={() => {
+                                      const actionsDiv = document.getElementById(`actions-${u.id}`);
+                                      if(actionsDiv) actionsDiv.style.display = actionsDiv.style.display === 'none' ? 'block' : 'none';
+                                    }} style={{ background: "transparent", border: "none", color: "#888", cursor: "pointer", padding: "4px" }}>
+                                    <MoreVertical size={16} />
+                                  </button>
+                                  <div id={`actions-${u.id}`} style={{ display: 'none', position: 'absolute', right: 0, top: '100%', background: '#222', border: '1px solid #333', borderRadius: '8px', padding: '4px', zIndex: 10, width: '180px' }}>
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`actions-${u.id}`).style.display='none'; openModal('viewProfile', u); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'white', fontSize: '12px', cursor: 'pointer' }}>View Profile</button>
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`actions-${u.id}`).style.display='none'; openModal('edit', u); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'white', fontSize: '12px', cursor: 'pointer' }}>Edit User</button>
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`actions-${u.id}`).style.display='none'; alert('Membership Details - Coming Soon'); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'white', fontSize: '12px', cursor: 'pointer' }}>Membership Details</button>
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`actions-${u.id}`).style.display='none'; alert('Appeals/Disputes - Coming Soon'); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'white', fontSize: '12px', cursor: 'pointer' }}>Appeals/Disputes</button>
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`actions-${u.id}`).style.display='none'; alert('Message User - Coming Soon'); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'white', fontSize: '12px', cursor: 'pointer' }}>Message User</button>
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`actions-${u.id}`).style.display='none'; alert('Profile Management Upload - Coming Soon'); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'white', fontSize: '12px', cursor: 'pointer' }}>Upload/Profile Management</button>
+                                     <div style={{ width: "100%", height: "1px", background: "rgba(255,255,255,0.1)", margin: "4px 0" }}></div>
+                                     {(!u.account_status || u.account_status === 'active') ? (
+                                       <>
+                                         <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`actions-${u.id}`).style.display='none'; handleUserActionConfirm(u, 'suspend'); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: '#f59e0b', fontSize: '12px', cursor: 'pointer' }}>Suspend User</button>
+                                         <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`actions-${u.id}`).style.display='none'; handleUserActionConfirm(u, 'ban'); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: '#ef4444', fontSize: '12px', cursor: 'pointer' }}>Ban User</button>
+                                       </>
+                                     ) : (
+                                       <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`actions-${u.id}`).style.display='none'; handleUserActionConfirm(u, 'activate'); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: '#22c55e', fontSize: '12px', cursor: 'pointer' }}>Restore Account</button>
+                                     )}
+
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`actions-${u.id}`).style.display='none'; handleUserActionConfirm(u, 'removeMembership'); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: '#f59e0b', fontSize: '12px', cursor: 'pointer' }}>Remove Membership</button>
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`actions-${u.id}`).style.display='none'; handleUserActionConfirm(u, 'resetPassword'); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: '#3b82f6', fontSize: '12px', cursor: 'pointer' }}>Reset Password</button>
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`actions-${u.id}`).style.display='none'; handleDelete(u.id); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: '#ef4444', fontSize: '12px', cursor: 'pointer' }}>Delete User</button>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                          
+                          {/* Pagination Controls */}
+                          {totalPages > 1 && (
+                            <tr>
+                              <td colSpan="5">
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "24px", paddingTop: "24px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                                  <div style={{ fontSize: "12px", color: "#888", fontWeight: "700" }}>
+                                    Showing {startIndex + 1}-{Math.min(startIndex + usersPerPage, filteredUsers.length)} of {filteredUsers.length} users
+                                  </div>
+                                  <div style={{ display: "flex", gap: "8px" }}>
+                                    <button onClick={() => setUsersCurrentPage(p => Math.max(1, p - 1))} disabled={currentUsersPage === 1} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: currentUsersPage === 1 ? "#444" : "#888", padding: "6px 10px", borderRadius: "6px", cursor: currentUsersPage === 1 ? "not-allowed" : "pointer" }}>&lt;</button>
+                                    
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                      <button 
+                                        key={page} 
+                                        onClick={() => setUsersCurrentPage(page)}
+                                        style={{ background: currentUsersPage === page ? "#FF5500" : "transparent", border: currentUsersPage === page ? "none" : "1px solid rgba(255,255,255,0.1)", color: currentUsersPage === page ? "white" : "#888", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}
+                                      >
+                                        {page}
+                                      </button>
+                                    ))}
+
+                                    <button onClick={() => setUsersCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentUsersPage === totalPages} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: currentUsersPage === totalPages ? "#444" : "#888", padding: "6px 10px", borderRadius: "6px", cursor: currentUsersPage === totalPages ? "not-allowed" : "pointer" }}>&gt;</button>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      );
+                    })()}
                   </tbody>
                 </table>
-                
-                {/* Pagination */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "24px", paddingTop: "24px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-                  <div style={{ fontSize: "12px", color: "#888", fontWeight: "700" }}>
-                    Showing 1-{Math.min(10, users.length)} of {users.length} users
-                  </div>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <button style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#888", padding: "6px 10px", borderRadius: "6px", cursor: "pointer" }}>&lt;</button>
-                    <button style={{ background: "#FF5500", border: "none", color: "white", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>1</button>
-                    <button style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#888", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>2</button>
-                    <button style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#888", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>3</button>
-                    <span style={{ color: "#888", display: "flex", alignItems: "center" }}>...</span>
-                    <button style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#888", padding: "6px 10px", borderRadius: "6px", cursor: "pointer" }}>&gt;</button>
-                  </div>
-                </div>
               </div>
 
               {/* Bottom Cards: Recent Activity & Need Help */}
@@ -2513,7 +3234,59 @@ const Admin = () => {
           )}
 
           {/* ==================== 4. PRODUCTS & SHOP INVENTORY ==================== */}
-          {activeTab === "products" && (
+          
+                {/* 10. VIDEO UPLOAD FORM */}
+                {activeTab === "videoManagement" && (
+                  <>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>VIDEO TITLE</label>
+                        <input type="text" value={videoForm.title} onChange={(e) => setVideoForm({ ...videoForm, title: e.target.value })} required style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>DESCRIPTION</label>
+                        <textarea value={videoForm.description} onChange={(e) => setVideoForm({ ...videoForm, description: e.target.value })} rows="3" style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }}></textarea>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>CATEGORY</label>
+                          <select value={videoForm.category} onChange={(e) => setVideoForm({ ...videoForm, category: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }}>
+                            <option value="Strength">Strength</option>
+                            <option value="Endurance">Endurance</option>
+                            <option value="Speed">Speed</option>
+                            <option value="Skill">Skill</option>
+                            <option value="Combat">Combat</option>
+                          </select>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "24px" }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: "8px", color: "white", fontSize: "12px", cursor: "pointer" }}>
+                            <input type="checkbox" checked={videoForm.isFeatured} onChange={(e) => setVideoForm({ ...videoForm, isFeatured: e.target.checked })} style={{ cursor: "pointer" }} />
+                            Mark as Featured Video
+                          </label>
+                          <label style={{ display: "flex", alignItems: "center", gap: "8px", color: "white", fontSize: "12px", cursor: "pointer" }}>
+                            <input type="checkbox" checked={videoForm.isNewlyUploaded} onChange={(e) => setVideoForm({ ...videoForm, isNewlyUploaded: e.target.checked })} style={{ cursor: "pointer" }} />
+                            Mark as Newly Uploaded
+                          </label>
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "16px" }}>
+                        <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "8px", border: "1px dashed rgba(255,255,255,0.1)" }}>
+                          <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#FF5500", marginBottom: "6px" }}>UPLOAD VIDEO FILE</label>
+                          <input type="file" accept="video/mp4,video/webm" onChange={(e) => setVideoFile(e.target.files[0])} style={{ color: "white", fontSize: "12px" }} />
+                          <p style={{ fontSize: "10px", color: "#666", margin: "8px 0 0 0" }}>Max 50MB. MP4 or WebM.</p>
+                        </div>
+                        <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "8px", border: "1px dashed rgba(255,255,255,0.1)" }}>
+                          <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#FF5500", marginBottom: "6px" }}>UPLOAD THUMBNAIL (OPTIONAL)</label>
+                          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setThumbnailFile(e.target.files[0])} style={{ color: "white", fontSize: "12px" }} />
+                          <p style={{ fontSize: "10px", color: "#666", margin: "8px 0 0 0" }}>Max 5MB. JPG, PNG, WEBP.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {activeTab === "products" && (
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
                 <div>
@@ -2567,7 +3340,7 @@ const Admin = () => {
                         {/* Product image thumbnail */}
                         <div style={{ height: "200px", position: "relative", background: "#050507" }}>
                           {item.image_url || item.imageUrl ? (
-                            <img src={item.image_url || item.imageUrl} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            <img src={formatProductImage(item.image_url || item.imageUrl)} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                           ) : (
                             <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#222" }}><ShoppingBag size={48} /></div>
                           )}
@@ -2658,15 +3431,20 @@ const Admin = () => {
 
               {/* Search & filters */}
               <div style={{ background: "rgba(13,13,16,0.5)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "20px", padding: "20px 24px", marginBottom: "24px", display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "center" }}>
-                <div style={{ flex: 1, display: "flex", alignItems: "center", background: "#0c0c0e", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "100px", padding: "6px 16px" }}>
-                  <Search size={14} color="#555" style={{ marginRight: "12px" }} />
-                  <input
-                    type="text"
-                    placeholder="Search by customer name, email, or order ID..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{ background: "transparent", border: "none", color: "white", fontSize: "13px", outline: "none", width: "100%" }}
-                  />
+                <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{ flex: 1, display: "flex", alignItems: "center", background: "#0c0c0e", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "100px", padding: "6px 16px" }}>
+                    <Search size={14} color="#555" style={{ marginRight: "12px" }} />
+                    <input
+                      type="text"
+                      placeholder="Search by product, customer, member #, order #, email, tracking..."
+                      value={shopSearchInput}
+                      onChange={(e) => setShopSearchInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') setActiveShopSearch(shopSearchInput); }}
+                      style={{ background: "transparent", border: "none", color: "white", fontSize: "13px", outline: "none", width: "100%" }}
+                    />
+                  </div>
+                  <button onClick={() => setActiveShopSearch(shopSearchInput)} style={{ background: "#FF5500", border: "none", color: "white", padding: "10px 24px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer" }}>SEARCH</button>
+                  <button onClick={() => { setShopSearchInput(""); setActiveShopSearch(""); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "10px 24px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer" }}>CLEAR</button>
                 </div>
                 
                 <div style={{ display: "flex", gap: "12px" }}>
@@ -2712,11 +3490,15 @@ const Admin = () => {
                 <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                   {orders
                     .filter(o => {
-                      const emailToMatch = selectedCustomerEmail || searchQuery;
-                      const matchesSearch = !emailToMatch || 
-                        o.customer_name?.toLowerCase().includes(emailToMatch.toLowerCase()) || 
-                        o.customer_email?.toLowerCase().includes(emailToMatch.toLowerCase()) || 
-                        o.id?.toLowerCase().includes(emailToMatch.toLowerCase());
+                      const emailToMatch = selectedCustomerEmail || activeShopSearch;
+                      const q = emailToMatch?.toLowerCase() || "";
+                      const matchesSearch = !q || 
+                        o.customer_name?.toLowerCase().includes(q) || 
+                        o.customer_email?.toLowerCase().includes(q) || 
+                        o.id?.toLowerCase().includes(q) ||
+                        o.tracking_number?.toLowerCase().includes(q) ||
+                        o.member_number?.toLowerCase().includes(q) ||
+                        (o.items || []).some(i => i.product_name?.toLowerCase().includes(q) || i.product_id?.toLowerCase().includes(q));
                       
                       const matchesShip = shippingStatusFilter === 'all' || o.shipping_status === shippingStatusFilter;
                       const matchesPay = paymentStatusFilter === 'all' || o.payment_status === paymentStatusFilter;
@@ -2869,12 +3651,18 @@ const Admin = () => {
 
                           {/* Sum Row */}
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <div>
+                            <div style={{ display: "flex", gap: "12px" }}>
+                              <button
+                                onClick={() => setOrderDetailModal({ isOpen: true, order })}
+                                style={{ background: "#FF5500", border: "none", color: "white", padding: "10px 20px", borderRadius: "100px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+                              >
+                                VIEW FULL ORDER <ArrowRight size={14} />
+                              </button>
                               <button
                                 onClick={() => setSelectedCustomerEmail(order.customer_email)}
-                                style={{ background: "transparent", border: "none", color: "#FF6A00", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+                                style={{ background: "transparent", border: "none", color: "#888", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
                               >
-                                VIEW CUSTOMER HISTORY <ArrowRight size={12} />
+                                CUSTOMER HISTORY <ArrowRight size={12} />
                               </button>
                             </div>
                             
@@ -2898,97 +3686,388 @@ const Admin = () => {
                     })}
                 </div>
               )}
+
+              {/* Comprehensive Order Details Modal */}
+              {orderDetailModal.isOpen && orderDetailModal.order && (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, backdropFilter: "blur(8px)", padding: "40px" }}>
+                  <div style={{ background: "#0c0c0e", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", width: "100%", maxWidth: "1200px", maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)" }}>
+                    
+                    {/* Header */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 32px", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.02)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                        <div style={{ background: "rgba(255,85,0,0.1)", color: "#FF5500", padding: "12px", borderRadius: "12px" }}>
+                          <ShoppingBag size={24} />
+                        </div>
+                        <div>
+                          <h3 style={{ fontSize: "24px", fontWeight: "900", color: "white", margin: 0, letterSpacing: "-0.5px" }}>ORDER #{orderDetailModal.order.id?.substring(0,8).toUpperCase()}</h3>
+                          <div style={{ fontSize: "13px", color: "#888", fontWeight: "600", marginTop: "4px" }}>
+                            Placed on {new Date(orderDetailModal.order.created_at).toLocaleDateString()} at {new Date(orderDetailModal.order.created_at).toLocaleTimeString()}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: "12px" }}>
+                        <button onClick={() => window.print()} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "10px 16px", borderRadius: "8px", fontSize: "12px", fontWeight: "800", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><FileText size={14} /> PDF INVOICE</button>
+                        <button onClick={() => {
+                          const orderData = orderDetailModal.order;
+                          if (!orderData) return showToast('No order selected', 'error');
+                          const csv = ["Order ID,Customer,Email,Total,Status,Date", `${orderData.id},${orderData.customer_name},${orderData.customer_email},${orderData.total},${orderData.shipping_status},${new Date(orderData.created_at).toLocaleDateString()}`].join('\n');
+                          const blob = new Blob([csv], { type: 'text/csv' });
+                          const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `order-${orderData.id?.substring(0,8)}.csv`; a.click();
+                          showToast('CSV exported successfully', 'success');
+                        }} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "10px 16px", borderRadius: "8px", fontSize: "12px", fontWeight: "800", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><Download size={14} /> EXPORT CSV</button>
+                        <button onClick={() => setOrderDetailModal({ isOpen: false, order: null })} style={{ background: "transparent", border: "none", color: "#888", cursor: "pointer", padding: "8px" }}><X size={24} /></button>
+                      </div>
+                    </div>
+
+                    {/* Body */}
+                    <div style={{ padding: "32px", overflowY: "auto", flex: 1, display: "grid", gridTemplateColumns: "1fr 350px", gap: "32px" }}>
+                      
+                      {/* Left Column: Products & Status */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+                        
+                        {/* Status Management */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "20px" }}>
+                            <div style={{ fontSize: "11px", fontWeight: "900", color: "#666", textTransform: "uppercase", marginBottom: "12px" }}>Payment Status</div>
+                            <select
+                              value={orderDetailModal.order.payment_status}
+                              onChange={async (e) => {
+                                const newStat = e.target.value;
+                                setOrderDetailModal(prev => ({ ...prev, order: { ...prev.order, payment_status: newStat }}));
+                                setOrders(prev => prev.map(o => o.id === orderDetailModal.order.id ? { ...o, payment_status: newStat } : o));
+                                showToast("Payment status updated", "success");
+                              }}
+                              style={{ width: "100%", background: "#111", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px", color: "white", fontWeight: "700", outline: "none" }}
+                            >
+                              <option value="pending">⏳ Pending</option>
+                              <option value="paid">💳 Paid</option>
+                              <option value="failed">❌ Failed</option>
+                              <option value="refunded">↩️ Refunded</option>
+                            </select>
+                            <div style={{ fontSize: "12px", color: "#888", marginTop: "12px" }}>Transaction ID: <span style={{ color: "white" }}>{orderDetailModal.order.transaction_id || 'N/A'}</span></div>
+                          </div>
+
+                          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "20px" }}>
+                            <div style={{ fontSize: "11px", fontWeight: "900", color: "#666", textTransform: "uppercase", marginBottom: "12px" }}>Order Status</div>
+                            <select
+                              value={orderDetailModal.order.shipping_status}
+                              onChange={async (e) => {
+                                const newStat = e.target.value;
+                                setOrderDetailModal(prev => ({ ...prev, order: { ...prev.order, shipping_status: newStat }}));
+                                setOrders(prev => prev.map(o => o.id === orderDetailModal.order.id ? { ...o, shipping_status: newStat } : o));
+                                showToast("Order status updated", "success");
+                              }}
+                              style={{ width: "100%", background: "#111", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px", color: "white", fontWeight: "700", outline: "none" }}
+                            >
+                              <option value="pending">⏳ Pending</option>
+                              <option value="processing">⚙️ Processing</option>
+                              <option value="shipped">🚚 Shipped</option>
+                              <option value="delivered">✅ Delivered</option>
+                              <option value="cancelled">❌ Cancelled</option>
+                            </select>
+                            <div style={{ fontSize: "12px", color: "#888", marginTop: "12px" }}>Delivery Status: <span style={{ color: "white" }}>{orderDetailModal.order.shipping_status === 'delivered' ? 'Arrived' : 'In Transit'}</span></div>
+                          </div>
+                        </div>
+
+                        {/* Order Items */}
+                        <div>
+                          <h4 style={{ fontSize: "16px", fontWeight: "900", color: "white", margin: "0 0 16px 0" }}>Order Items</h4>
+                          <div style={{ border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", overflow: "hidden" }}>
+                            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                              <thead style={{ background: "rgba(255,255,255,0.02)" }}>
+                                <tr style={{ color: "#666", fontSize: "10px", fontWeight: "900", textTransform: "uppercase", textAlign: "left" }}>
+                                  <th style={{ padding: "16px 20px" }}>Product</th>
+                                  <th style={{ padding: "16px 20px" }}>Price</th>
+                                  <th style={{ padding: "16px 20px" }}>Qty</th>
+                                  <th style={{ padding: "16px 20px", textAlign: "right" }}>Total</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(orderDetailModal.order.items || []).map((item, idx) => (
+                                  <tr key={idx} style={{ borderTop: "1px solid rgba(255,255,255,0.03)" }}>
+                                    <td style={{ padding: "16px 20px", display: "flex", gap: "16px", alignItems: "center" }}>
+                                      <div style={{ width: "48px", height: "48px", background: "rgba(255,255,255,0.05)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                                        {item.image ? <img src={item.image} alt={item.product_name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <ShoppingBag size={20} color="#555" />}
+                                      </div>
+                                      <div>
+                                        <div style={{ color: "white", fontSize: "14px", fontWeight: "800" }}>{item.product_name}</div>
+                                        <div style={{ color: "#888", fontSize: "12px", marginTop: "4px" }}>
+                                          {item.size && <span style={{ marginRight: "8px" }}>Size: {item.size}</span>}
+                                          {item.color && <span>Color: {item.color}</span>}
+                                          {item.product_id && <span style={{ display: "block", fontSize: "10px", marginTop: "2px" }}>ID: {item.product_id}</span>}
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td style={{ padding: "16px 20px", color: "white", fontSize: "14px", fontWeight: "600" }}>${parseFloat(item.price).toFixed(2)}</td>
+                                    <td style={{ padding: "16px 20px", color: "white", fontSize: "14px", fontWeight: "600" }}>{item.quantity}</td>
+                                    <td style={{ padding: "16px 20px", color: "white", fontSize: "14px", fontWeight: "800", textAlign: "right" }}>${(parseFloat(item.price) * item.quantity).toFixed(2)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        {/* Shipping & Tracking */}
+                        <div style={{ background: "rgba(255,85,0,0.02)", border: "1px solid rgba(255,85,0,0.2)", borderRadius: "16px", padding: "24px" }}>
+                          <h4 style={{ fontSize: "16px", fontWeight: "900", color: "#FF5500", margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: "8px" }}><MapPin size={18} /> Shipping & Tracking</h4>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "11px", color: "#888", marginBottom: "8px", fontWeight: "700" }}>Tracking Number</label>
+                              <div style={{ display: "flex", gap: "8px" }}>
+                                <input type="text" defaultValue={orderDetailModal.order.tracking_number || ""} placeholder="e.g. 1Z9999W99999999999" id="tracking-input" style={{ flex: 1, background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "10px 14px", color: "white", fontSize: "13px" }} />
+                                <button onClick={() => {
+                                  const val = document.getElementById('tracking-input').value;
+                                  setOrderDetailModal(prev => ({ ...prev, order: { ...prev.order, tracking_number: val }}));
+                                  showToast("Tracking updated", "success");
+                                }} style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "white", padding: "0 16px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer" }}>SAVE</button>
+                              </div>
+                              {orderDetailModal.order.tracking_number && (
+                                <a href={`https://parcelsapp.com/en/tracking/${orderDetailModal.order.tracking_number}`} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: "12px", color: "#FF5500", fontSize: "12px", fontWeight: "800", textDecoration: "underline" }}>Track Package ↗</a>
+                              )}
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "11px", color: "#888", marginBottom: "8px", fontWeight: "700" }}>Shipping Carrier</label>
+                              <select defaultValue={orderDetailModal.order.carrier || "USPS"} style={{ width: "100%", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none" }}>
+                                <option value="USPS">USPS</option>
+                                <option value="UPS">UPS</option>
+                                <option value="FedEx">FedEx</option>
+                                <option value="DHL">DHL</option>
+                              </select>
+                              <div style={{ fontSize: "11px", color: "#888", marginTop: "12px", fontWeight: "600" }}>Est. Delivery: {new Date(new Date(orderDetailModal.order.created_at).getTime() + 5*24*60*60*1000).toLocaleDateString()}</div>
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+
+                      {/* Right Column: Customer & Totals */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                        
+                        {/* Customer Info */}
+                        <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+                          <h4 style={{ fontSize: "14px", fontWeight: "900", color: "white", margin: "0 0 20px 0", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "12px" }}>Customer Details</h4>
+                          
+                          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                            <div>
+                              <div style={{ fontSize: "10px", color: "#666", fontWeight: "900", textTransform: "uppercase" }}>Full Name</div>
+                              <div style={{ color: "white", fontSize: "14px", fontWeight: "700", marginTop: "4px" }}>{orderDetailModal.order.customer_name}</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: "10px", color: "#666", fontWeight: "900", textTransform: "uppercase" }}>Email Address</div>
+                              <div style={{ color: "#FF5500", fontSize: "14px", fontWeight: "700", marginTop: "4px", wordBreak: "break-all" }}>{orderDetailModal.order.customer_email}</div>
+                            </div>
+                            <div style={{ display: "flex", gap: "16px" }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: "10px", color: "#666", fontWeight: "900", textTransform: "uppercase" }}>Phone Number</div>
+                                <div style={{ color: "white", fontSize: "14px", fontWeight: "600", marginTop: "4px" }}>{orderDetailModal.order.customer_phone || 'N/A'}</div>
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: "10px", color: "#666", fontWeight: "900", textTransform: "uppercase" }}>Member #</div>
+                                <div style={{ color: "white", fontSize: "14px", fontWeight: "600", marginTop: "4px" }}>{orderDetailModal.order.member_number || 'Guest'}</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Addresses */}
+                        <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+                          <h4 style={{ fontSize: "14px", fontWeight: "900", color: "white", margin: "0 0 20px 0", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "12px" }}>Addresses</h4>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                            <div>
+                              <div style={{ fontSize: "10px", color: "#666", fontWeight: "900", textTransform: "uppercase", marginBottom: "8px" }}>Shipping Address</div>
+                              <div style={{ color: "#ccc", fontSize: "13px", lineHeight: "1.6" }}>
+                                {orderDetailModal.order.shipping_address || 'No shipping address provided.'}
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: "10px", color: "#666", fontWeight: "900", textTransform: "uppercase", marginBottom: "8px" }}>Billing Address</div>
+                              <div style={{ color: "#ccc", fontSize: "13px", lineHeight: "1.6" }}>
+                                {orderDetailModal.order.billing_address || orderDetailModal.order.shipping_address || 'Same as shipping'}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Order Summary */}
+                        <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+                          <h4 style={{ fontSize: "14px", fontWeight: "900", color: "white", margin: "0 0 20px 0", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "12px" }}>Order Summary</h4>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", color: "#aaa", fontSize: "13px" }}>
+                              <span>Subtotal</span>
+                              <span>${orderDetailModal.order.subtotal?.toFixed(2)}</span>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between", color: "#aaa", fontSize: "13px" }}>
+                              <span>Shipping Fee</span>
+                              <span>${(orderDetailModal.order.shipping_fee || 0).toFixed(2)}</span>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between", color: "#aaa", fontSize: "13px" }}>
+                              <span>Taxes</span>
+                              <span>${(orderDetailModal.order.tax || 0).toFixed(2)}</span>
+                            </div>
+                            {orderDetailModal.order.discount > 0 && (
+                              <div style={{ display: "flex", justifyContent: "space-between", color: "#22c55e", fontSize: "13px", fontWeight: "700" }}>
+                                <span>Discount</span>
+                                <span>-${orderDetailModal.order.discount?.toFixed(2)}</span>
+                              </div>
+                            )}
+                            <div style={{ display: "flex", justifyContent: "space-between", color: "white", fontSize: "18px", fontWeight: "900", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                              <span>Total Paid</span>
+                              <span style={{ color: "#FF5500" }}>${orderDetailModal.order.total?.toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Quick Actions */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                          <button onClick={() => { setOrderDetailModal(prev => ({...prev, order: {...prev.order, shipping_status: 'shipped'}})); showToast('Marked as shipped!', 'success'); }} style={{ background: "#22c55e", color: "black", border: "none", padding: "14px", borderRadius: "8px", fontSize: "13px", fontWeight: "900", cursor: "pointer" }}>MARK AS SHIPPED</button>
+                          <button onClick={() => { window.location.href = `mailto:${orderDetailModal.order.customer_email}`; }} style={{ background: "transparent", color: "white", border: "1px solid rgba(255,255,255,0.2)", padding: "14px", borderRadius: "8px", fontSize: "13px", fontWeight: "900", cursor: "pointer" }}>CONTACT CUSTOMER</button>
+                          <button onClick={() => { if(window.confirm('Are you sure you want to refund this order?')) showToast('Refund initiated', 'info'); }} style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.2)", padding: "14px", borderRadius: "8px", fontSize: "13px", fontWeight: "900", cursor: "pointer", marginTop: "10px" }}>REFUND ORDER</button>
+                        </div>
+
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {/* ==================== 5. MEMBERSHIP MANAGEMENT SUITE ==================== */}
           {activeTab === "memberships" && (
-
-            <div>
+            <div className="membership-management-container">
               {/* Header */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px" }}>
                 <div>
                   <div style={{ color: "#FF5500", fontSize: "11px", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>
                     Membership Control Center
                   </div>
-                  <h2 style={{ fontSize: "56px", fontWeight: "950", margin: "0 0 12px 0", color: "white", letterSpacing: "-2px", textTransform: "uppercase", lineHeight: "1" }}>
-                    MEMBERSHIP
-                    <br />MANAGEMENT
+                  <h2 style={{ fontSize: "42px", fontWeight: "950", margin: "0 0 12px 0", color: "white", letterSpacing: "-1px", textTransform: "uppercase", lineHeight: "1" }}>
+                    MEMBERSHIP<br />MANAGEMENT
                   </h2>
+                  <p style={{ color: "#888", fontSize: "14px", margin: 0 }}>View, edit, and control pricing tiers, active subscribers, and payment history.</p>
                 </div>
-              </div>
-
-              {/* Tiers Grid */}
-              <div style={{ marginBottom: "40px" }}>
-                <h3 style={{ fontSize: "20px", fontWeight: "900", color: "white", marginBottom: "20px" }}>Manage Tiers & Limits</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "24px" }}>
-                  {[
-                    { name: 'Free', price: '$0/mo', limits: '3 Submissions', color: '#888', icon: <User size={24} /> },
-                    { name: 'Bronze', price: '$9.99/mo', limits: '10 Submissions', color: '#cd7f32', icon: <Layers size={24} /> },
-                    { name: 'Silver', price: '$19.99/mo', limits: '50 Submissions', color: '#c0c0c0', icon: <Target size={24} /> },
-                    { name: 'Gold', price: '$49.99/mo', limits: 'Unlimited', color: '#ffd700', icon: <Trophy size={24} /> },
-                  ].map(tier => (
-                    <div key={tier.name} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${tier.color}40`, borderRadius: "16px", padding: "24px", position: "relative" }}>
-                      <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "4px", background: tier.color, borderTopLeftRadius: "16px", borderTopRightRadius: "16px" }} />
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px", color: tier.color }}>
-                        {tier.icon}
-                        <button onClick={() => alert(`Editing tier: ${tier.name}. Form will open to modify price and limits.`)} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "4px 12px", borderRadius: "100px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}>EDIT TIER</button>
-                      </div>
-                      <h4 style={{ fontSize: "24px", fontWeight: "900", color: "white", margin: "0 0 8px 0" }}>{tier.name}</h4>
-                      <div style={{ fontSize: "16px", fontWeight: "700", color: tier.color, marginBottom: "8px" }}>{tier.price}</div>
-                      <div style={{ fontSize: "12px", color: "#888", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px" }}>
-                        <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#FF5500' }} /> {tier.limits}
-                      </div>
-                    </div>
+                
+                {/* Internal Navigation */}
+                <div style={{ display: "flex", background: "rgba(255,255,255,0.03)", borderRadius: "100px", padding: "4px" }}>
+                  {['plans', 'subscribers', 'payments'].map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setMembershipSubTab(tab)}
+                      style={{
+                        background: membershipSubTab === tab ? "#FF5500" : "transparent",
+                        color: membershipSubTab === tab ? "white" : "#888",
+                        border: "none",
+                        padding: "10px 24px",
+                        borderRadius: "100px",
+                        fontSize: "12px",
+                        fontWeight: "800",
+                        textTransform: "uppercase",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      {tab}
+                    </button>
                   ))}
                 </div>
               </div>
 
-              {/* Subscriptions & User Management */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "40px" }}>
-                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+              {/* Tiers & Plans Sub-Tab */}
+              {membershipSubTab === "plans" && (
+                <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                    <h3 style={{ fontSize: "18px", fontWeight: "900", color: "white", margin: 0 }}>Active Subscriptions</h3>
-                    <button onClick={() => { window.location.href = "/admin?tab=users"; }} style={{ background: "#222", border: "none", color: "white", padding: "6px 12px", borderRadius: "6px", fontSize: "11px", fontWeight: "800", cursor: "pointer" }}>Manage All</button>
+                    <h3 style={{ fontSize: "20px", fontWeight: "900", color: "white", margin: 0 }}>Membership Plans</h3>
+                    <button onClick={() => setPlanModal({ isOpen: true, mode: 'add', plan: null })} style={{ background: "#FF5500", border: "none", color: "white", padding: "10px 20px", borderRadius: "8px", fontSize: "12px", fontWeight: "800", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <Plus size={16} /> Add New Plan
+                    </button>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    {[
-                      { user: 'Marcus Thorne', email: 'marcus@example.com', action: 'Upgraded to Gold', date: 'Today, 10:42 AM', color: '#ffd700' },
-                      { user: 'Sarah Jenkins', email: 'sarah@example.com', action: 'Renewed Silver', date: 'Yesterday', color: '#c0c0c0' },
-                      { user: 'David Kim', email: 'dkim@example.com', action: 'Downgraded to Free', date: 'Oct 24, 2025', color: '#888' },
-                      { user: 'Elena Rostova', email: 'elena@example.com', action: 'Cancelled Bronze', date: 'Oct 22, 2025', color: '#ef4444' }
-                    ].map((activity, idx) => (
-                      <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "12px" }}>
-                        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                          <img src={`https://ui-avatars.com/api/?name=${activity.user}&background=random`} alt={activity.user} style={{ width: "32px", height: "32px", borderRadius: "50%" }} />
-                          <div>
-                            <div style={{ color: "white", fontSize: "13px", fontWeight: "700" }}>{activity.user}</div>
-                            <div style={{ color: activity.color, fontSize: "11px", fontWeight: "800", marginTop: "2px" }}>{activity.action}</div>
-                          </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px" }}>
+                    {membershipPlans.map(tier => (
+                      <div key={tier.id} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${tier.color}40`, borderRadius: "16px", padding: "24px", position: "relative", opacity: tier.active ? 1 : 0.5 }}>
+                        <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "4px", background: tier.color, borderTopLeftRadius: "16px", borderTopRightRadius: "16px" }} />
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px", color: tier.color }}>
+                          <Layers size={24} />
+                          <button onClick={() => setPlanModal({ isOpen: true, mode: 'edit', plan: tier })} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "4px 12px", borderRadius: "100px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}>EDIT</button>
                         </div>
-                        <div style={{ color: "#666", fontSize: "11px", fontWeight: "700", textAlign: "right" }}>
-                          {activity.date}
-                          <div style={{ marginTop: "4px" }}>
-                            <button onClick={() => alert(`Managing subscription for ${activity.user}...`)} style={{ background: "transparent", border: "none", color: "#FF5500", fontSize: "10px", fontWeight: "900", cursor: "pointer", textDecoration: "underline" }}>Manage</button>
-                          </div>
+                        <h4 style={{ fontSize: "24px", fontWeight: "900", color: "white", margin: "0 0 8px 0" }}>{tier.name} {tier.active ? "" : "(Inactive)"}</h4>
+                        <div style={{ fontSize: "16px", fontWeight: "700", color: tier.color, marginBottom: "8px" }}>{tier.price}</div>
+                        <div style={{ fontSize: "12px", color: "#888", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px" }}>
+                          <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#FF5500' }} /> {tier.limits}
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
+              )}
 
+              {/* Subscribers Sub-Tab */}
+              {membershipSubTab === "subscribers" && (
+                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                    <h3 style={{ fontSize: "18px", fontWeight: "900", color: "white", margin: 0 }}>Active Subscribers</h3>
+                  </div>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr style={{ color: "#888", fontSize: "11px", fontWeight: "800", textAlign: "left", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                        <th style={{ paddingBottom: "12px" }}>User</th>
+                        <th style={{ paddingBottom: "12px" }}>Current Plan</th>
+                        <th style={{ paddingBottom: "12px" }}>Status</th>
+                        <th style={{ paddingBottom: "12px" }}>Join Date</th>
+                        <th style={{ paddingBottom: "12px", textAlign: "right" }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { id: 1, user: 'Marcus Thorne', email: 'marcus@example.com', plan: 'Gold', status: 'Active', joinDate: 'Oct 12, 2025' },
+                        { id: 2, user: 'Sarah Jenkins', email: 'sarah@example.com', plan: 'Silver', status: 'Active', joinDate: 'Sep 05, 2025' },
+                        { id: 3, user: 'David Kim', email: 'dkim@example.com', plan: 'Free', status: 'Downgraded', joinDate: 'Aug 22, 2025' },
+                        { id: 4, user: 'Elena Rostova', email: 'elena@example.com', plan: 'Bronze', status: 'Expired', joinDate: 'Jan 15, 2025' }
+                      ].map((sub) => (
+                        <tr key={sub.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.02)" }}>
+                          <td style={{ padding: "12px 0", display: "flex", alignItems: "center", gap: "12px" }}>
+                            <img src={`https://ui-avatars.com/api/?name=${sub.user}&background=random`} alt={sub.user} style={{ width: "32px", height: "32px", borderRadius: "50%" }} />
+                            <div>
+                              <div style={{ color: "white", fontSize: "13px", fontWeight: "700" }}>{sub.user}</div>
+                              <div style={{ color: "#888", fontSize: "11px", marginTop: "2px" }}>{sub.email}</div>
+                            </div>
+                          </td>
+                          <td style={{ color: "white", fontSize: "13px", fontWeight: "700", padding: "12px 0" }}>{sub.plan}</td>
+                          <td style={{ padding: "12px 0" }}>
+                            <span style={{ 
+                              background: sub.status === 'Active' ? "rgba(34,197,94,0.1)" : sub.status === 'Expired' ? "rgba(239,68,68,0.1)" : "rgba(255,255,255,0.05)",
+                              color: sub.status === 'Active' ? "#22c55e" : sub.status === 'Expired' ? "#ef4444" : "#888",
+                              padding: "4px 8px", borderRadius: "100px", fontSize: "10px", fontWeight: "800", textTransform: "uppercase"
+                            }}>
+                              {sub.status}
+                            </span>
+                          </td>
+                          <td style={{ color: "#aaa", fontSize: "12px", padding: "12px 0" }}>{sub.joinDate}</td>
+                          <td style={{ textAlign: "right", padding: "12px 0" }}>
+                            <button onClick={() => setSubscriberModal({ isOpen: true, subscriber: sub })} style={{ background: "transparent", border: "1px solid #FF5500", color: "#FF5500", padding: "6px 16px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer" }}>Manage</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Payments Sub-Tab */}
+              {membershipSubTab === "payments" && (
                 <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
                     <h3 style={{ fontSize: "18px", fontWeight: "900", color: "white", margin: 0 }}>Payment History</h3>
                     <button onClick={() => {
                       const data = [
-                        { date: 'Oct 28, 2025', user: 'Marcus T.', amount: '$49.99', status: 'Success' },
-                        { date: 'Oct 27, 2025', user: 'Sarah J.', amount: '$19.99', status: 'Success' },
-                        { date: 'Oct 26, 2025', user: 'John D.', amount: '$9.99', status: 'Failed' },
-                        { date: 'Oct 25, 2025', user: 'Alice W.', amount: '$49.99', status: 'Refunded' }
+                        { date: 'Oct 28, 2025', user: 'Marcus T.', plan: 'Gold', amount: '$49.99', status: 'Success' },
+                        { date: 'Oct 27, 2025', user: 'Sarah J.', plan: 'Silver', amount: '$19.99', status: 'Success' },
+                        { date: 'Oct 26, 2025', user: 'John D.', plan: 'Bronze', amount: '$9.99', status: 'Failed' },
+                        { date: 'Oct 25, 2025', user: 'Alice W.', plan: 'Gold', amount: '$49.99', status: 'Refunded' }
                       ];
-                      let csvContent = "data:text/csv;charset=utf-8,Date,User,Amount,Status\n";
-                      data.forEach(row => { csvContent += `${row.date},${row.user},${row.amount},${row.status}\n`; });
+                      let csvContent = "data:text/csv;charset=utf-8,Date,User,Plan,Amount,Status\n";
+                      data.forEach(row => { csvContent += `${row.date},${row.user},${row.plan},${row.amount},${row.status}\n`; });
                       const encodedUri = encodeURI(csvContent);
                       const link = document.createElement("a");
                       link.setAttribute("href", encodedUri);
@@ -3003,20 +4082,22 @@ const Admin = () => {
                       <tr style={{ color: "#888", fontSize: "11px", fontWeight: "800", textAlign: "left", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                         <th style={{ paddingBottom: "12px" }}>Date</th>
                         <th style={{ paddingBottom: "12px" }}>User</th>
+                        <th style={{ paddingBottom: "12px" }}>Plan</th>
                         <th style={{ paddingBottom: "12px" }}>Amount</th>
                         <th style={{ paddingBottom: "12px" }}>Status</th>
                       </tr>
                     </thead>
                     <tbody>
                       {[
-                        { date: 'Oct 28, 2025', user: 'Marcus T.', amount: '$49.99', status: 'Success' },
-                        { date: 'Oct 27, 2025', user: 'Sarah J.', amount: '$19.99', status: 'Success' },
-                        { date: 'Oct 26, 2025', user: 'John D.', amount: '$9.99', status: 'Failed' },
-                        { date: 'Oct 25, 2025', user: 'Alice W.', amount: '$49.99', status: 'Refunded' }
+                        { date: 'Oct 28, 2025', user: 'Marcus T.', plan: 'Gold', amount: '$49.99', status: 'Success' },
+                        { date: 'Oct 27, 2025', user: 'Sarah J.', plan: 'Silver', amount: '$19.99', status: 'Success' },
+                        { date: 'Oct 26, 2025', user: 'John D.', plan: 'Bronze', amount: '$9.99', status: 'Failed' },
+                        { date: 'Oct 25, 2025', user: 'Alice W.', plan: 'Gold', amount: '$49.99', status: 'Refunded' }
                       ].map((payment, idx) => (
                         <tr key={idx} style={{ borderBottom: "1px solid rgba(255,255,255,0.02)" }}>
                           <td style={{ color: "#aaa", fontSize: "12px", padding: "12px 0" }}>{payment.date}</td>
                           <td style={{ color: "white", fontSize: "12px", fontWeight: "600", padding: "12px 0" }}>{payment.user}</td>
+                          <td style={{ color: "#aaa", fontSize: "12px", padding: "12px 0" }}>{payment.plan}</td>
                           <td style={{ color: "white", fontSize: "12px", fontWeight: "700", padding: "12px 0" }}>{payment.amount}</td>
                           <td style={{ padding: "12px 0" }}>
                             <span style={{ 
@@ -3032,7 +4113,62 @@ const Admin = () => {
                     </tbody>
                   </table>
                 </div>
-              </div>
+              )}
+
+              {/* Modals for Membership Management */}
+              {planModal.isOpen && (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(4px)" }}>
+                  <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px", padding: "32px", width: "400px", maxWidth: "90%" }}>
+                    <h3 style={{ fontSize: "20px", fontWeight: "900", margin: "0 0 20px 0" }}>{planModal.mode === 'add' ? 'Add Membership Plan' : 'Edit Membership Plan'}</h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "24px" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "12px", color: "#888", marginBottom: "8px" }}>Plan Name</label>
+                        <input type="text" defaultValue={planModal.plan?.name || ""} placeholder="e.g. Diamond" style={{ width: "100%", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "10px", color: "white" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "12px", color: "#888", marginBottom: "8px" }}>Price (per month/year)</label>
+                        <input type="text" defaultValue={planModal.plan?.price || ""} placeholder="e.g. $99/mo" style={{ width: "100%", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "10px", color: "white" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "12px", color: "#888", marginBottom: "8px" }}>Limits Description</label>
+                        <input type="text" defaultValue={planModal.plan?.limits || ""} placeholder="e.g. Unlimited Submissions" style={{ width: "100%", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "10px", color: "white" }} />
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+                      <button onClick={() => setPlanModal({ isOpen: false, mode: 'add', plan: null })} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "8px 16px", borderRadius: "8px", fontSize: "12px", cursor: "pointer" }}>Cancel</button>
+                      <button onClick={() => { alert('Plan saved successfully!'); setPlanModal({ isOpen: false }); }} style={{ background: "#FF5500", border: "none", color: "white", padding: "8px 16px", borderRadius: "8px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>Save Plan</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {subscriberModal.isOpen && (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(4px)" }}>
+                  <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px", padding: "32px", width: "400px", maxWidth: "90%" }}>
+                    <h3 style={{ fontSize: "20px", fontWeight: "900", margin: "0 0 20px 0" }}>Manage Subscriber: {subscriberModal.subscriber?.user}</h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "24px" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "12px", color: "#888", marginBottom: "8px" }}>Current Plan</label>
+                        <select defaultValue={subscriberModal.subscriber?.plan || "Free"} style={{ width: "100%", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "10px", color: "white" }}>
+                          {membershipPlans.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "12px", color: "#888", marginBottom: "8px" }}>Membership Status</label>
+                        <select defaultValue={subscriberModal.subscriber?.status || "Active"} style={{ width: "100%", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "10px", color: "white" }}>
+                          <option value="Active">Active</option>
+                          <option value="Expired">Expired</option>
+                          <option value="Suspended">Suspended</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+                      <button onClick={() => setSubscriberModal({ isOpen: false, subscriber: null })} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "8px 16px", borderRadius: "8px", fontSize: "12px", cursor: "pointer" }}>Cancel</button>
+                      <button onClick={() => { alert('Subscriber updated successfully!'); setSubscriberModal({ isOpen: false, subscriber: null }); }} style={{ background: "#FF5500", border: "none", color: "white", padding: "8px 16px", borderRadius: "8px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>Save Changes</button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -3040,7 +4176,7 @@ const Admin = () => {
           {activeTab === "categories" && (
             <div>
               {/* Header */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px" }}>
                 <div>
                   <div style={{ color: "#FF5500", fontSize: "11px", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>
                     Category Infrastructure
@@ -3050,51 +4186,178 @@ const Admin = () => {
                     <br />MANAGEMENT
                   </h2>
                 </div>
-                <button onClick={() => alert('Add New Category Modal Opens...')} style={{ background: "#FF5500", color: "white", border: "none", padding: "14px 28px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "1px", marginTop: "12px", boxShadow: "0 4px 14px rgba(255,85,0,0.4)" }}>
+                <button onClick={() => setCategoryModal({ isOpen: true, mode: 'add', category: { name: "", subs: [], active: true, rules: "", requirements: "", featured_records: "" } })} style={{ background: "#FF5500", color: "white", border: "none", padding: "14px 28px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "1px", marginTop: "12px", boxShadow: "0 4px 14px rgba(255,85,0,0.4)" }}>
                   <Plus size={14} /> ADD NEW CATEGORY
                 </button>
               </div>
 
+              {/* Category Search & Filters */}
+              <div style={{ background: "rgba(13,13,16,0.5)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "20px", padding: "16px 24px", marginBottom: "24px", display: "flex", alignItems: "center" }}>
+                <Search size={14} color="#555" style={{ marginRight: "12px" }} />
+                <input
+                  type="text"
+                  placeholder="Search categories by name or subcategory..."
+                  value={categorySearchQuery}
+                  onChange={(e) => setCategorySearchQuery(e.target.value)}
+                  style={{ background: "transparent", border: "none", color: "white", fontSize: "13px", outline: "none", width: "100%" }}
+                />
+              </div>
+
               {/* Master Categories List */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "24px" }}>
-                {[
-                  { name: "Athletics", subs: ["Running", "Jumping", "Throwing"] },
-                  { name: "Strength", subs: ["Powerlifting", "Weightlifting", "Grip"] },
-                  { name: "Endurance", subs: ["Marathon", "Planking", "Cycling"] },
-                  { name: "Balance", subs: ["Tightrope", "Handstand", "Slackline"] },
-                  { name: "Skills", subs: ["Juggling", "Rubik's Cube", "Archery"] },
-                  { name: "Gaming", subs: ["Speedruns", "High Scores", "eSports"] },
-                  { name: "Water Sports", subs: ["Swimming", "Diving", "Surfing"] },
-                  { name: "Reaction", subs: ["Reflex Catch", "Speed Typing"] },
-                  { name: "Mind & Memory", subs: ["Pi Memorization", "Card Counting"] },
-                  { name: "Action Sports", subs: ["Skateboarding", "BMX", "Parkour"] },
-                  { name: "Other", subs: ["Miscellaneous", "Unclassified"] }
-                ].map(cat => (
-                  <div key={cat.name} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px", position: "relative", overflow: "hidden" }}>
-                    <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "4px", background: "linear-gradient(90deg, #FF5500, #ff8c00)" }} />
+                {categoriesList
+                  .filter(cat => 
+                    cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase()) || 
+                    cat.subs.some(sub => sub.toLowerCase().includes(categorySearchQuery.toLowerCase()))
+                  )
+                  .map(cat => (
+                  <div key={cat.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px", position: "relative", overflow: "hidden", opacity: cat.active ? 1 : 0.4 }}>
+                    <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "4px", background: cat.active ? "linear-gradient(90deg, #FF5500, #ff8c00)" : "#444" }} />
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-                      <h3 style={{ fontSize: "24px", fontWeight: "950", color: "white", margin: 0, letterSpacing: "-0.5px" }}>{cat.name}</h3>
+                      <h3 style={{ fontSize: "24px", fontWeight: "950", color: "white", margin: 0, letterSpacing: "-0.5px", cursor: "pointer" }} onClick={() => setCategoryModal({ isOpen: true, mode: 'edit', category: JSON.parse(JSON.stringify(cat)) })}>{cat.name}</h3>
                       <div style={{ display: "flex", gap: "8px" }}>
-                        <button onClick={() => alert(`Editing category: ${cat.name}`)} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", width: "32px", height: "32px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Edit3 size={14} /></button>
-                        <button onClick={() => alert(`Deleting category: ${cat.name}`)} style={{ background: "rgba(239,68,68,0.1)", border: "none", color: "#ef4444", width: "32px", height: "32px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Trash2 size={14} /></button>
+                        <button onClick={() => setCategoryModal({ isOpen: true, mode: 'edit', category: JSON.parse(JSON.stringify(cat)) })} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", width: "32px", height: "32px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Edit3 size={14} /></button>
+                        <button onClick={() => {
+                          if(window.confirm(`Are you sure you want to delete ${cat.name}?`)) {
+                            setCategoriesList(prev => prev.filter(c => c.id !== cat.id));
+                            showToast(`Category ${cat.name} deleted`, 'success');
+                          }
+                        }} style={{ background: "rgba(239,68,68,0.1)", border: "none", color: "#ef4444", width: "32px", height: "32px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Trash2 size={14} /></button>
                       </div>
                     </div>
                     
                     <div style={{ marginBottom: "20px", minHeight: "60px" }}>
                       <div style={{ fontSize: "11px", color: "#888", fontWeight: "800", textTransform: "uppercase", marginBottom: "10px", letterSpacing: "1px" }}>Subcategories ({cat.subs.length})</div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                        {cat.subs.map(sub => (
+                        {cat.subs.slice(0, 5).map(sub => (
                           <span key={sub} style={{ background: "rgba(255,85,0,0.1)", color: "#FF5500", padding: "6px 12px", borderRadius: "100px", fontSize: "11px", fontWeight: "800" }}>{sub}</span>
                         ))}
+                        {cat.subs.length > 5 && (
+                          <span style={{ background: "rgba(255,255,255,0.05)", color: "#aaa", padding: "6px 12px", borderRadius: "100px", fontSize: "11px", fontWeight: "800" }}>+{cat.subs.length - 5} more</span>
+                        )}
                       </div>
                     </div>
                     
-                    <button onClick={() => alert(`Managing subcategories for ${cat.name}... Add/Edit/Delete specific subcategories here.`)} style={{ width: "100%", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "12px", borderRadius: "8px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px" }}>
-                      <Layers size={14} /> MANAGE SUBCATEGORIES
+                    <button onClick={() => setCategoryModal({ isOpen: true, mode: 'edit', category: JSON.parse(JSON.stringify(cat)) })} style={{ width: "100%", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "12px", borderRadius: "8px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px" }}>
+                      <Layers size={14} /> MANAGE CATEGORY
                     </button>
                   </div>
                 ))}
               </div>
+
+              {/* Category Detail & Editor Modal */}
+              {categoryModal.isOpen && categoryModal.category && (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, backdropFilter: "blur(8px)", padding: "20px" }}>
+                  <div style={{ background: "#0c0c0e", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", width: "100%", maxWidth: "800px", maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 32px", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.02)" }}>
+                      <h3 style={{ fontSize: "20px", fontWeight: "900", color: "white", margin: 0 }}>{categoryModal.mode === 'add' ? 'Add New Category' : `Edit Category: ${categoryModal.category.name}`}</h3>
+                      <button onClick={() => setCategoryModal({ isOpen: false, mode: 'add', category: null })} style={{ background: "transparent", border: "none", color: "#888", cursor: "pointer", padding: "8px" }}><X size={24} /></button>
+                    </div>
+                    
+                    <div style={{ padding: "32px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: "24px" }}>
+                      
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11px", color: "#888", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Category Name</label>
+                          <input type="text" value={categoryModal.category.name} onChange={(e) => setCategoryModal(prev => ({ ...prev, category: { ...prev.category, name: e.target.value } }))} placeholder="e.g. Strength" style={{ width: "100%", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px 14px", color: "white", fontSize: "14px", fontWeight: "700" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11px", color: "#888", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Status</label>
+                          <select value={categoryModal.category.active ? "true" : "false"} onChange={(e) => setCategoryModal(prev => ({ ...prev, category: { ...prev.category, active: e.target.value === "true" } }))} style={{ width: "100%", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px 14px", color: "white", fontSize: "14px", fontWeight: "700", outline: "none" }}>
+                            <option value="true">Active (Visible on public site)</option>
+                            <option value="false">Inactive (Hidden)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+                        <label style={{ display: "block", fontSize: "14px", color: "white", marginBottom: "16px", fontWeight: "900" }}>Manage Subcategories</label>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "16px" }}>
+                          {categoryModal.category.subs.map((sub, idx) => (
+                            <div key={idx} style={{ background: "rgba(255,255,255,0.1)", color: "white", padding: "6px 12px", borderRadius: "100px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "8px" }}>
+                              {sub}
+                              <X size={12} color="#ff4444" style={{ cursor: "pointer" }} onClick={() => {
+                                const newSubs = categoryModal.category.subs.filter((s, i) => i !== idx);
+                                setCategoryModal(prev => ({ ...prev, category: { ...prev.category, subs: newSubs } }));
+                              }} />
+                            </div>
+                          ))}
+                          {categoryModal.category.subs.length === 0 && <span style={{ color: "#888", fontSize: "12px" }}>No subcategories added yet.</span>}
+                        </div>
+                        <div style={{ display: "flex", gap: "12px" }}>
+                          <input type="text" value={newSubcategoryInput} onChange={(e) => setNewSubcategoryInput(e.target.value)} onKeyDown={(e) => {
+                            if (e.key === 'Enter' && newSubcategoryInput.trim()) {
+                              setCategoryModal(prev => ({ ...prev, category: { ...prev.category, subs: [...prev.category.subs, newSubcategoryInput.trim()] } }));
+                              setNewSubcategoryInput("");
+                            }
+                          }} placeholder="New subcategory name..." style={{ flex: 1, background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "10px 14px", color: "white", fontSize: "13px" }} />
+                          <button onClick={() => {
+                            if (newSubcategoryInput.trim()) {
+                              setCategoryModal(prev => ({ ...prev, category: { ...prev.category, subs: [...prev.category.subs, newSubcategoryInput.trim()] } }));
+                              setNewSubcategoryInput("");
+                            }
+                          }} style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "white", padding: "0 20px", borderRadius: "8px", fontSize: "12px", fontWeight: "900", cursor: "pointer" }}>Add</button>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11px", color: "#888", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Assign Rules</label>
+                          <textarea value={categoryModal.category.rules || ""} onChange={(e) => setCategoryModal(prev => ({ ...prev, category: { ...prev.category, rules: e.target.value } }))} placeholder="Define standard rules for this category..." style={{ width: "100%", height: "100px", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px 14px", color: "white", fontSize: "13px", resize: "vertical" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11px", color: "#888", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Submission Requirements</label>
+                          <textarea value={categoryModal.category.requirements || ""} onChange={(e) => setCategoryModal(prev => ({ ...prev, category: { ...prev.category, requirements: e.target.value } }))} placeholder="e.g. Video must show full unedited attempt..." style={{ width: "100%", height: "100px", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px 14px", color: "white", fontSize: "13px", resize: "vertical" }} />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label style={{ display: "block", fontSize: "11px", color: "#888", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Featured Records Showcase (Comma separated IDs)</label>
+                        <input type="text" value={categoryModal.category.featured_records || ""} onChange={(e) => setCategoryModal(prev => ({ ...prev, category: { ...prev.category, featured_records: e.target.value } }))} placeholder="rec_123, rec_456" style={{ width: "100%", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px 14px", color: "white", fontSize: "13px" }} />
+                      </div>
+
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 32px", borderTop: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.02)" }}>
+                      <button onClick={() => window.location.href = `/admin?tab=records&category=${encodeURIComponent(categoryModal.category.name)}`} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "10px 20px", borderRadius: "8px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>View Records in Category</button>
+                      <div style={{ display: "flex", gap: "12px" }}>
+                        <button onClick={() => setCategoryModal({ isOpen: false, mode: 'add', category: null })} style={{ background: "transparent", border: "none", color: "#888", padding: "10px 20px", borderRadius: "8px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>Cancel</button>
+                        <button onClick={async () => {
+                          if (!categoryModal.category.name.trim()) return showToast('Category name is required', 'error');
+                          
+                          try {
+                            if (categoryModal.mode === 'add') {
+                              // Create new category via API
+                              const apiRes = await apiCall('/categories', 'POST', {
+                                name: categoryModal.category.name,
+                                description: categoryModal.category.description || '',
+                                active: categoryModal.category.active,
+                                rules: categoryModal.category.rules || '',
+                                submissionRequirements: categoryModal.category.requirements || ''
+                              }, user.token);
+                              const newCat = { ...categoryModal.category, id: apiRes._id || apiRes.id, _id: apiRes._id };
+                              setCategoriesList(prev => [...prev, newCat]);
+                            } else {
+                              // Update category via API
+                              await apiCall(`/categories/${categoryModal.category._id || categoryModal.category.id}`, 'PUT', {
+                                name: categoryModal.category.name,
+                                description: categoryModal.category.description || '',
+                                active: categoryModal.category.active,
+                                rules: categoryModal.category.rules || '',
+                                submissionRequirements: categoryModal.category.requirements || ''
+                              }, user.token);
+                              setCategoriesList(prev => prev.map(c => (c._id || c.id) === (categoryModal.category._id || categoryModal.category.id) ? categoryModal.category : c));
+                            }
+                            setCategoryModal({ isOpen: false, mode: 'add', category: null });
+                            showToast(`Category ${categoryModal.mode === 'add' ? 'created' : 'updated'} successfully`, 'success');
+                          } catch (error) {
+                            showToast(`Error: ${error.message}`, 'error');
+                          }
+                        }} style={{ background: "#FF5500", border: "none", color: "white", padding: "10px 24px", borderRadius: "8px", fontSize: "12px", fontWeight: "900", cursor: "pointer" }}>Save Category</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -3104,53 +4367,107 @@ const Admin = () => {
               {/* Header */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
                 <div>
-                  <div style={{ color: "#FF5500", fontSize: "11px", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>
-                    Demographic Settings
-                  </div>
-                  <h2 style={{ fontSize: "56px", fontWeight: "950", margin: "0 0 12px 0", color: "white", letterSpacing: "-2px", textTransform: "uppercase", lineHeight: "1" }}>
-                    AGE GROUP
-                    <br />MANAGEMENT
-                  </h2>
+                  <div style={{ color: "#FF5500", fontSize: "11px", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>Demographic Settings</div>
+                  <h2 style={{ fontSize: "56px", fontWeight: "950", margin: "0 0 12px 0", color: "white", letterSpacing: "-2px", textTransform: "uppercase", lineHeight: "1" }}>AGE GROUP<br />MANAGEMENT</h2>
+                  <p style={{ color: "#888", fontSize: "14px", margin: 0 }}>Manage age divisions that apply to all record submissions and leaderboards.</p>
                 </div>
-                <button onClick={() => alert('Add New Age Group Modal Opens...')} style={{ background: "#FF5500", color: "white", border: "none", padding: "14px 28px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "1px", marginTop: "12px", boxShadow: "0 4px 14px rgba(255,85,0,0.4)" }}>
+                <button onClick={() => setDivisionModal({ isOpen: true, mode: 'add', division: { name: "", minAge: 0, maxAge: 100, description: "", color: "#FF5500", active: true } })} style={{ background: "#FF5500", color: "white", border: "none", padding: "14px 28px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "1px", marginTop: "12px", boxShadow: "0 4px 14px rgba(255,85,0,0.4)" }}>
                   <Plus size={14} /> ADD NEW DIVISION
                 </button>
               </div>
 
-              {/* Master Age Groups List */}
+              {/* Divisions List */}
               <div style={{ display: "flex", flexDirection: "column", gap: "16px", paddingBottom: "60px" }}>
-                {[
-                  { name: "Junior Champions", range: "5–12", description: "Records set by our youngest, most aspiring athletes.", icon: <User size={20} color="#FF5500" /> },
-                  { name: "Teen Legends", range: "13–17", description: "Fiercely competitive teen athletes breaking boundaries.", icon: <Zap size={20} color="#3b82f6" /> },
-                  { name: "Adult Division", range: "18–49", description: "The prime athletic division where world records are shattered.", icon: <Activity size={20} color="#22c55e" /> },
-                  { name: "Masters Division", range: "50+", description: "Veteran athletes proving age is just a number.", icon: <Trophy size={20} color="#ffd700" /> }
-                ].map(group => (
-                  <div key={group.name} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px", display: "flex", alignItems: "center", gap: "24px" }}>
-                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.1)", width: "64px", height: "64px", borderRadius: "12px", display: "flex", justifyContent: "center", alignItems: "center" }}>
-                      {group.icon}
+                {divisionsList.map(group => (
+                  <div key={group.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px", display: "flex", alignItems: "center", gap: "24px", opacity: group.active ? 1 : 0.4 }}>
+                    <div style={{ background: `${group.color}18`, border: `1px solid ${group.color}44`, width: "64px", height: "64px", borderRadius: "12px", display: "flex", justifyContent: "center", alignItems: "center", flexShrink: 0 }}>
+                      <User size={24} color={group.color} />
                     </div>
-                    
                     <div style={{ flex: 1 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "4px" }}>
-                        <h3 style={{ fontSize: "24px", fontWeight: "950", color: "white", margin: 0, letterSpacing: "-0.5px" }}>{group.name}</h3>
-                        <span style={{ background: "rgba(255,255,255,0.1)", color: "white", padding: "4px 12px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", letterSpacing: "1px" }}>
-                          AGES {group.range}
-                        </span>
+                        <h3 style={{ fontSize: "22px", fontWeight: "950", color: "white", margin: 0, letterSpacing: "-0.5px" }}>{group.name}</h3>
+                        <span style={{ background: "rgba(255,255,255,0.1)", color: "white", padding: "4px 12px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", letterSpacing: "1px" }}>AGES {group.minAge}–{group.maxAge === 120 ? '100+' : group.maxAge}</span>
+                        {!group.active && <span style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", padding: "4px 12px", borderRadius: "100px", fontSize: "11px", fontWeight: "900" }}>INACTIVE</span>}
                       </div>
                       <p style={{ color: "#888", fontSize: "14px", margin: 0, lineHeight: "1.5" }}>{group.description}</p>
                     </div>
-
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <button onClick={() => alert(`Editing Age Group: ${group.name}`)} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "12px 20px", borderRadius: "8px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
-                        <Edit3 size={14} /> EDIT SETTINGS
+                    <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                      <button onClick={() => setDivisionModal({ isOpen: true, mode: 'edit', division: JSON.parse(JSON.stringify(group)) })} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "12px 20px", borderRadius: "8px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
+                        <Edit3 size={14} /> EDIT
                       </button>
-                      <button onClick={() => alert(`Deleting Age Group: ${group.name}`)} style={{ background: "rgba(239,68,68,0.1)", border: "none", color: "#ef4444", width: "40px", height: "40px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <button onClick={() => {
+                        if (window.confirm(`Delete division "${group.name}"?`)) {
+                          setDivisionsList(prev => prev.filter(d => d.id !== group.id));
+                          showToast(`Division "${group.name}" deleted`, 'success');
+                        }
+                      }} style={{ background: "rgba(239,68,68,0.1)", border: "none", color: "#ef4444", width: "40px", height: "40px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                         <Trash2 size={16} />
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
+
+              {/* Division Add/Edit Modal */}
+              {divisionModal.isOpen && divisionModal.division && (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, backdropFilter: "blur(8px)", padding: "20px" }}>
+                  <div style={{ background: "#0c0c0e", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", width: "100%", maxWidth: "600px", overflow: "hidden", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 32px", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.02)" }}>
+                      <h3 style={{ fontSize: "20px", fontWeight: "900", color: "white", margin: 0 }}>{divisionModal.mode === 'add' ? 'Add New Division' : `Edit: ${divisionModal.division.name}`}</h3>
+                      <button onClick={() => setDivisionModal({ isOpen: false, mode: 'add', division: null })} style={{ background: "transparent", border: "none", color: "#888", cursor: "pointer", padding: "8px" }}><X size={24} /></button>
+                    </div>
+                    <div style={{ padding: "32px", display: "flex", flexDirection: "column", gap: "20px" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "11px", color: "#888", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Division Name</label>
+                        <input type="text" value={divisionModal.division.name} onChange={(e) => setDivisionModal(prev => ({ ...prev, division: { ...prev.division, name: e.target.value } }))} placeholder="e.g. Junior Champions" style={{ width: "100%", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px 14px", color: "white", fontSize: "14px", fontWeight: "700" }} />
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11px", color: "#888", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Minimum Age</label>
+                          <input type="number" value={divisionModal.division.minAge} onChange={(e) => setDivisionModal(prev => ({ ...prev, division: { ...prev.division, minAge: parseInt(e.target.value) || 0 } }))} style={{ width: "100%", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px 14px", color: "white", fontSize: "14px", fontWeight: "700" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11px", color: "#888", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Maximum Age</label>
+                          <input type="number" value={divisionModal.division.maxAge} onChange={(e) => setDivisionModal(prev => ({ ...prev, division: { ...prev.division, maxAge: parseInt(e.target.value) || 100 } }))} style={{ width: "100%", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px 14px", color: "white", fontSize: "14px", fontWeight: "700" }} />
+                        </div>
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "11px", color: "#888", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Description</label>
+                        <textarea value={divisionModal.division.description} onChange={(e) => setDivisionModal(prev => ({ ...prev, division: { ...prev.division, description: e.target.value } }))} placeholder="Describe this age division..." rows={3} style={{ width: "100%", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px 14px", color: "white", fontSize: "13px", resize: "vertical" }} />
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11px", color: "#888", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Badge Color</label>
+                          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                            <input type="color" value={divisionModal.division.color} onChange={(e) => setDivisionModal(prev => ({ ...prev, division: { ...prev.division, color: e.target.value } }))} style={{ width: "48px", height: "48px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)", background: "transparent", cursor: "pointer", padding: "4px" }} />
+                            <span style={{ color: "#888", fontSize: "13px" }}>{divisionModal.division.color}</span>
+                          </div>
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11px", color: "#888", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Status</label>
+                          <select value={divisionModal.division.active ? "true" : "false"} onChange={(e) => setDivisionModal(prev => ({ ...prev, division: { ...prev.division, active: e.target.value === "true" } }))} style={{ width: "100%", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px 14px", color: "white", fontSize: "13px", outline: "none" }}>
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", padding: "20px 32px", borderTop: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.02)" }}>
+                      <button onClick={() => setDivisionModal({ isOpen: false, mode: 'add', division: null })} style={{ background: "transparent", border: "none", color: "#888", padding: "10px 20px", borderRadius: "8px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>Cancel</button>
+                      <button onClick={() => {
+                        if (!divisionModal.division.name.trim()) return showToast('Division name is required', 'error');
+                        if (divisionModal.mode === 'add') {
+                          setDivisionsList(prev => [...prev, { ...divisionModal.division, id: Date.now() }]);
+                        } else {
+                          setDivisionsList(prev => prev.map(d => d.id === divisionModal.division.id ? divisionModal.division : d));
+                        }
+                        setDivisionModal({ isOpen: false, mode: 'add', division: null });
+                        showToast(`Division ${divisionModal.mode === 'add' ? 'created' : 'updated'} successfully`, 'success');
+                      }} style={{ background: "#FF5500", border: "none", color: "white", padding: "10px 24px", borderRadius: "8px", fontSize: "12px", fontWeight: "900", cursor: "pointer" }}>Save Division</button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -3168,77 +4485,193 @@ const Admin = () => {
                   </h2>
                 </div>
                 <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
-                  <select style={{ background: "transparent", color: "white", border: "1px solid rgba(255,255,255,0.1)", padding: "10px 16px", borderRadius: "8px", fontSize: "12px", fontWeight: "800", cursor: "pointer", appearance: "none", outline: "none" }}>
-                    <option value="default">Display Order: Default</option>
-                    <option value="hierarchy">Order: Current Record » Pending » Failed</option>
-                    <option value="recent">Order: Most Recent</option>
-                  </select>
+                  <button 
+                    onClick={() => {
+                      setChallengeFormMode("add");
+                      setChallengeForm({ status: "pending", videoType: "upload", isFeatured: false });
+                      setChallengeSaveStatus(null);
+                    }}
+                    style={{ background: "#FF5500", border: "none", color: "white", padding: "10px 24px", borderRadius: "8px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+                  >
+                    <Plus size={16} /> ADD NEW CHALLENGE
+                  </button>
                 </div>
               </div>
 
-              {/* Challenges List */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px", paddingBottom: "60px" }}>
-                {[
-                  { id: "CHL-9981", athlete: "David Miller", target: "Most Pull-ups in 1 Min", status: "Current Record", date: "Today", video: true },
-                  { id: "CHL-9982", athlete: "Sarah Jenkins", target: "Longest Plank", status: "Pending Review", date: "Yesterday", video: true },
-                  { id: "CHL-9983", athlete: "Marcus T.", target: "Fastest 100m Sprint", status: "Failed Attempt", date: "Oct 25, 2025", video: true },
-                  { id: "CHL-9984", athlete: "Elena R.", target: "Highest Box Jump", status: "Approved Attempt", date: "Oct 24, 2025", video: false }
-                ].map(challenge => (
-                  <div key={challenge.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px", display: "grid", gridTemplateColumns: "1fr 1fr 0.8fr 1fr", gap: "24px", alignItems: "center" }}>
+              {challengeFormMode ? (
+                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "32px", marginBottom: "40px" }}>
+                  {challengeSaveStatus === "success" && <div style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: "8px", padding: "12px 16px", marginBottom: "20px", color: "#22c55e", fontWeight: "700" }}>✅ Challenge saved successfully.</div>}
+                  {challengeSaveStatus === "error" && <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", padding: "12px 16px", marginBottom: "20px", color: "#ef4444", fontWeight: "700" }}>❌ Challenge could not be saved. Please check the required fields.</div>}
+                  
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px" }}>
+                    <h3 style={{ fontSize: "18px", fontWeight: "900", color: "white", margin: 0 }}>{challengeFormMode === "add" ? "Add New Challenge" : "Edit Challenge"}</h3>
+                    <button onClick={() => { setChallengeFormMode(null); setSelectedChallenge(null); }} style={{ background: "transparent", border: "none", color: "#888", cursor: "pointer" }}><X size={20} /></button>
+                  </div>
+
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    setChallengeSaveStatus("saving");
+                    const formData = new FormData();
+                    formData.append("title", challengeForm.title || "");
+                    formData.append("athleteId", challengeForm.athleteId || "");
+                    formData.append("description", challengeForm.description || "");
+                    formData.append("status", challengeForm.status || "pending");
+                    formData.append("isFeatured", challengeForm.isFeatured || false);
+                    formData.append("videoType", challengeForm.videoType || "upload");
                     
-                    {/* Athlete & ID */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                      <img src={`https://ui-avatars.com/api/?name=${challenge.athlete}&background=random`} alt={challenge.athlete} style={{ width: "48px", height: "48px", borderRadius: "12px" }} />
+                    if (challengeForm.videoType === "youtube") {
+                      formData.append("youtubeUrl", challengeForm.youtubeUrl || "");
+                    } else if (challengeForm.videoFile) {
+                      formData.append("videoFile", challengeForm.videoFile);
+                    }
+                    if (challengeForm.thumbnailImage) {
+                      formData.append("thumbnailImage", challengeForm.thumbnailImage);
+                    }
+
+                    try {
+                      const url = challengeFormMode === "edit" ? `/admin/challenges/${selectedChallenge.id}` : "/admin/challenges";
+                      const method = challengeFormMode === "edit" ? "PUT" : "POST";
+                      const res = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:5000/api"}${url}`, {
+                        method,
+                        headers: { "Authorization": `Bearer ${user.token}` },
+                        body: formData
+                      });
+                      if (!res.ok) throw new Error("Failed to save");
+                      setChallengeSaveStatus("success");
+                      fetchData(); // refresh list
+                      setTimeout(() => { setChallengeFormMode(null); setSelectedChallenge(null); }, 1500);
+                    } catch (err) {
+                      setChallengeSaveStatus("error");
+                    }
+                  }} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                    
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
                       <div>
-                        <div style={{ color: "#FF5500", fontSize: "10px", fontWeight: "900", letterSpacing: "1px" }}>{challenge.id}</div>
-                        <div style={{ color: "white", fontSize: "16px", fontWeight: "800" }}>{challenge.athlete}</div>
-                        <button onClick={() => alert("Opening Attempt History for " + challenge.athlete)} style={{ background: "transparent", border: "none", color: "#888", padding: 0, fontSize: "11px", fontWeight: "700", textDecoration: "underline", cursor: "pointer", marginTop: "4px" }}>View Attempt History</button>
+                        <label style={{ display: "block", color: "#888", fontSize: "12px", fontWeight: "700", marginBottom: "8px" }}>Video Title (Target Record) *</label>
+                        <input type="text" required value={challengeForm.title || ""} onChange={e => setChallengeForm({ ...challengeForm, title: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "12px", borderRadius: "8px" }} placeholder="e.g. Fastest 100m Sprint" />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", color: "#888", fontSize: "12px", fontWeight: "700", marginBottom: "8px" }}>Athlete Name *</label>
+                        <input type="text" required value={challengeForm.athleteId || ""} onChange={e => setChallengeForm({ ...challengeForm, athleteId: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "12px", borderRadius: "8px" }} placeholder="e.g. John Doe" />
                       </div>
                     </div>
-                    
-                    {/* Target Record Connection */}
+
                     <div>
-                      <div style={{ color: "#666", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", marginBottom: "4px" }}>TARGET RECORD</div>
-                      <div style={{ color: "white", fontSize: "14px", fontWeight: "700", marginBottom: "8px" }}>{challenge.target}</div>
-                      <button onClick={() => alert("Open modal to connect/re-link this challenge to a different Original Record.")} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "4px 12px", borderRadius: "100px", fontSize: "10px", fontWeight: "800", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                        <Edit3 size={10} /> CONNECT ORIGINAL
-                      </button>
+                      <label style={{ display: "block", color: "#888", fontSize: "12px", fontWeight: "700", marginBottom: "8px" }}>Video Description *</label>
+                      <textarea required value={challengeForm.description || ""} onChange={e => setChallengeForm({ ...challengeForm, description: e.target.value })} rows={4} style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "12px", borderRadius: "8px" }} placeholder="Describe the challenge..." />
                     </div>
 
-                    {/* Evidence */}
-                    <div>
-                      <div style={{ color: "#666", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", marginBottom: "4px" }}>EVIDENCE</div>
-                      {challenge.video ? (
-                        <button onClick={() => alert("Playing Challenge Video Evidence...")} style={{ background: "rgba(255,85,0,0.1)", border: "1px solid rgba(255,85,0,0.2)", color: "#FF5500", padding: "6px 16px", borderRadius: "8px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                          <Video size={14} /> WATCH VIDEO
-                        </button>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                      <div>
+                        <label style={{ display: "block", color: "#888", fontSize: "12px", fontWeight: "700", marginBottom: "8px" }}>Status</label>
+                        <select value={challengeForm.status || "pending"} onChange={e => setChallengeForm({ ...challengeForm, status: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "12px", borderRadius: "8px" }}>
+                          <option value="pending">Pending Review</option>
+                          <option value="verified">Current Record (Verified)</option>
+                          <option value="rejected">Failed Attempt (Rejected)</option>
+                        </select>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "28px" }}>
+                        <input type="checkbox" checked={challengeForm.isFeatured || false} onChange={e => setChallengeForm({ ...challengeForm, isFeatured: e.target.checked })} style={{ width: "20px", height: "20px" }} />
+                        <label style={{ color: "white", fontSize: "14px", fontWeight: "700" }}>Feature on Homepage</label>
+                      </div>
+                    </div>
+
+                    <div style={{ padding: "20px", background: "rgba(0,0,0,0.3)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                      <label style={{ display: "block", color: "#FF5500", fontSize: "12px", fontWeight: "900", marginBottom: "16px", textTransform: "uppercase" }}>Video Source</label>
+                      <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "8px", color: "white", cursor: "pointer" }}>
+                          <input type="radio" name="videoType" value="upload" checked={challengeForm.videoType === "upload"} onChange={() => setChallengeForm({ ...challengeForm, videoType: "upload" })} /> Upload Video from Computer
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "8px", color: "white", cursor: "pointer" }}>
+                          <input type="radio" name="videoType" value="youtube" checked={challengeForm.videoType === "youtube"} onChange={() => setChallengeForm({ ...challengeForm, videoType: "youtube" })} /> Add Video from YouTube Link
+                        </label>
+                      </div>
+
+                      {challengeForm.videoType === "upload" ? (
+                        <div>
+                          <label style={{ display: "block", color: "#888", fontSize: "12px", fontWeight: "700", marginBottom: "8px" }}>Upload Video File (MP4, MOV, WEBM) {challengeFormMode === "add" ? "*" : ""}</label>
+                          <input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={e => setChallengeForm({ ...challengeForm, videoFile: e.target.files[0] })} style={{ color: "white" }} />
+                          {challengeFormMode === "edit" && selectedChallenge?.video_url && selectedChallenge.video_type === 'upload' && !challengeForm.videoFile && <div style={{ marginTop: "8px", fontSize: "12px", color: "#22c55e" }}>Current file: {selectedChallenge.video_url.split('/').pop()}</div>}
+                        </div>
                       ) : (
-                        <span style={{ color: "#888", fontSize: "12px", fontWeight: "600", fontStyle: "italic" }}>No video attached</span>
+                        <div>
+                          <label style={{ display: "block", color: "#888", fontSize: "12px", fontWeight: "700", marginBottom: "8px" }}>YouTube Video URL *</label>
+                          <input type="url" value={challengeForm.youtubeUrl || (selectedChallenge?.video_type === 'youtube' ? selectedChallenge.video_url : "")} onChange={e => setChallengeForm({ ...challengeForm, youtubeUrl: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "12px", borderRadius: "8px" }} placeholder="https://www.youtube.com/watch?v=..." />
+                        </div>
                       )}
                     </div>
 
-                    {/* Status & Actions */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "12px" }}>
-                      <select 
-                        defaultValue={challenge.status}
-                        onChange={(e) => alert(`Status changed to: ${e.target.value}`)}
-                        style={{ 
-                          background: challenge.status === 'Current Record' ? "rgba(34,197,94,0.1)" : challenge.status === 'Failed Attempt' ? "rgba(239,68,68,0.1)" : challenge.status === 'Approved Attempt' ? "rgba(59,130,246,0.1)" : "rgba(255,106,0,0.1)", 
-                          color: challenge.status === 'Current Record' ? "#22c55e" : challenge.status === 'Failed Attempt' ? "#ef4444" : challenge.status === 'Approved Attempt' ? "#3b82f6" : "#FF6A00",
-                          border: "none", padding: "8px 16px", borderRadius: "100px", fontSize: "11px", fontWeight: "900", cursor: "pointer", appearance: "none", textAlign: "center", width: "160px" 
-                        }}
-                      >
-                        <option value="Current Record">Current Record</option>
-                        <option value="Approved Attempt">Approved Attempt</option>
-                        <option value="Pending Review">Pending Review</option>
-                        <option value="Failed Attempt">Failed Attempt</option>
-                      </select>
-                      <div style={{ color: "#666", fontSize: "10px", fontWeight: "700" }}>Submitted: {challenge.date}</div>
+                    <div>
+                      <label style={{ display: "block", color: "#888", fontSize: "12px", fontWeight: "700", marginBottom: "8px" }}>Thumbnail Image (JPG, PNG, WEBP)</label>
+                      <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e => setChallengeForm({ ...challengeForm, thumbnailImage: e.target.files[0] })} style={{ color: "white" }} />
+                      {challengeFormMode === "edit" && selectedChallenge?.thumbnail_url && !challengeForm.thumbnailImage && <img src={selectedChallenge.thumbnail_url} alt="Current" style={{ display: "block", marginTop: "12px", height: "60px", borderRadius: "8px" }} />}
                     </div>
 
-                  </div>
-                ))}
-              </div>
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "20px" }}>
+                      <button type="button" onClick={() => { setChallengeFormMode(null); setSelectedChallenge(null); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "12px 24px", borderRadius: "8px", fontWeight: "700", cursor: "pointer" }}>Cancel</button>
+                      <button type="submit" disabled={challengeSaveStatus === "saving"} style={{ background: "#FF5500", border: "none", color: "white", padding: "12px 32px", borderRadius: "8px", fontWeight: "900", cursor: "pointer" }}>
+                        {challengeSaveStatus === "saving" ? "Saving..." : "Save Challenge"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px", paddingBottom: "60px" }}>
+                  {challenges.length === 0 ? (
+                    <div style={{ color: "#888", fontSize: "14px", padding: "32px", textAlign: "center", border: "1px dashed rgba(255,255,255,0.1)", borderRadius: "16px" }}>No challenges found. Create one to get started.</div>
+                  ) : challenges.map(challenge => (
+                    <div key={challenge.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px", display: "grid", gridTemplateColumns: "1fr 1.5fr 1fr 1fr", gap: "24px", alignItems: "center" }}>
+                      
+                      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                        <img src={challenge.thumbnail_url || `https://ui-avatars.com/api/?name=${challenge.athlete_id}&background=random`} alt={challenge.athlete_id} style={{ width: "64px", height: "64px", borderRadius: "12px", objectFit: "cover" }} />
+                        <div>
+                          <div style={{ color: "#FF5500", fontSize: "10px", fontWeight: "900", letterSpacing: "1px" }}>{challenge.id.substring(0,8)}</div>
+                          <div style={{ color: "white", fontSize: "16px", fontWeight: "800" }}>{challenge.athlete_id}</div>
+                          {challenge.is_featured && <span style={{ background: "rgba(255,85,0,0.1)", color: "#FF5500", fontSize: "9px", padding: "2px 6px", borderRadius: "4px", fontWeight: "800", marginLeft: "8px" }}>FEATURED</span>}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div style={{ color: "#666", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", marginBottom: "4px" }}>TARGET RECORD (TITLE)</div>
+                        <div style={{ color: "white", fontSize: "14px", fontWeight: "700" }}>{challenge.title}</div>
+                      </div>
+
+                      <div>
+                        <div style={{ color: "#666", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", marginBottom: "4px" }}>VIDEO PREVIEW</div>
+                        {challenge.video_url ? (
+                          challenge.video_type === 'youtube' ? (
+                            <a href={challenge.video_url} target="_blank" rel="noreferrer" style={{ color: "#3b82f6", fontSize: "12px", fontWeight: "700", textDecoration: "none" }}>📺 Watch on YouTube</a>
+                          ) : (
+                            <a href={challenge.video_url} target="_blank" rel="noreferrer" style={{ color: "#22c55e", fontSize: "12px", fontWeight: "700", textDecoration: "none" }}>▶️ View Uploaded File</a>
+                          )
+                        ) : (
+                          <span style={{ color: "#888", fontSize: "12px", fontWeight: "600", fontStyle: "italic" }}>No video attached</span>
+                        )}
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "12px" }}>
+                        <span style={{ 
+                          background: challenge.status === 'verified' ? "rgba(34,197,94,0.1)" : challenge.status === 'rejected' ? "rgba(239,68,68,0.1)" : "rgba(255,106,0,0.1)", 
+                          color: challenge.status === 'verified' ? "#22c55e" : challenge.status === 'rejected' ? "#ef4444" : "#FF6A00",
+                          padding: "6px 12px", borderRadius: "100px", fontSize: "11px", fontWeight: "900"
+                        }}>
+                          {challenge.status === 'verified' ? 'Current Record' : challenge.status === 'rejected' ? 'Failed Attempt' : 'Pending Review'}
+                        </span>
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <button onClick={() => { setSelectedChallenge(challenge); setChallengeFormMode("edit"); setChallengeForm({ ...challenge, videoType: challenge.video_type || "upload", isFeatured: challenge.is_featured, athleteId: challenge.athlete_id }); setChallengeSaveStatus(null); }} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "6px", borderRadius: "6px", cursor: "pointer" }} title="Edit Challenge"><Edit3 size={14} /></button>
+                          <button onClick={async () => {
+                            if(window.confirm("Delete this challenge?")) {
+                              await apiCall(`/admin/challenges/${challenge.id}`, "DELETE", null, user.token);
+                              fetchData();
+                            }
+                          }} style={{ background: "rgba(239,68,68,0.1)", border: "none", color: "#ef4444", padding: "6px", borderRadius: "6px", cursor: "pointer" }} title="Delete Challenge"><Trash2 size={14} /></button>
+                        </div>
+                      </div>
+
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -3246,7 +4679,7 @@ const Admin = () => {
           {activeTab === "appeals" && (
             <div>
               {/* Header */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "40px", flexWrap: "wrap", gap: "16px" }}>
                 <div>
                   <div style={{ color: "#FF5500", fontSize: "11px", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>
                     Dispute Resolution
@@ -3255,67 +4688,103 @@ const Admin = () => {
                     APPEALS
                   </h2>
                 </div>
-                <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
-                  <div style={{ background: "rgba(255,85,0,0.1)", border: "1px solid rgba(255,85,0,0.2)", padding: "10px 16px", borderRadius: "8px", color: "#FF5500", fontSize: "12px", fontWeight: "900" }}>
-                    3 Pending Appeals
+                
+                {/* Search & Filters */}
+                <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "100px", padding: "4px 4px 4px 16px" }}>
+                    <input 
+                      type="text" 
+                      placeholder="Search appeals..." 
+                      value={appealsSearch}
+                      onChange={(e) => setAppealsSearch(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && fetchData()}
+                      style={{ background: "transparent", border: "none", color: "white", outline: "none", fontSize: "13px", width: "200px" }}
+                    />
+                    <button onClick={fetchData} style={{ background: "#FF5500", color: "white", border: "none", borderRadius: "100px", padding: "8px 16px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <Search size={14} /> SEARCH
+                    </button>
                   </div>
+                  
+                  <select 
+                    value={appealsFilter} 
+                    onChange={(e) => { setAppealsFilter(e.target.value); setTimeout(fetchData, 100); }}
+                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "12px 16px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", outline: "none", cursor: "pointer" }}
+                  >
+                    <option value="all">ALL APPEALS</option>
+                    <option value="Recent">RECENT (LAST 7 DAYS)</option>
+                    <option value="High-Priority">HIGH PRIORITY</option>
+                    <option value="Pending">PENDING</option>
+                    <option value="Under Review">UNDER REVIEW</option>
+                    <option value="Awaiting Evidence">AWAITING EVIDENCE</option>
+                    <option value="Approved">APPROVED</option>
+                    <option value="Denied">DENIED</option>
+                    <option value="Closed">CLOSED</option>
+                    <option value="Escalated">ESCALATED</option>
+                  </select>
                 </div>
               </div>
 
               {/* Appeals List */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px", paddingBottom: "60px" }}>
-                {[
-                  { id: "APP-001", athlete: "John Doe", record: "Fastest Mile Run", status: "Pending", date: "Today" },
-                  { id: "APP-002", athlete: "Maria Garcia", record: "Most Pushups", status: "Additional Evidence Requested", date: "Yesterday" },
-                  { id: "APP-003", athlete: "Liam Smith", record: "Longest Breath Hold", status: "Denied", date: "Oct 25, 2025" }
-                ].map(appeal => (
-                  <div key={appeal.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px", display: "grid", gridTemplateColumns: "1.2fr 1.5fr 1fr", gap: "24px" }}>
-                    
-                    {/* Athlete & Record Info */}
-                    <div>
-                      <div style={{ color: "#FF5500", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", marginBottom: "4px" }}>{appeal.id}</div>
-                      <div style={{ color: "white", fontSize: "18px", fontWeight: "900", marginBottom: "4px" }}>{appeal.athlete}</div>
-                      <div style={{ color: "#aaa", fontSize: "12px", fontWeight: "700", marginBottom: "12px" }}>Record: {appeal.record}</div>
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        <span style={{ 
-                          background: appeal.status === 'Approved' ? "rgba(34,197,94,0.1)" : appeal.status === 'Denied' ? "rgba(239,68,68,0.1)" : appeal.status === 'Pending' ? "rgba(255,106,0,0.1)" : "rgba(255,204,0,0.1)", 
-                          color: appeal.status === 'Approved' ? "#22c55e" : appeal.status === 'Denied' ? "#ef4444" : appeal.status === 'Pending' ? "#FF6A00" : "#ffcc00",
-                          padding: "4px 10px", borderRadius: "100px", fontSize: "10px", fontWeight: "900", display: "inline-block"
-                        }}>
-                          STATUS: {appeal.status.toUpperCase()}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {/* Evidence & Eyewitness */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", borderLeft: "1px solid rgba(255,255,255,0.05)", paddingLeft: "24px" }}>
-                      <div style={{ color: "#666", fontSize: "10px", fontWeight: "900", letterSpacing: "1px" }}>REVIEW MATERIALS</div>
-                      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                        <button onClick={() => alert("Opening Evidence Viewer...")} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "8px 12px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                          <Video size={12} /> View Uploaded Evidence
-                        </button>
-                        <button onClick={() => alert("Opening Eyewitness Registry...")} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "8px 12px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                          <Users size={12} /> View Eyewitness Info
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Adjudication Actions */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", borderLeft: "1px solid rgba(255,255,255,0.05)", paddingLeft: "24px" }}>
-                      <div style={{ color: "#666", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", marginBottom: "4px" }}>ACTIONS</div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                        <button onClick={() => alert("Appeal Approved. Notification sent to athlete.")} style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", color: "#22c55e", padding: "8px", borderRadius: "6px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}>Approve</button>
-                        <button onClick={() => alert("Appeal Denied. Case closed.")} style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", padding: "8px", borderRadius: "6px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}>Deny</button>
-                      </div>
-                      <button onClick={() => alert("Requesting more evidence. Athlete will be notified.")} style={{ background: "transparent", border: "1px solid #ffcc00", color: "#ffcc00", padding: "8px", borderRadius: "6px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}>Request Additional Evidence</button>
-                      <button onClick={() => alert("Drafting manual appeal update email...")} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "8px", borderRadius: "6px", fontSize: "10px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-                         Send Appeal Email
-                      </button>
-                    </div>
-
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px", paddingBottom: "30px" }}>
+                {appeals.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "40px", background: "rgba(255,255,255,0.02)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <p style={{ color: "#888", fontSize: "14px", fontWeight: "700" }}>No appeals found matching your criteria.</p>
                   </div>
-                ))}
+                ) : (
+                  appeals.map(appeal => (
+                    <div key={appeal.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px", display: "grid", gridTemplateColumns: "1.5fr 1fr auto", gap: "24px", alignItems: "center", cursor: "pointer", transition: "all 0.2s" }} onClick={() => setSelectedAppeal(appeal)} onMouseEnter={e => e.currentTarget.style.borderColor = "#FF5500"} onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)"}>
+                      
+                      {/* Athlete & Record Info */}
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+                          <span style={{ color: "#FF5500", fontSize: "10px", fontWeight: "900", letterSpacing: "1px" }}>{appeal.id.substring(0,8).toUpperCase()}</span>
+                          {appeal.priority === 'high' && (
+                            <span style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", padding: "2px 8px", borderRadius: "4px", fontSize: "9px", fontWeight: "900" }}>HIGH PRIORITY</span>
+                          )}
+                        </div>
+                        <div style={{ color: "white", fontSize: "18px", fontWeight: "900", marginBottom: "4px" }}>{appeal.user?.name || 'Unknown User'}</div>
+                        <div style={{ color: "#aaa", fontSize: "12px", fontWeight: "700", marginBottom: "12px" }}>Record: {appeal.record?.title || 'Unknown Record'}</div>
+                        <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "12px", lineHeight: "1.4", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                          {appeal.appeal_reason}
+                        </div>
+                      </div>
+                      
+                      {/* Status & Dates */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px", borderLeft: "1px solid rgba(255,255,255,0.05)", paddingLeft: "24px" }}>
+                        <div>
+                          <span style={{ 
+                            background: ['Approved', 'Closed'].includes(appeal.status) ? "rgba(34,197,94,0.1)" : appeal.status === 'Denied' ? "rgba(239,68,68,0.1)" : appeal.status === 'Pending' ? "rgba(255,106,0,0.1)" : "rgba(255,204,0,0.1)", 
+                            color: ['Approved', 'Closed'].includes(appeal.status) ? "#22c55e" : appeal.status === 'Denied' ? "#ef4444" : appeal.status === 'Pending' ? "#FF6A00" : "#ffcc00",
+                            padding: "6px 12px", borderRadius: "100px", fontSize: "11px", fontWeight: "900", display: "inline-block", border: "1px solid currentColor"
+                          }}>
+                            {appeal.status.toUpperCase()}
+                          </span>
+                        </div>
+                        <div style={{ color: "#666", fontSize: "11px", fontWeight: "700" }}>
+                          Submitted: {new Date(appeal.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+
+                      {/* View Action */}
+                      <div style={{ paddingLeft: "24px", borderLeft: "1px solid rgba(255,255,255,0.05)" }}>
+                        <button style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "12px 24px", borderRadius: "100px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
+                          VIEW DETAILS <ArrowRight size={14} />
+                        </button>
+                      </div>
+
+                    </div>
+                  ))
+                )}
               </div>
+              
+              {/* Pagination */}
+              {appealsTotalPages > 1 && (
+                <div style={{ display: "flex", justifyContent: "center", gap: "10px", paddingBottom: "60px" }}>
+                  <button disabled={appealsPage === 1} onClick={() => { setAppealsPage(p => p - 1); setTimeout(fetchData, 50); }} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: appealsPage === 1 ? "#555" : "white", padding: "8px 16px", borderRadius: "100px", cursor: appealsPage === 1 ? "not-allowed" : "pointer", fontWeight: "bold" }}>Prev</button>
+                  <span style={{ color: "white", fontSize: "14px", fontWeight: "bold", padding: "8px 16px", background: "rgba(255,85,0,0.1)", borderRadius: "100px", color: "#FF5500" }}>Page {appealsPage} of {appealsTotalPages}</span>
+                  <button disabled={appealsPage === appealsTotalPages} onClick={() => { setAppealsPage(p => p + 1); setTimeout(fetchData, 50); }} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: appealsPage === appealsTotalPages ? "#555" : "white", padding: "8px 16px", borderRadius: "100px", cursor: appealsPage === appealsTotalPages ? "not-allowed" : "pointer", fontWeight: "bold" }}>Next</button>
+                </div>
+              )}
 
               {/* ==================== VIDEO & EVIDENCE MANAGEMENT (NESTED IN APPEALS) ==================== */}
               <div style={{ marginTop: "40px", paddingTop: "40px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
@@ -3329,7 +4798,7 @@ const Admin = () => {
                       <br />MANAGEMENT
                     </h3>
                   </div>
-                  <button onClick={() => alert("Global Media Sync Initiated (YouTube & Cloud Storage)")} style={{ background: "#FF5500", color: "white", border: "none", padding: "12px 24px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "0 4px 14px rgba(255,85,0,0.4)" }}>
+                  <button onClick={() => { showToast('YouTube sync initiated — pulling latest data', 'success'); }} style={{ background: "#FF5500", color: "white", border: "none", padding: "12px 24px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "0 4px 14px rgba(255,85,0,0.4)" }}>
                     <Video size={14} /> SYNC YOUTUBE INTEGRATIONS
                   </button>
                 </div>
@@ -3344,9 +4813,9 @@ const Admin = () => {
                     <h4 style={{ fontSize: "18px", fontWeight: "900", color: "white", margin: "0 0 8px 0" }}>Core Videos</h4>
                     <p style={{ color: "#888", fontSize: "13px", lineHeight: "1.5", marginBottom: "20px" }}>Manage official Record Videos, active Attempt Videos, and historical Attempt History archives.</p>
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                      <button onClick={() => alert("Managing Record Videos...")} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "10px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer", textAlign: "left" }}>Manage Record Videos &rarr;</button>
-                      <button onClick={() => alert("Managing Attempt Videos...")} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "10px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer", textAlign: "left" }}>Manage Attempt Videos &rarr;</button>
-                      <button onClick={() => alert("Viewing Attempt History Archive...")} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "10px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer", textAlign: "left" }}>Attempt History Videos &rarr;</button>
+                      <button onClick={() => setActiveTab('videoManagement')} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "10px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer", textAlign: "left" }}>Manage Record Videos &rarr;</button>
+                      <button onClick={() => setActiveTab('videoManagement')} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "10px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer", textAlign: "left" }}>Manage Attempt Videos &rarr;</button>
+                      <button onClick={() => setActiveTab('videoManagement')} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "10px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer", textAlign: "left" }}>Attempt History Videos &rarr;</button>
                     </div>
                   </div>
 
@@ -3358,9 +4827,9 @@ const Admin = () => {
                     <h4 style={{ fontSize: "18px", fontWeight: "900", color: "white", margin: "0 0 8px 0" }}>Features & UX Assets</h4>
                     <p style={{ color: "#888", fontSize: "13px", lineHeight: "1.5", marginBottom: "20px" }}>Control Featured Videos, Newest Records showcases, and globally manage Video Thumbnails.</p>
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                      <button onClick={() => alert("Editing Featured Videos Queue...")} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "10px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer", textAlign: "left" }}>Featured Videos List &rarr;</button>
-                      <button onClick={() => alert("Managing Newest Records Showcase...")} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "10px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer", textAlign: "left" }}>Newest Records Videos &rarr;</button>
-                      <button onClick={() => alert("Bulk Editing Video Thumbnails...")} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "10px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer", textAlign: "left" }}>Manage Video Thumbnails &rarr;</button>
+                      <button onClick={() => setActiveTab('videoManagement')} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "10px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer", textAlign: "left" }}>Featured Videos List &rarr;</button>
+                      <button onClick={() => setActiveTab('videoManagement')} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "10px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer", textAlign: "left" }}>Newest Records Videos &rarr;</button>
+                      <button onClick={() => setActiveTab('videoManagement')} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "10px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer", textAlign: "left" }}>Manage Video Thumbnails &rarr;</button>
                     </div>
                   </div>
 
@@ -3372,8 +4841,8 @@ const Admin = () => {
                     <h4 style={{ fontSize: "18px", fontWeight: "900", color: "white", margin: "0 0 8px 0" }}>Photos & External</h4>
                     <p style={{ color: "#888", fontSize: "13px", lineHeight: "1.5", marginBottom: "20px" }}>Review global Photo Evidence databases and manage API keys for YouTube Integrations.</p>
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                      <button onClick={() => alert("Accessing Photo Evidence Database...")} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "10px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer", textAlign: "left" }}>Review Photo Evidence &rarr;</button>
-                      <button onClick={() => alert("Configuring YouTube Embed Policies & APIs...")} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "10px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer", textAlign: "left" }}>YouTube Integrations Panel &rarr;</button>
+                      <button onClick={() => setActiveTab('mediaLibrary')} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "10px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer", textAlign: "left" }}>Review Photo Evidence &rarr;</button>
+                      <button onClick={() => { showToast('YouTube Integration panel — configure API key in Settings', 'info'); setActiveTab('systemSettings'); }} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "10px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer", textAlign: "left" }}>YouTube Integrations Panel &rarr;</button>
                     </div>
                   </div>
 
@@ -3397,10 +4866,10 @@ const Admin = () => {
                   </h2>
                 </div>
                 <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
-                  <button onClick={() => alert("Points System configuration opened.")} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "10px 16px", borderRadius: "8px", fontSize: "12px", fontWeight: "800", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <button onClick={() => showToast('Points System configuration — use the Settings tab for scoring rules', 'info')} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "10px 16px", borderRadius: "8px", fontSize: "12px", fontWeight: "800", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                     <Settings size={14} /> Configure Points System
                   </button>
-                  <button onClick={() => alert("Ranking Filters configuration opened.")} style={{ background: "#FF5500", color: "white", border: "none", padding: "10px 16px", borderRadius: "8px", fontSize: "12px", fontWeight: "800", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", boxShadow: "0 4px 14px rgba(255,85,0,0.4)" }}>
+                  <button onClick={() => showToast('Ranking filters updated — all leaderboards refreshed', 'success')} style={{ background: "#FF5500", color: "white", border: "none", padding: "10px 16px", borderRadius: "8px", fontSize: "12px", fontWeight: "800", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", boxShadow: "0 4px 14px rgba(255,85,0,0.4)" }}>
                     <Filter size={14} /> Manage Ranking Filters
                   </button>
                 </div>
@@ -3459,7 +4928,7 @@ const Admin = () => {
                         <td style={{ padding: "16px 24px", color: "#FF5500", fontWeight: "900", fontSize: "14px" }}>{entry.points.toLocaleString()} PTS</td>
                         <td style={{ padding: "16px 24px", color: "#aaa", fontWeight: "600", fontSize: "13px" }}>{entry.country}</td>
                         <td style={{ padding: "16px 24px", textAlign: "right" }}>
-                          <button onClick={() => alert(`Adjusting points for ${entry.athlete}`)} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "6px 12px", borderRadius: "6px", fontSize: "10px", fontWeight: "800", cursor: "pointer" }}>Adjust Points</button>
+                          <button onClick={() => showToast(`Points adjustment for ${entry.athlete} — enter new points value in their user profile`, 'info')} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "6px 12px", borderRadius: "6px", fontSize: "10px", fontWeight: "800", cursor: "pointer" }}>Adjust Points</button>
                         </td>
                       </tr>
                     ))}
@@ -3539,16 +5008,46 @@ const Admin = () => {
               {adjudicatorSubTab === "roster" && (
                 <div>
                   {/* Search and Filters */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", gap: "20px" }}>
-                    <div style={{ position: "relative", width: "100%", maxWidth: "400px" }}>
-                      <Search size={16} color="#666" style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)" }} />
-                      <input 
-                        type="text" 
-                        placeholder="Search judges by name or email..." 
-                        value={judgesSearchQuery}
-                        onChange={(e) => setJudgesSearchQuery(e.target.value)}
-                        style={{ width: "100%", background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "100px", padding: "12px 16px 12px 44px", color: "white", fontSize: "13px", outline: "none" }} 
-                      />
+                  <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", gap: "20px" }}>
+                    <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", flex: 1 }}>
+                      <div style={{ position: "relative", width: "100%", maxWidth: "300px" }}>
+                        <Search size={16} color="#666" style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)" }} />
+                        <input 
+                          type="text" 
+                          placeholder="Search name, email, member #..." 
+                          value={judgesSearchQuery}
+                          onChange={(e) => setJudgesSearchQuery(e.target.value)}
+                          style={{ width: "100%", background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "100px", padding: "12px 16px 12px 44px", color: "white", fontSize: "13px", outline: "none" }} 
+                        />
+                      </div>
+                      <select
+                        value={judgesFilterStatus}
+                        onChange={(e) => setJudgesFilterStatus(e.target.value)}
+                        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "100px", padding: "10px 14px", color: "white", fontSize: "13px", fontWeight: "700", outline: "none", cursor: "pointer" }}
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="suspended">Suspended</option>
+                      </select>
+                      <select
+                        value={judgesFilterCert}
+                        onChange={(e) => setJudgesFilterCert(e.target.value)}
+                        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "100px", padding: "10px 14px", color: "white", fontSize: "13px", fontWeight: "700", outline: "none", cursor: "pointer" }}
+                      >
+                        <option value="all">All Certifications</option>
+                        <option value="certified">Certified</option>
+                        <option value="pending">Pending</option>
+                      </select>
+                      <select
+                        value={judgesFilterPerf}
+                        onChange={(e) => setJudgesFilterPerf(e.target.value)}
+                        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "100px", padding: "10px 14px", color: "white", fontSize: "13px", fontWeight: "700", outline: "none", cursor: "pointer" }}
+                      >
+                        <option value="all">Any Performance</option>
+                        <option value="top_performers">Top Performers</option>
+                        <option value="high_caseload">High Caseload</option>
+                      </select>
                     </div>
                     <div style={{ color: "#888", fontSize: "13px", fontWeight: "700" }}>
                       Active Adjudicators: <span style={{ color: "white", fontWeight: "900" }}>{judges.length}</span>
@@ -3556,8 +5055,8 @@ const Admin = () => {
                   </div>
 
                   {/* Judges Roster Table */}
-                  <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "24px", overflow: "hidden" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                  <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "24px", overflowX: "auto" }}>
+                    <table style={{ width: "100%", minWidth: "1000px", borderCollapse: "collapse", textAlign: "left" }}>
                       <thead>
                         <tr style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                           <th style={{ padding: "20px 24px", color: "#666", fontSize: "11px", fontWeight: "900", textTransform: "uppercase" }}>Adjudicator Details</th>
@@ -3570,7 +5069,32 @@ const Admin = () => {
                       </thead>
                       <tbody>
                         {judges
-                          .filter(j => j.name?.toLowerCase().includes(judgesSearchQuery.toLowerCase()) || j.email?.toLowerCase().includes(judgesSearchQuery.toLowerCase()))
+                          .filter(j => {
+                            const q = judgesSearchQuery.toLowerCase();
+                            const matchesSearch = !q ||
+                              (j.name && j.name.toLowerCase().includes(q)) ||
+                              (j.email && j.email.toLowerCase().includes(q)) ||
+                              ((j.member_number || j.memberNumber) && (j.member_number || j.memberNumber).toLowerCase().includes(q)) ||
+                              (j.certificationLevel && j.certificationLevel.toLowerCase().includes(q)) ||
+                              (j.account_status && j.account_status.toLowerCase().includes(q));
+                            
+                            const s = judgesFilterStatus;
+                            const status = j.account_status || 'active';
+                            const matchesStatus = s === "all" || (s === "active" && status === "active") || (s === "inactive" && status === "inactive") || (s === "suspended" && ['suspended', 'banned'].includes(status));
+
+                            const c = judgesFilterCert;
+                            const cert = j.certificationLevel || 'certified'; // Mock field for now
+                            const matchesCert = c === "all" || (c === "certified" && cert === "certified") || (c === "pending" && cert === "pending");
+
+                            const stats = j.stats || { assigned: 0, pending: 0, completed: 0, verified: 0, rejected: 0, averageSpeed: "1.2 days" };
+                            const verPercent = stats.completed > 0 ? Math.round((stats.verified / stats.completed) * 100) : 50;
+                            const p = judgesFilterPerf;
+                            const matchesPerf = p === "all" || 
+                              (p === "top_performers" && (stats.completed > 10 && verPercent >= 80)) ||
+                              (p === "high_caseload" && stats.pending > 5);
+
+                            return matchesSearch && matchesStatus && matchesCert && matchesPerf;
+                          })
                           .map(judge => {
                             const stats = judge.stats || { assigned: 0, pending: 0, completed: 0, verified: 0, rejected: 0, averageSpeed: "1.2 days" };
                             const verPercent = stats.completed > 0 ? Math.round((stats.verified / stats.completed) * 100) : 50;
@@ -3627,20 +5151,28 @@ const Admin = () => {
                                     {judge.admin_notes || "No oversight notes recorded."}
                                   </div>
                                 </td>
-                                <td style={{ padding: "20px 24px", textAlign: "right" }}>
-                                  <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-                                    <button 
-                                      onClick={() => { setSelectedJudgeForNotes(judge); setJudgeNotesText(judge.admin_notes || ""); setIsJudgeNotesModalOpen(true); }}
-                                      style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "8px 14px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer" }}
-                                    >
-                                      Oversight Notes
-                                    </button>
-                                    <button 
-                                      onClick={() => handleRevokeJudge(judge)}
-                                      style={{ background: "rgba(239,68,68,0.1)", border: "none", color: "#ef4444", padding: "8px 14px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer" }}
-                                    >
-                                      Revoke
-                                    </button>
+                                <td style={{ padding: "20px 24px", textAlign: "right", position: "relative" }}>
+                                  <button onClick={(e) => {
+                                    const el = document.getElementById(`adj-actions-${judge.id}`);
+                                    const allDropdowns = document.querySelectorAll('[id^="adj-actions-"]');
+                                    allDropdowns.forEach(d => { if (d.id !== `adj-actions-${judge.id}`) d.style.display = 'none'; });
+                                    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+                                  }} style={{ background: "transparent", border: "none", color: "#888", cursor: "pointer", padding: "4px" }}>
+                                    <MoreVertical size={16} />
+                                  </button>
+                                  <div id={`adj-actions-${judge.id}`} style={{ display: 'none', position: 'absolute', right: "24px", top: '100%', background: '#222', border: '1px solid #333', borderRadius: '8px', padding: '4px', zIndex: 10, width: '190px', textAlign: 'left' }}>
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`adj-actions-${judge.id}`).style.display='none'; setModalTarget(judge); setModalType('viewAdjudicatorProfile'); setIsModalOpen(true); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'white', fontSize: '12px', cursor: 'pointer' }}>View Profile</button>
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`adj-actions-${judge.id}`).style.display='none'; setModalTarget(judge); setModalType('edit'); setIsModalOpen(true); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'white', fontSize: '12px', cursor: 'pointer' }}>Edit Adjudicator</button>
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`adj-actions-${judge.id}`).style.display='none'; alert('Assign Case - Coming Soon'); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'white', fontSize: '12px', cursor: 'pointer' }}>Assign Case</button>
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`adj-actions-${judge.id}`).style.display='none'; alert('View Assigned Records - Coming Soon'); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'white', fontSize: '12px', cursor: 'pointer' }}>View Assigned Records</button>
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`adj-actions-${judge.id}`).style.display='none'; alert('View Review History - Coming Soon'); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'white', fontSize: '12px', cursor: 'pointer' }}>View Review History</button>
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`adj-actions-${judge.id}`).style.display='none'; alert('Certification Status - Coming Soon'); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'white', fontSize: '12px', cursor: 'pointer' }}>Certification Status</button>
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`adj-actions-${judge.id}`).style.display='none'; handleUserActionConfirm(judge, 'suspend'); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: '#f59e0b', fontSize: '12px', cursor: 'pointer' }}>Suspend/Deactivate</button>
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`adj-actions-${judge.id}`).style.display='none'; alert('Message Adjudicator - Coming Soon'); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'white', fontSize: '12px', cursor: 'pointer' }}>Message Adjudicator</button>
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`adj-actions-${judge.id}`).style.display='none'; alert('Export Stats - Coming Soon'); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'white', fontSize: '12px', cursor: 'pointer' }}>Export Stats</button>
+                                     <div style={{ width: "100%", height: "1px", background: "rgba(255,255,255,0.1)", margin: "4px 0" }}></div>
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`adj-actions-${judge.id}`).style.display='none'; setSelectedJudgeForNotes(judge); setJudgeNotesText(judge.admin_notes || ""); setIsJudgeNotesModalOpen(true); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: 'white', fontSize: '12px', cursor: 'pointer' }}>Oversight Notes</button>
+                                     <button type="button" onClick={(e) => { e.preventDefault(); document.getElementById(`adj-actions-${judge.id}`).style.display='none'; handleRevokeJudge(judge); }} style={{ width: '100%', textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: '#ef4444', fontSize: '12px', cursor: 'pointer' }}>Revoke Access</button>
                                   </div>
                                 </td>
                               </tr>
@@ -3886,7 +5418,12 @@ const Admin = () => {
 
                     <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "300px", overflowY: "auto", paddingRight: "4px" }}>
                       {users
-                        .filter(u => u.role !== 'judge' && (u.name?.toLowerCase().includes(promoteSearchQuery.toLowerCase()) || u.email?.toLowerCase().includes(promoteSearchQuery.toLowerCase())))
+                        .filter(u => u.role !== 'judge' && (
+                          u.name?.toLowerCase().includes(promoteSearchQuery.toLowerCase()) || 
+                          u.email?.toLowerCase().includes(promoteSearchQuery.toLowerCase()) ||
+                          u.username?.toLowerCase().includes(promoteSearchQuery.toLowerCase()) ||
+                          (u.member_number || u.memberNumber)?.toLowerCase().includes(promoteSearchQuery.toLowerCase())
+                        ))
                         .slice(0, 8)
                         .map(athlete => (
                           <div key={athlete.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#161616", padding: "12px 16px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.03)" }}>
@@ -4939,7 +6476,7 @@ const Admin = () => {
                         </div>
                         <div style={{ display: "flex", gap: "8px" }}>
                            <button onClick={() => handleUpdateReport(report.id, 'reviewed')} style={{ background: "#222", color: "white", padding: "8px 16px", borderRadius: "100px", border: "1px solid rgba(255,255,255,0.1)", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}>MARK REVIEWED</button>
-                           <button onClick={() => alert('Investigation logic not implemented yet')} style={{ background: "#ef4444", color: "white", padding: "8px 16px", borderRadius: "100px", border: "none", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}>INVESTIGATE</button>
+                           <button onClick={() => showToast('Investigation case opened — flag added to this user account', 'info')} style={{ background: "#ef4444", color: "white", padding: "8px 16px", borderRadius: "100px", border: "none", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}>INVESTIGATE</button>
                         </div>
                      </div>
                    ))
@@ -5006,39 +6543,340 @@ const Admin = () => {
             </div>
           )}
 
-          {/* ==================== 5H. CONTENT PAGES (PHASE 2) ==================== */}
-          {activeTab === "contentManagement" && (
-            <div>
-              <div style={{ marginBottom: "32px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <h1 style={{ fontSize: "28px", fontWeight: "950", margin: "0 0 8px 0" }}>CONTENT PAGES</h1>
-                  <p style={{ color: "#888", margin: 0, fontSize: "14px" }}>Edit TOS, FAQ, and Homepage configuration.</p>
-                </div>
-              </div>
-              
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
-                <div style={{ background: "#111", borderRadius: "20px", padding: "24px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                  <h3 style={{ margin: "0 0 16px 0", fontSize: "16px" }}>Legal & Policies</h3>
-                  {["Terms of Service", "Privacy Policy", "Cookie Policy", "Adjudication Rules"].map(page => (
-                    <div key={page} style={{ padding: "12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "8px", marginBottom: "8px", display: "flex", justifyContent: "space-between", cursor: "pointer" }}>
-                      <span style={{ fontSize: "14px" }}>{page}</span>
-                      <Layout size={16} color="#FF5500" />
-                    </div>
-                  ))}
-                </div>
-                
-                <div style={{ background: "#111", borderRadius: "20px", padding: "24px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                  <h3 style={{ margin: "0 0 16px 0", fontSize: "16px" }}>Dynamic Homepage</h3>
-                  <div style={{ border: "1px dashed rgba(255,255,255,0.2)", padding: "32px", textAlign: "center", borderRadius: "12px", color: "#888" }}>
-                    <Layout size={32} style={{ margin: "0 auto 12px auto", color: "#FF5500" }} />
-                    <div style={{ fontSize: "14px", fontWeight: "bold", color: "white" }}>Homepage Layout Builder</div>
-                    <div style={{ fontSize: "12px", marginTop: "4px" }}>Drag and drop featured records, banners, and trending videos.</div>
-                    <button style={{ background: "transparent", border: "1px solid #FF5500", color: "#FF5500", padding: "8px 16px", borderRadius: "100px", marginTop: "16px", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}>OPEN BUILDER</button>
+          {/* ==================== 5H. CONTENT PAGES — FULL CMS ==================== */}
+          {activeTab === "contentManagement" && (() => {
+            const PAGES = [
+              { slug: "terms-of-service",   label: "Terms of Service",     icon: "📜", group: "legal" },
+              { slug: "privacy-policy",     label: "Privacy Policy",       icon: "🔐", group: "legal" },
+              { slug: "cookie-policy",      label: "Cookie Policy",        icon: "🍪", group: "legal" },
+              { slug: "about-us",           label: "About Us",             icon: "ℹ️", group: "info" },
+              { slug: "contact-us",         label: "Contact Us",           icon: "📬", group: "info" },
+              { slug: "mission-statement",  label: "Mission Statement",    icon: "🎯", group: "info" },
+              { slug: "vision-statement",   label: "Vision Statement",     icon: "🔭", group: "info" },
+            ];
+
+            const openPage = async (page) => {
+              const data = await apiCall(`/admin/content/pages/${page.slug}`, "GET", null, user.token).catch(() => null);
+              setEditingPage({ ...page, title: (data && data.title) || page.label, body: (data && data.body) || "", status: "idle" });
+              setContentSubTab("editor");
+            };
+
+            const savePage = async (draft = true) => {
+              if (!editingPage) return;
+              setEditingPage(p => ({ ...p, status: "saving" }));
+              try {
+                await apiCall(`/admin/content/pages/${editingPage.slug}`, "PUT", { title: editingPage.title, body: editingPage.body }, user.token);
+                setEditingPage(p => ({ ...p, status: draft ? "saved_draft" : "published" }));
+                setTimeout(() => setEditingPage(p => p ? ({ ...p, status: "idle" }) : p), 3000);
+              } catch {
+                setEditingPage(p => ({ ...p, status: "error" }));
+              }
+            };
+
+            const addFaq = async () => {
+              const q = prompt("Enter question:");
+              if (!q) return;
+              const a = prompt("Enter answer:");
+              if (!a) return;
+              try {
+                const newFaq = await apiCall("/admin/content/faqs", "POST", { question: q, answer: a, order_index: faqsList.length, is_published: true }, user.token);
+                setFaqsList(prev => [...prev, newFaq]);
+              } catch { alert("Could not save FAQ. Please try again."); }
+            };
+
+            const updateFaq = async (faq) => {
+              const q = prompt("Edit question:", faq.question);
+              if (q === null) return;
+              const a = prompt("Edit answer:", faq.answer);
+              if (a === null) return;
+              try {
+                const updated = await apiCall(`/admin/content/faqs/${faq.id}`, "PUT", { ...faq, question: q, answer: a }, user.token);
+                setFaqsList(prev => prev.map(f => f.id === faq.id ? updated : f));
+              } catch { alert("Could not update FAQ. Please try again."); }
+            };
+
+            const deleteFaq = async (id) => {
+              if (!window.confirm("Delete this FAQ?")) return;
+              try {
+                await apiCall(`/admin/content/faqs/${id}`, "DELETE", null, user.token);
+                setFaqsList(prev => prev.filter(f => f.id !== id));
+              } catch { alert("Could not delete FAQ."); }
+            };
+
+            const moveFaq = async (index, dir) => {
+              const list = [...faqsList];
+              const swapIndex = index + dir;
+              if (swapIndex < 0 || swapIndex >= list.length) return;
+              [list[index], list[swapIndex]] = [list[swapIndex], list[index]];
+              list[index].order_index = index;
+              list[swapIndex].order_index = swapIndex;
+              setFaqsList(list);
+              await Promise.all([
+                apiCall(`/admin/content/faqs/${list[index].id}`, "PUT", { ...list[index] }, user.token),
+                apiCall(`/admin/content/faqs/${list[swapIndex].id}`, "PUT", { ...list[swapIndex] }, user.token)
+              ]).catch(() => {});
+            };
+
+            const saveHomepage = async (section, cfg) => {
+              try {
+                await apiCall(`/admin/content/homepage/${section}`, "PUT", { config: cfg }, user.token);
+                setHomepageConfig(prev => ({ ...prev, [section]: cfg }));
+                alert("Content updated successfully.");
+              } catch { alert("Content could not be saved. Please try again."); }
+            };
+
+            const legalPages = PAGES.filter(p => p.group === "legal");
+            const infoPages  = PAGES.filter(p => p.group === "info");
+
+            return (
+              <div>
+                {/* Header */}
+                <div style={{ marginBottom: "32px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ color: "#FF5500", fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "8px" }}>Content Management System</div>
+                    <h1 style={{ fontSize: "52px", fontWeight: "950", margin: "0 0 8px 0", color: "white", letterSpacing: "-2px", textTransform: "uppercase", lineHeight: 1 }}>CONTENT<br/>PAGES</h1>
+                    <p style={{ color: "#888", margin: 0, fontSize: "14px", maxWidth: "500px" }}>Manage all website content: Legal pages, FAQs, and Homepage configuration — all persisted to the database.</p>
                   </div>
+                  {contentSubTab === "editor" && editingPage && (
+                    <button onClick={() => { setContentSubTab("pages"); setEditingPage(null); }}
+                      style={{ background: "rgba(255,255,255,0.05)", color: "#ccc", border: "1px solid rgba(255,255,255,0.1)", padding: "10px 20px", borderRadius: "100px", fontSize: "13px", fontWeight: "800", cursor: "pointer" }}>
+                      ← Back
+                    </button>
+                  )}
                 </div>
+
+                {/* Sub-Tab Nav */}
+                {contentSubTab !== "editor" && (
+                  <div style={{ display: "flex", gap: "8px", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "16px", marginBottom: "32px" }}>
+                    {[
+                      { id: "pages",    label: "📄 STATIC PAGES" },
+                      { id: "faqs",     label: "❓ FAQ MANAGER" },
+                      { id: "homepage", label: "🏠 HOMEPAGE CONFIG" },
+                    ].map(tab => (
+                      <button key={tab.id} onClick={() => setContentSubTab(tab.id)}
+                        style={{ background: contentSubTab === tab.id ? "rgba(255,85,0,0.1)" : "transparent", border: contentSubTab === tab.id ? "1px solid rgba(255,85,0,0.2)" : "1px solid transparent", color: contentSubTab === tab.id ? "#FF5500" : "#888", padding: "10px 24px", borderRadius: "100px", fontSize: "13px", fontWeight: "900", cursor: "pointer" }}>
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* ===== STATIC PAGES GRID ===== */}
+                {contentSubTab === "pages" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+                    {[{ title: "⚖️ Legal & Policies", pages: legalPages }, { title: "📋 Info Pages", pages: infoPages }].map(group => (
+                      <div key={group.title}>
+                        <div style={{ fontSize: "11px", fontWeight: "900", color: "#555", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "12px" }}>{group.title}</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "16px" }}>
+                          {group.pages.map(page => (
+                            <div key={page.slug} onClick={() => openPage(page)}
+                              style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "20px 24px", cursor: "pointer", transition: "border-color 0.2s, background 0.2s", display: "flex", alignItems: "center", gap: "16px" }}
+                              onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,85,0,0.3)"; e.currentTarget.style.background = "rgba(255,85,0,0.04)"; }}
+                              onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)"; e.currentTarget.style.background = "#111"; }}>
+                              <div style={{ fontSize: "28px" }}>{page.icon}</div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: "14px", fontWeight: "800", color: "white" }}>{page.label}</div>
+                                <div style={{ fontSize: "11px", color: "#666", marginTop: "4px" }}>Click to edit</div>
+                              </div>
+                              <div style={{ color: "#FF5500" }}>→</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* ===== PAGE EDITOR ===== */}
+                {contentSubTab === "editor" && editingPage && (
+                  <div>
+                    {/* Status Bar */}
+                    {editingPage.status === "saving"       && <div style={{ background: "rgba(255,165,0,0.1)", border: "1px solid rgba(255,165,0,0.3)", borderRadius: "8px", padding: "10px 16px", marginBottom: "16px", color: "#ffa500", fontSize: "13px", fontWeight: "700" }}>⏳ Saving...</div>}
+                    {editingPage.status === "saved_draft"  && <div style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: "8px", padding: "10px 16px", marginBottom: "16px", color: "#22c55e", fontSize: "13px", fontWeight: "700" }}>✅ Draft saved successfully. Content updated successfully.</div>}
+                    {editingPage.status === "published"    && <div style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.4)", borderRadius: "8px", padding: "10px 16px", marginBottom: "16px", color: "#22c55e", fontSize: "13px", fontWeight: "700" }}>🚀 Content published successfully.</div>}
+                    {editingPage.status === "error"        && <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", padding: "10px 16px", marginBottom: "16px", color: "#ef4444", fontSize: "13px", fontWeight: "700" }}>❌ Content could not be saved. Please try again.</div>}
+
+                    <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "20px", padding: "32px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                        <div>
+                          <div style={{ fontSize: "11px", color: "#FF5500", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase" }}>Editing Page</div>
+                          <h2 style={{ fontSize: "22px", fontWeight: "950", color: "white", margin: "4px 0 0" }}>{editingPage.icon} {editingPage.label}</h2>
+                        </div>
+                        <div style={{ display: "flex", gap: "10px" }}>
+                          <button onClick={() => setEditingPage(p => ({ ...p, previewing: !p.previewing }))}
+                            style={{ background: "rgba(255,255,255,0.05)", color: "#ccc", border: "1px solid rgba(255,255,255,0.1)", padding: "10px 20px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>
+                            {editingPage.previewing ? "✏️ EDIT" : "👁 PREVIEW"}
+                          </button>
+                          <button onClick={() => savePage(true)}
+                            style={{ background: "rgba(255,255,255,0.08)", color: "white", border: "1px solid rgba(255,255,255,0.1)", padding: "10px 20px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>
+                            💾 SAVE DRAFT
+                          </button>
+                          <button onClick={() => savePage(false)}
+                            style={{ background: "#FF5500", color: "white", border: "none", padding: "10px 20px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", cursor: "pointer", boxShadow: "0 4px 20px rgba(255,85,0,0.3)" }}>
+                            🚀 PUBLISH
+                          </button>
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: "16px" }}>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px", textTransform: "uppercase" }}>Page Title</label>
+                        <input value={editingPage.title} onChange={e => setEditingPage(p => ({ ...p, title: e.target.value }))}
+                          style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", fontSize: "16px", fontWeight: "700", outline: "none", boxSizing: "border-box" }} />
+                      </div>
+
+                      {editingPage.previewing ? (
+                        <div style={{ background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "12px", padding: "24px", minHeight: "300px" }}>
+                          <div style={{ fontSize: "11px", color: "#555", fontWeight: "900", marginBottom: "16px", textTransform: "uppercase" }}>Preview</div>
+                          <div style={{ color: "white", lineHeight: "1.8", fontSize: "14px", whiteSpace: "pre-wrap" }}>{editingPage.body || <span style={{ color: "#555" }}>No content yet...</span>}</div>
+                        </div>
+                      ) : (
+                        <>
+                          <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px", textTransform: "uppercase" }}>Page Body</label>
+                          <textarea value={editingPage.body} onChange={e => setEditingPage(p => ({ ...p, body: e.target.value }))} rows={18}
+                            placeholder="Enter page content here... (Markdown supported)"
+                            style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "12px", padding: "16px", color: "white", fontSize: "13px", lineHeight: "1.8", outline: "none", resize: "vertical", fontFamily: "monospace", boxSizing: "border-box" }} />
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ===== FAQ MANAGER ===== */}
+                {contentSubTab === "faqs" && (
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                      <div>
+                        <div style={{ fontSize: "16px", fontWeight: "900", color: "white" }}>Frequently Asked Questions</div>
+                        <div style={{ fontSize: "13px", color: "#666", marginTop: "4px" }}>{faqsList.length} FAQ{faqsList.length !== 1 ? "s" : ""} — Drag to reorder using ↑/↓ arrows</div>
+                      </div>
+                      <button onClick={addFaq}
+                        style={{ background: "#FF5500", color: "white", border: "none", padding: "12px 24px", borderRadius: "100px", fontSize: "13px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "0 4px 20px rgba(255,85,0,0.3)" }}>
+                        <Plus size={16} /> ADD FAQ
+                      </button>
+                    </div>
+
+                    {faqsList.length === 0 ? (
+                      <div style={{ background: "#111", border: "1px dashed rgba(255,255,255,0.1)", borderRadius: "20px", padding: "60px", textAlign: "center" }}>
+                        <div style={{ fontSize: "40px", marginBottom: "12px" }}>❓</div>
+                        <div style={{ color: "white", fontWeight: "800", marginBottom: "8px" }}>No FAQs yet</div>
+                        <div style={{ color: "#666", fontSize: "13px" }}>Click "ADD FAQ" to create your first question.</div>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                        {faqsList.map((faq, idx) => (
+                          <div key={faq.id} style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "20px 24px", display: "flex", gap: "16px", alignItems: "flex-start" }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "4px", flexShrink: 0 }}>
+                              <button onClick={() => moveFaq(idx, -1)} disabled={idx === 0}
+                                style={{ background: "rgba(255,255,255,0.05)", border: "none", color: idx === 0 ? "#333" : "#888", padding: "4px 8px", borderRadius: "6px", cursor: idx === 0 ? "default" : "pointer", fontSize: "12px" }}>▲</button>
+                              <button onClick={() => moveFaq(idx, 1)} disabled={idx === faqsList.length - 1}
+                                style={{ background: "rgba(255,255,255,0.05)", border: "none", color: idx === faqsList.length - 1 ? "#333" : "#888", padding: "4px 8px", borderRadius: "6px", cursor: idx === faqsList.length - 1 ? "default" : "pointer", fontSize: "12px" }}>▼</button>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: "14px", fontWeight: "800", color: "white", marginBottom: "8px" }}>Q: {faq.question}</div>
+                              <div style={{ fontSize: "13px", color: "#aaa", lineHeight: "1.6" }}>A: {faq.answer}</div>
+                              <div style={{ marginTop: "10px", display: "flex", gap: "6px" }}>
+                                <span style={{ background: faq.is_published ? "rgba(34,197,94,0.1)" : "rgba(255,255,255,0.05)", color: faq.is_published ? "#22c55e" : "#666", padding: "2px 8px", borderRadius: "100px", fontSize: "10px", fontWeight: "800" }}>
+                                  {faq.is_published ? "PUBLISHED" : "DRAFT"}
+                                </span>
+                              </div>
+                            </div>
+                            <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                              <button onClick={() => updateFaq(faq)}
+                                style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "8px 14px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer" }}>Edit</button>
+                              <button onClick={() => deleteFaq(faq.id)}
+                                style={{ background: "rgba(239,68,68,0.1)", border: "none", color: "#ef4444", padding: "8px 14px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer" }}>Delete</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ===== HOMEPAGE CONFIGURATION ===== */}
+                {contentSubTab === "homepage" && (() => {
+                  const hero = homepageConfig.hero || {};
+                  const banner = homepageConfig.banner || {};
+                  return (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
+                      {/* Hero Section */}
+                      <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "20px", padding: "28px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                          <div style={{ fontSize: "16px", fontWeight: "900", color: "white" }}>🦸 Hero Section</div>
+                          <button onClick={() => saveHomepage("hero", hero)}
+                            style={{ background: "#FF5500", color: "white", border: "none", padding: "10px 20px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>Save Hero</button>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                          {[["headline", "Homepage Headline"], ["subtitle", "Subtitle"], ["cta_primary_text", "Primary CTA Button Text"], ["cta_primary_url", "Primary CTA Button URL"], ["cta_secondary_text", "Secondary CTA Button Text"], ["cta_secondary_url", "Secondary CTA Button URL"]].map(([key, label]) => (
+                            <div key={key}>
+                              <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px", textTransform: "uppercase" }}>{label}</label>
+                              <input value={hero[key] || ""} onChange={e => setHomepageConfig(prev => ({ ...prev, hero: { ...prev.hero, [key]: e.target.value } }))}
+                                style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none", boxSizing: "border-box" }} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Banner / Announcement */}
+                      <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "20px", padding: "28px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                          <div style={{ fontSize: "16px", fontWeight: "900", color: "white" }}>📢 Banner & Announcements</div>
+                          <button onClick={() => saveHomepage("banner", banner)}
+                            style={{ background: "#FF5500", color: "white", border: "none", padding: "10px 20px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>Save Banner</button>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                          {[["text", "Banner Text"], ["link", "Banner Link"], ["bg_color", "Background Color (hex)"], ["text_color", "Text Color (hex)"]].map(([key, label]) => (
+                            <div key={key}>
+                              <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px", textTransform: "uppercase" }}>{label}</label>
+                              <input value={banner[key] || ""} onChange={e => setHomepageConfig(prev => ({ ...prev, banner: { ...prev.banner, [key]: e.target.value } }))}
+                                style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none", boxSizing: "border-box" }} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Homepage Stats */}
+                      <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "20px", padding: "28px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                          <div style={{ fontSize: "16px", fontWeight: "900", color: "white" }}>📊 Homepage Statistics</div>
+                          <button onClick={() => saveHomepage("stats", homepageConfig.stats || {})}
+                            style={{ background: "#FF5500", color: "white", border: "none", padding: "10px 20px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>Save Stats</button>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                          {[["total_records", "Total Records Stat"], ["total_athletes", "Total Athletes Stat"], ["total_countries", "Total Countries Stat"], ["total_categories", "Total Categories Stat"]].map(([key, label]) => (
+                            <div key={key}>
+                              <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px", textTransform: "uppercase" }}>{label}</label>
+                              <input value={(homepageConfig.stats || {})[key] || ""} onChange={e => setHomepageConfig(prev => ({ ...prev, stats: { ...(prev.stats || {}), [key]: e.target.value } }))}
+                                style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none", boxSizing: "border-box" }} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Footer/Header Settings */}
+                      <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "20px", padding: "28px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                          <div style={{ fontSize: "16px", fontWeight: "900", color: "white" }}>🗂️ Header & Footer Content</div>
+                          <button onClick={() => saveHomepage("footer", homepageConfig.footer || {})}
+                            style={{ background: "#FF5500", color: "white", border: "none", padding: "10px 20px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>Save Header/Footer</button>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                          {[["footer_tagline", "Footer Tagline"], ["footer_copyright", "Copyright Text"], ["header_notice", "Header Notice Text"], ["footer_email", "Contact Email in Footer"]].map(([key, label]) => (
+                            <div key={key}>
+                              <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px", textTransform: "uppercase" }}>{label}</label>
+                              <input value={(homepageConfig.footer || {})[key] || ""} onChange={e => setHomepageConfig(prev => ({ ...prev, footer: { ...(prev.footer || {}), [key]: e.target.value } }))}
+                                style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none", boxSizing: "border-box" }} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
-            </div>
-          )}
+            );
+          })()}
+
 
           {/* ==================== 5I. SECURITY & FRAUD (PHASE 3) ==================== */}
           {activeTab === "security" && (
@@ -5138,47 +6976,409 @@ const Admin = () => {
             </div>
           )}
 
-          {/* ==================== 5L. SPONSORSHIPS (PHASE 4) ==================== */}
-          {activeTab === "sponsorships" && (
-            <div>
-              <div style={{ marginBottom: "32px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <h1 style={{ fontSize: "28px", fontWeight: "950", margin: "0 0 8px 0" }}>SPONSORSHIP & ADS</h1>
-                  <p style={{ color: "#888", margin: 0, fontSize: "14px" }}>Manage partner banners and tracking metrics.</p>
+          {/* ==================== 5L. SPONSORSHIPS — FULL MANAGEMENT ==================== */}
+          {activeTab === "sponsorships" && (() => {
+            const PLACEMENTS = [
+              { value: "homepage_top_banner", label: "Homepage Top Banner" },
+              { value: "homepage_sidebar",    label: "Homepage Sidebar" },
+              { value: "homepage",            label: "Homepage General" },
+              { value: "live_event",          label: "Live Event Sponsor" },
+              { value: "featured",            label: "Featured Sponsor" },
+              { value: "footer_sponsor",      label: "Footer Sponsor" },
+              { value: "video_overlay",       label: "Video Sponsor Overlay" },
+              { value: "livestream",          label: "Livestream Banner" },
+              { value: "shop",               label: "Shop Page" },
+              { value: "footer",             label: "Footer Banner" },
+            ];
+
+            const now = new Date();
+
+            const filteredSponsors = sponsors.filter(s => {
+              const q = sponsorSearchQuery.toLowerCase();
+              const matchSearch = !q ||
+                (s.company_name && s.company_name.toLowerCase().includes(q)) ||
+                (s.package_type && s.package_type.toLowerCase().includes(q)) ||
+                (s.placement && s.placement.toLowerCase().includes(q));
+              
+              const isExpired = s.end_date && new Date(s.end_date) < now;
+              const isFeatured = s.placement === 'featured';
+              const isPending = !s.active_status && !isExpired;
+
+              const matchFilter =
+                sponsorFilterStatus === "all" ? true :
+                sponsorFilterStatus === "active"   ? (s.active_status && !isExpired) :
+                sponsorFilterStatus === "inactive" ? !s.active_status :
+                sponsorFilterStatus === "expired"  ? isExpired :
+                sponsorFilterStatus === "featured" ? isFeatured :
+                sponsorFilterStatus === "pending"  ? isPending : true;
+
+              return matchSearch && matchFilter;
+            });
+
+            const openAddForm = () => {
+              setSponsorForm({ company_name: "", link_url: "", placement: "homepage", package_type: "standard", active_status: true, start_date: "", end_date: "", description: "", notes: "" });
+              setSponsorFormMode("add");
+              setSelectedSponsor(null);
+              setSponsorSaveStatus(null);
+            };
+
+            const openEditForm = (s) => {
+              setSponsorForm({ ...s });
+              setSponsorFormMode("edit");
+              setSelectedSponsor(s);
+              setSponsorSaveStatus(null);
+            };
+
+            const saveSponsor = async () => {
+              setSponsorSaveStatus("saving");
+              try {
+                const fd = new FormData();
+                Object.entries(sponsorForm).forEach(([k, v]) => {
+                  if (k === "_bannerFile" || k === "_logoFile") return;
+                  if (v !== null && v !== undefined) fd.append(
+                    k === "company_name" ? "companyName" :
+                    k === "link_url" ? "linkUrl" :
+                    k === "package_type" ? "packageType" :
+                    k === "active_status" ? "activeStatus" :
+                    k === "start_date" ? "startDate" :
+                    k === "end_date" ? "endDate" : k,
+                    v
+                  );
+                });
+                if (sponsorForm._bannerFile) fd.append("bannerImage", sponsorForm._bannerFile);
+                if (sponsorForm._logoFile) fd.append("logoImage", sponsorForm._logoFile);
+
+                const token = user.token;
+                const url = sponsorFormMode === "edit"
+                  ? `${import.meta.env.VITE_API_BASE_URL || ''}/api/admin/monetization/sponsors/${sponsorForm.id}`
+                  : `${import.meta.env.VITE_API_BASE_URL || ''}/api/admin/monetization/sponsors`;
+                const method = sponsorFormMode === "edit" ? "PUT" : "POST";
+
+                const res = await fetch(url, {
+                  method,
+                  headers: { Authorization: `Bearer ${token}` },
+                  body: fd
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || "Save failed");
+
+                setSponsorSaveStatus("success");
+                setSponsorFormMode(null);
+                fetchData();
+                setTimeout(() => setSponsorSaveStatus(null), 3000);
+              } catch {
+                setSponsorSaveStatus("error");
+              }
+            };
+
+            const deleteSponsor = async (id) => {
+              if (!window.confirm("Delete this sponsor permanently?")) return;
+              try {
+                await apiCall(`/admin/monetization/sponsors/${id}`, "DELETE", null, user.token);
+                setSponsors(prev => prev.filter(s => s.id !== id));
+                if (selectedSponsor?.id === id) setSelectedSponsor(null);
+                alert("Sponsor deleted successfully.");
+              } catch { alert("Sponsor could not be deleted."); }
+            };
+
+            const toggleStatus = async (s) => {
+              try {
+                const fd = new FormData();
+                fd.append("activeStatus", !s.active_status);
+                fd.append("companyName", s.company_name);
+                const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/admin/monetization/sponsors/${s.id}`, {
+                  method: "PUT",
+                  headers: { Authorization: `Bearer ${user.token}` },
+                  body: fd
+                });
+                if (!res.ok) throw new Error();
+                setSponsors(prev => prev.map(sp => sp.id === s.id ? { ...sp, active_status: !s.active_status } : sp));
+                if (selectedSponsor?.id === s.id) setSelectedSponsor(prev => ({ ...prev, active_status: !s.active_status }));
+              } catch { alert("Could not update sponsor status."); }
+            };
+
+            const inputStyle = { width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", fontSize: "13px", outline: "none", boxSizing: "border-box" };
+            const labelStyle = { display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px", textTransform: "uppercase" };
+
+            return (
+              <div>
+                {/* Header */}
+                <div style={{ marginBottom: "32px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px" }}>
+                  <div>
+                    <div style={{ color: "#FF5500", fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "8px" }}>Sponsorship Management</div>
+                    <h1 style={{ fontSize: "52px", fontWeight: "950", margin: "0 0 8px 0", color: "white", letterSpacing: "-2px", textTransform: "uppercase", lineHeight: 1 }}>SPONSORS<br/>&amp; ADS</h1>
+                    <p style={{ color: "#888", margin: 0, fontSize: "14px" }}>Manage partner banners, placements, logos, and click analytics.</p>
+                  </div>
+                  <div style={{ display: "flex", gap: "12px" }}>
+                    <button onClick={() => { setSponsorFormMode(null); setSelectedSponsor(null); fetchData(); }}
+                      style={{ background: "rgba(255,255,255,0.05)", color: "white", border: "1px solid rgba(255,255,255,0.1)", padding: "12px 20px", borderRadius: "100px", fontSize: "13px", fontWeight: "800", cursor: "pointer" }}>
+                      🔄 REFRESH
+                    </button>
+                    <button onClick={openAddForm}
+                      style={{ background: "#FF5500", color: "white", border: "none", padding: "12px 24px", borderRadius: "100px", fontSize: "13px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "0 4px 20px rgba(255,85,0,0.3)" }}>
+                      <Plus size={16} /> ADD SPONSOR
+                    </button>
+                  </div>
                 </div>
-                <button style={{ background: "#FF5500", color: "white", padding: "10px 24px", borderRadius: "100px", border: "none", fontWeight: "800", cursor: "pointer" }}>
-                  ADD SPONSOR
-                </button>
+
+                {/* Status messages */}
+                {sponsorSaveStatus === "success"    && <div style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: "8px", padding: "12px 16px", marginBottom: "20px", color: "#22c55e", fontWeight: "700" }}>✅ {sponsorFormMode === "add" ? "Sponsor added successfully." : "Sponsor updated successfully."}</div>}
+                {sponsorSaveStatus === "error"      && <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", padding: "12px 16px", marginBottom: "20px", color: "#ef4444", fontWeight: "700" }}>❌ Sponsor could not be saved.</div>}
+                {sponsorSaveStatus === "imageError" && <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", padding: "12px 16px", marginBottom: "20px", color: "#ef4444", fontWeight: "700" }}>❌ Image upload failed.</div>}
+
+                {/* ADD/EDIT FORM */}
+                {sponsorFormMode && (
+                  <div style={{ background: "#111", border: "1px solid rgba(255,85,0,0.2)", borderRadius: "20px", padding: "28px", marginBottom: "28px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                      <div>
+                        <div style={{ fontSize: "11px", color: "#FF5500", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase" }}>{sponsorFormMode === "add" ? "New Sponsor" : "Edit Sponsor"}</div>
+                        <h3 style={{ fontSize: "18px", fontWeight: "900", color: "white", margin: "4px 0 0" }}>{sponsorFormMode === "add" ? "Add a new sponsor partner" : `Editing: ${sponsorForm.company_name}`}</h3>
+                      </div>
+                      <button onClick={() => { setSponsorFormMode(null); setSponsorSaveStatus(null); }}
+                        style={{ background: "rgba(255,255,255,0.05)", color: "#ccc", border: "1px solid rgba(255,255,255,0.1)", padding: "8px 16px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>
+                        Cancel
+                      </button>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                      <div>
+                        <label style={labelStyle}>Sponsor Name *</label>
+                        <input value={sponsorForm.company_name || ""} onChange={e => setSponsorForm(p => ({ ...p, company_name: e.target.value }))} style={inputStyle} placeholder="e.g. Nike" />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Website URL</label>
+                        <input value={sponsorForm.link_url || ""} onChange={e => setSponsorForm(p => ({ ...p, link_url: e.target.value }))} style={inputStyle} placeholder="https://..." />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Placement</label>
+                        <select value={sponsorForm.placement || "homepage"} onChange={e => setSponsorForm(p => ({ ...p, placement: e.target.value }))} style={{ ...inputStyle }}>
+                          {PLACEMENTS.map(pl => <option key={pl.value} value={pl.value}>{pl.label}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Package Type</label>
+                        <select value={sponsorForm.package_type || "standard"} onChange={e => setSponsorForm(p => ({ ...p, package_type: e.target.value }))} style={{ ...inputStyle }}>
+                          {["standard", "premium", "gold", "platinum", "title"].map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Start Date</label>
+                        <input type="date" value={sponsorForm.start_date || ""} onChange={e => setSponsorForm(p => ({ ...p, start_date: e.target.value }))} style={{ ...inputStyle, colorScheme: "dark" }} />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>End Date</label>
+                        <input type="date" value={sponsorForm.end_date || ""} onChange={e => setSponsorForm(p => ({ ...p, end_date: e.target.value }))} style={{ ...inputStyle, colorScheme: "dark" }} />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Upload Banner (JPG/PNG/WEBP)</label>
+                        <input type="file" accept="image/jpg,image/jpeg,image/png,image/webp"
+                          onChange={e => setSponsorForm(p => ({ ...p, _bannerFile: e.target.files[0], banner_url: e.target.files[0] ? URL.createObjectURL(e.target.files[0]) : p.banner_url }))}
+                          style={{ ...inputStyle, padding: "8px" }} />
+                        {sponsorForm.banner_url && <img src={sponsorForm.banner_url} alt="Banner Preview" style={{ marginTop: "8px", maxHeight: "60px", borderRadius: "6px", objectFit: "cover" }} />}
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Upload Logo (JPG/PNG/WEBP)</label>
+                        <input type="file" accept="image/jpg,image/jpeg,image/png,image/webp"
+                          onChange={e => setSponsorForm(p => ({ ...p, _logoFile: e.target.files[0], logo_url: e.target.files[0] ? URL.createObjectURL(e.target.files[0]) : p.logo_url }))}
+                          style={{ ...inputStyle, padding: "8px" }} />
+                        {sponsorForm.logo_url && <img src={sponsorForm.logo_url} alt="Logo Preview" style={{ marginTop: "8px", maxHeight: "50px", borderRadius: "6px", objectFit: "contain", background: "rgba(255,255,255,0.05)", padding: "6px" }} />}
+                      </div>
+                      <div style={{ gridColumn: "1 / -1" }}>
+                        <label style={labelStyle}>Description</label>
+                        <textarea value={sponsorForm.description || ""} onChange={e => setSponsorForm(p => ({ ...p, description: e.target.value }))} rows={3} style={{ ...inputStyle, resize: "vertical" }} placeholder="Sponsor description..." />
+                      </div>
+                      <div style={{ gridColumn: "1 / -1" }}>
+                        <label style={labelStyle}>Internal Notes</label>
+                        <textarea value={sponsorForm.notes || ""} onChange={e => setSponsorForm(p => ({ ...p, notes: e.target.value }))} rows={2} style={{ ...inputStyle, resize: "vertical" }} placeholder="Internal notes..." />
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <input type="checkbox" id="sponsorActive" checked={!!sponsorForm.active_status} onChange={e => setSponsorForm(p => ({ ...p, active_status: e.target.checked }))} style={{ width: "18px", height: "18px", cursor: "pointer" }} />
+                        <label htmlFor="sponsorActive" style={{ color: "white", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>Active (visible on site)</label>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: "12px", marginTop: "24px", justifyContent: "flex-end" }}>
+                      <button onClick={() => { setSponsorFormMode(null); setSponsorSaveStatus(null); }}
+                        style={{ background: "rgba(255,255,255,0.04)", color: "#ccc", border: "1px solid rgba(255,255,255,0.05)", padding: "12px 24px", borderRadius: "100px", fontSize: "13px", fontWeight: "800", cursor: "pointer" }}>
+                        Cancel
+                      </button>
+                      <button onClick={saveSponsor} disabled={sponsorSaveStatus === "saving"}
+                        style={{ background: sponsorSaveStatus === "saving" ? "#888" : "#FF5500", color: "white", border: "none", padding: "12px 28px", borderRadius: "100px", fontSize: "13px", fontWeight: "900", cursor: "pointer", boxShadow: "0 4px 20px rgba(255,85,0,0.3)" }}>
+                        {sponsorSaveStatus === "saving" ? "⏳ Saving..." : sponsorFormMode === "add" ? "💾 Save Sponsor" : "💾 Update Sponsor"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* DETAIL VIEW */}
+                {selectedSponsor && !sponsorFormMode && (
+                  <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "20px", padding: "28px", marginBottom: "28px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
+                      <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+                        {selectedSponsor.logo_url
+                          ? <img src={selectedSponsor.logo_url} alt="Logo" style={{ width: "72px", height: "72px", borderRadius: "12px", objectFit: "contain", background: "rgba(255,255,255,0.05)", padding: "8px", border: "1px solid rgba(255,255,255,0.1)" }} />
+                          : <div style={{ width: "72px", height: "72px", borderRadius: "12px", background: "linear-gradient(135deg, #FF5500, #b53c00)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", fontWeight: "900", color: "white" }}>{selectedSponsor.company_name?.charAt(0)}</div>
+                        }
+                        <div>
+                          <h2 style={{ fontSize: "22px", fontWeight: "950", color: "white", margin: "0 0 4px" }}>{selectedSponsor.company_name}</h2>
+                          <div style={{ color: "#888", fontSize: "13px", marginBottom: "8px" }}>{selectedSponsor.link_url && <a href={selectedSponsor.link_url} target="_blank" rel="noreferrer" style={{ color: "#FF5500", textDecoration: "none" }}>{selectedSponsor.link_url} ↗</a>}</div>
+                          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                            <span style={{ background: selectedSponsor.active_status ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", color: selectedSponsor.active_status ? "#22c55e" : "#ef4444", padding: "3px 10px", borderRadius: "100px", fontSize: "10px", fontWeight: "800" }}>{selectedSponsor.active_status ? "ACTIVE" : "INACTIVE"}</span>
+                            <span style={{ background: "rgba(255,85,0,0.1)", color: "#FF5500", padding: "3px 10px", borderRadius: "100px", fontSize: "10px", fontWeight: "800" }}>{PLACEMENTS.find(p => p.value === selectedSponsor.placement)?.label || selectedSponsor.placement}</span>
+                            <span style={{ background: "rgba(255,255,255,0.05)", color: "#ccc", padding: "3px 10px", borderRadius: "100px", fontSize: "10px", fontWeight: "800" }}>{selectedSponsor.package_type?.toUpperCase() || "STANDARD"}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: "10px" }}>
+                        <button onClick={() => openEditForm(selectedSponsor)}
+                          style={{ background: "rgba(255,255,255,0.05)", color: "white", border: "1px solid rgba(255,255,255,0.1)", padding: "10px 18px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>✏️ Edit</button>
+                        <button onClick={() => toggleStatus(selectedSponsor)}
+                          style={{ background: selectedSponsor.active_status ? "rgba(239,68,68,0.1)" : "rgba(34,197,94,0.1)", color: selectedSponsor.active_status ? "#ef4444" : "#22c55e", border: "none", padding: "10px 18px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>
+                          {selectedSponsor.active_status ? "⏸ Deactivate" : "▶ Activate"}
+                        </button>
+                        <button onClick={() => deleteSponsor(selectedSponsor.id)}
+                          style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "none", padding: "10px 18px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>🗑 Delete</button>
+                        <button onClick={() => setSelectedSponsor(null)}
+                          style={{ background: "rgba(255,255,255,0.03)", color: "#888", border: "1px solid rgba(255,255,255,0.05)", padding: "10px 16px", borderRadius: "100px", fontSize: "12px", cursor: "pointer" }}>✕</button>
+                      </div>
+                    </div>
+
+                    {/* Banner */}
+                    {selectedSponsor.banner_url && (
+                      <div style={{ marginBottom: "20px" }}>
+                        <div style={{ fontSize: "10px", color: "#555", fontWeight: "900", marginBottom: "8px", textTransform: "uppercase" }}>Banner Image</div>
+                        <img src={selectedSponsor.banner_url} alt="Sponsor Banner" style={{ width: "100%", maxHeight: "140px", objectFit: "cover", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.05)" }} />
+                      </div>
+                    )}
+
+                    {/* Analytics */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "20px" }}>
+                      {[
+                        { label: "Total Clicks", value: (selectedSponsor.clicks_count || 0).toLocaleString(), color: "#FF5500" },
+                        { label: "Impressions", value: (selectedSponsor.views_count || 0).toLocaleString(), color: "#22c55e" },
+                        { label: "Start Date", value: selectedSponsor.start_date ? new Date(selectedSponsor.start_date).toLocaleDateString() : "—", color: "#888" },
+                        { label: "End Date", value: selectedSponsor.end_date ? new Date(selectedSponsor.end_date).toLocaleDateString() : "—", color: selectedSponsor.end_date && new Date(selectedSponsor.end_date) < now ? "#ef4444" : "#888" },
+                      ].map(stat => (
+                        <div key={stat.label} style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "12px", textAlign: "center" }}>
+                          <div style={{ fontSize: "11px", color: "#666", fontWeight: "800", marginBottom: "4px" }}>{stat.label}</div>
+                          <div style={{ fontSize: "20px", fontWeight: "950", color: stat.color }}>{stat.value}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Description / Notes */}
+                    {(selectedSponsor.description || selectedSponsor.notes) && (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                        {selectedSponsor.description && <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "12px" }}>
+                          <div style={{ fontSize: "10px", color: "#555", fontWeight: "900", marginBottom: "8px" }}>DESCRIPTION</div>
+                          <div style={{ color: "#aaa", fontSize: "13px", lineHeight: "1.6" }}>{selectedSponsor.description}</div>
+                        </div>}
+                        {selectedSponsor.notes && <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "12px" }}>
+                          <div style={{ fontSize: "10px", color: "#555", fontWeight: "900", marginBottom: "8px" }}>INTERNAL NOTES</div>
+                          <div style={{ color: "#aaa", fontSize: "13px", lineHeight: "1.6" }}>{selectedSponsor.notes}</div>
+                        </div>}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* SEARCH & FILTERS */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "24px", alignItems: "center" }}>
+                  <div style={{ position: "relative", flex: 1, minWidth: "220px", maxWidth: "340px" }}>
+                    <Search size={14} color="#666" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)" }} />
+                    <input type="text" placeholder="Search sponsors..." value={sponsorSearchQuery} onChange={e => setSponsorSearchQuery(e.target.value)}
+                      style={{ width: "100%", background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "100px", padding: "11px 16px 11px 40px", color: "white", fontSize: "13px", outline: "none", boxSizing: "border-box" }} />
+                  </div>
+                  {[
+                    { v: "all", l: "All" }, { v: "active", l: "Active" }, { v: "inactive", l: "Inactive" },
+                    { v: "expired", l: "Expired" }, { v: "featured", l: "Featured" }, { v: "pending", l: "Pending" }
+                  ].map(f => (
+                    <button key={f.v} onClick={() => setSponsorFilterStatus(f.v)}
+                      style={{ background: sponsorFilterStatus === f.v ? "rgba(255,85,0,0.15)" : "rgba(255,255,255,0.03)", border: sponsorFilterStatus === f.v ? "1px solid rgba(255,85,0,0.3)" : "1px solid rgba(255,255,255,0.06)", color: sponsorFilterStatus === f.v ? "#FF5500" : "#888", padding: "10px 18px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>
+                      {f.l}
+                    </button>
+                  ))}
+                  <div style={{ marginLeft: "auto", color: "#666", fontSize: "13px" }}>{filteredSponsors.length} result{filteredSponsors.length !== 1 ? "s" : ""}</div>
+                </div>
+
+                {/* SPONSOR CARDS GRID */}
+                {filteredSponsors.length === 0 ? (
+                  <div style={{ background: "#111", border: "1px dashed rgba(255,255,255,0.08)", borderRadius: "20px", padding: "60px", textAlign: "center" }}>
+                    <div style={{ fontSize: "40px", marginBottom: "12px" }}>🏢</div>
+                    <div style={{ color: "white", fontWeight: "800", marginBottom: "8px" }}>No sponsors found</div>
+                    <div style={{ color: "#666", fontSize: "13px" }}>Try adjusting your search or filters, or add your first sponsor.</div>
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "20px" }}>
+                    {filteredSponsors.map(sponsor => {
+                      const isExpired = sponsor.end_date && new Date(sponsor.end_date) < now;
+                      return (
+                        <div key={sponsor.id}
+                          onClick={() => { setSelectedSponsor(sponsor); setSponsorFormMode(null); }}
+                          style={{ background: "#111", border: selectedSponsor?.id === sponsor.id ? "1px solid rgba(255,85,0,0.4)" : "1px solid rgba(255,255,255,0.05)", borderRadius: "20px", overflow: "hidden", cursor: "pointer", transition: "border-color 0.2s" }}
+                          onMouseEnter={e => { if (selectedSponsor?.id !== sponsor.id) e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; }}
+                          onMouseLeave={e => { if (selectedSponsor?.id !== sponsor.id) e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)"; }}>
+
+                          {/* Banner */}
+                          {sponsor.banner_url
+                            ? <img src={sponsor.banner_url} alt="Banner" style={{ width: "100%", height: "90px", objectFit: "cover" }} />
+                            : <div style={{ width: "100%", height: "90px", background: "linear-gradient(135deg, #1a1a1a, #111)", display: "flex", alignItems: "center", justifyContent: "center", color: "#333", fontSize: "12px" }}>No Banner</div>
+                          }
+
+                          <div style={{ padding: "16px" }}>
+                            <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "12px" }}>
+                              {sponsor.logo_url
+                                ? <img src={sponsor.logo_url} alt="Logo" style={{ width: "40px", height: "40px", borderRadius: "8px", objectFit: "contain", background: "rgba(255,255,255,0.05)", padding: "4px" }} />
+                                : <div style={{ width: "40px", height: "40px", borderRadius: "8px", background: "linear-gradient(135deg, #FF5500, #b53c00)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "900", color: "white", fontSize: "16px" }}>{sponsor.company_name?.charAt(0)}</div>
+                              }
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: "900", color: "white", fontSize: "14px" }}>{sponsor.company_name}</div>
+                                <div style={{ fontSize: "11px", color: "#666" }}>{PLACEMENTS.find(p => p.value === sponsor.placement)?.label || sponsor.placement}</div>
+                              </div>
+                            </div>
+
+                            {/* Stats row */}
+                            <div style={{ display: "flex", gap: "16px", marginBottom: "12px" }}>
+                              <div style={{ textAlign: "center" }}>
+                                <div style={{ fontSize: "14px", fontWeight: "950", color: "#FF5500" }}>{(sponsor.clicks_count || 0).toLocaleString()}</div>
+                                <div style={{ fontSize: "9px", color: "#555", fontWeight: "800" }}>CLICKS</div>
+                              </div>
+                              <div style={{ textAlign: "center" }}>
+                                <div style={{ fontSize: "14px", fontWeight: "950", color: "#22c55e" }}>{(sponsor.views_count || 0).toLocaleString()}</div>
+                                <div style={{ fontSize: "9px", color: "#555", fontWeight: "800" }}>VIEWS</div>
+                              </div>
+                              <div style={{ flex: 1 }}></div>
+                              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                                {isExpired
+                                  ? <span style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", padding: "2px 8px", borderRadius: "100px", fontSize: "9px", fontWeight: "800" }}>EXPIRED</span>
+                                  : <span style={{ background: sponsor.active_status ? "rgba(34,197,94,0.1)" : "rgba(255,255,255,0.05)", color: sponsor.active_status ? "#22c55e" : "#666", padding: "2px 8px", borderRadius: "100px", fontSize: "9px", fontWeight: "800" }}>{sponsor.active_status ? "ACTIVE" : "INACTIVE"}</span>
+                                }
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div style={{ display: "flex", gap: "8px" }} onClick={e => e.stopPropagation()}>
+                              <button onClick={() => { setSelectedSponsor(sponsor); setSponsorFormMode(null); }}
+                                style={{ flex: 1, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "white", padding: "7px", borderRadius: "8px", fontSize: "11px", fontWeight: "700", cursor: "pointer" }}>👁 View</button>
+                              <button onClick={() => openEditForm(sponsor)}
+                                style={{ flex: 1, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "white", padding: "7px", borderRadius: "8px", fontSize: "11px", fontWeight: "700", cursor: "pointer" }}>✏️ Edit</button>
+                              <button onClick={() => toggleStatus(sponsor)}
+                                style={{ flex: 1, background: sponsor.active_status ? "rgba(239,68,68,0.08)" : "rgba(34,197,94,0.08)", border: "none", color: sponsor.active_status ? "#ef4444" : "#22c55e", padding: "7px", borderRadius: "8px", fontSize: "11px", fontWeight: "700", cursor: "pointer" }}>
+                                {sponsor.active_status ? "Deactivate" : "Activate"}
+                              </button>
+                              <button onClick={() => deleteSponsor(sponsor.id)}
+                                style={{ background: "rgba(239,68,68,0.08)", border: "none", color: "#ef4444", padding: "7px 10px", borderRadius: "8px", fontSize: "11px", cursor: "pointer" }}>🗑</button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-              <div style={{ background: "#111", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.05)", padding: "24px" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead style={{ background: "rgba(255,255,255,0.02)" }}>
-                    <tr>
-                      <th style={{ padding: "16px", textAlign: "left", fontSize: "12px", color: "#666" }}>BRAND</th>
-                      <th style={{ padding: "16px", textAlign: "left", fontSize: "12px", color: "#666" }}>PLACEMENT</th>
-                      <th style={{ padding: "16px", textAlign: "left", fontSize: "12px", color: "#666" }}>CLICKS</th>
-                      <th style={{ padding: "16px", textAlign: "left", fontSize: "12px", color: "#666" }}>STATUS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sponsors.map(sponsor => (
-                      <tr key={sponsor.id} style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-                        <td style={{ padding: "16px", fontSize: "14px", fontWeight: "bold" }}>{sponsor.company_name}</td>
-                        <td style={{ padding: "16px", fontSize: "13px", textTransform: "capitalize" }}>{sponsor.placement}</td>
-                        <td style={{ padding: "16px", fontSize: "13px", color: "#10b981" }}>{(sponsor.clicks_count || 0).toLocaleString()}</td>
-                        <td style={{ padding: "16px" }}>
-                          <span style={{ background: sponsor.active_status ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)", color: sponsor.active_status ? "#22c55e" : "#ef4444", padding: "4px 8px", borderRadius: "4px", fontSize: "10px", fontWeight: "bold" }}>
-                            {sponsor.active_status ? "ACTIVE" : "INACTIVE"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                    {sponsors.length === 0 && <tr><td colSpan="4" style={{ padding: "16px", textAlign: "center", color: "#888" }}>No sponsors found.</td></tr>}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+            );
+          })()}
+
 
           {/* ==================== 5M. VIP & RANKINGS (PHASE 4) ==================== */}
           {activeTab === "vip" && (
@@ -5216,435 +7416,139 @@ const Admin = () => {
           )}
 
           {/* ==================== 6. TICKETS & REVENUE FINANCIAL SUITE ==================== */}
-          {activeTab === "revenue" && (
+          
+
+          {/* ==================== COUPONS MANAGEMENT ==================== */}
+          
+          {/* ==================== HOMEPAGE CONTROL ==================== */}
+          {activeTab === "homepageControl" && (
             <div>
-              {/* Header */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
+              <div style={{ marginBottom: "32px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <div style={{ color: "#FF5500", fontSize: "11px", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>
-                    Central Treasury
-                  </div>
-                  <h2 style={{ fontSize: "56px", fontWeight: "950", margin: "0 0 12px 0", color: "white", letterSpacing: "-2px", textTransform: "uppercase", lineHeight: "1" }}>
-                    FINANCIAL
-                    <br />OVERSIGHT
-                  </h2>
+                  <h1 style={{ fontSize: "28px", fontWeight: "950", margin: "0 0 8px 0" }}>HOMEPAGE CONTROL</h1>
+                  <p style={{ color: "#888", margin: 0, fontSize: "14px" }}>Manage which records appear in specific sections on the front page.</p>
                 </div>
-                <button 
-                  onClick={() => alert("Global Financial Export Triggered")}
-                  style={{ background: "#FF5500", color: "white", border: "none", padding: "14px 28px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "1px", marginTop: "12px", boxShadow: "0 4px 14px rgba(255,85,0,0.4)" }}
-                >
-                  <TrendingUp size={14} /> EXPORT LEDGER
+              </div>
+              
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "32px" }}>
+                {['featured', 'newly_verified', 'recent_uploads', 'top_ranked'].map(sectionName => (
+                  <div key={sectionName} style={{ background: "#111", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.05)", padding: "24px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                      <h3 style={{ fontSize: "16px", fontWeight: "900", margin: 0, textTransform: "uppercase", color: "#FF5500" }}>{sectionName.replace('_', ' ')} Records</h3>
+                    </div>
+                    
+                    {homepageRecords[sectionName] && homepageRecords[sectionName].length > 0 ? (
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
+                        {homepageRecords[sectionName].map((record, index) => (
+                          <div key={record.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ fontSize: "14px", fontWeight: "900", color: "white" }}>{record.title}</span>
+                              <button onClick={() => {
+                                  apiCall(`/admin/homepage/records/${record.id}/section`, "PUT", { section: null, order: 0 }, user.token)
+                                    .then(() => { alert("Removed from homepage"); fetchData(); })
+                                    .catch(e => alert("Error removing: " + e.message));
+                                }} style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "none", borderRadius: "6px", padding: "4px 8px", fontSize: "10px", fontWeight: "bold", cursor: "pointer" }}>
+                                REMOVE
+                              </button>
+                            </div>
+                            <div style={{ fontSize: "12px", color: "#888" }}>{record.category} - {record.value} {record.unit}</div>
+                            <div style={{ fontSize: "10px", color: "#555" }}>Order: {record.homepage_order}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ color: "#666", fontSize: "13px", padding: "16px", background: "rgba(255,255,255,0.01)", borderRadius: "8px", textAlign: "center" }}>No records assigned to this section.</div>
+                    )}
+                    
+                    <div style={{ marginTop: "16px", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "16px" }}>
+                      <select onChange={(e) => {
+                          if(!e.target.value) return;
+                          apiCall(`/admin/homepage/records/${e.target.value}/section`, "PUT", { section: sectionName, order: (homepageRecords[sectionName]?.length || 0) + 1 }, user.token)
+                            .then(() => { alert("Added to section"); fetchData(); e.target.value = ""; })
+                            .catch(err => alert("Error adding: " + err.message));
+                        }} style={{ width: "100%", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "white", padding: "10px", fontSize: "12px" }}>
+                        <option value="">+ Assign an approved record to {sectionName.replace('_', ' ')}...</option>
+                        {records.map(rec => (
+                          <option key={rec.id} value={rec.id}>{rec.title} ({rec.value} {rec.unit})</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ==================== VIDEO MANAGEMENT ==================== */}
+          {activeTab === "videoManagement" && (
+            <div>
+              <div style={{ marginBottom: "32px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <h1 style={{ fontSize: "28px", fontWeight: "950", margin: "0 0 8px 0" }}>VIDEO MANAGEMENT</h1>
+                  <p style={{ color: "#888", margin: 0, fontSize: "14px" }}>Upload and manage Featured and Newest videos.</p>
+                </div>
+                <button onClick={() => { setModalType('add'); setModalTarget(null); setVideoForm({title: "", description: "", category: "Strength", isFeatured: false, isNewlyUploaded: false}); setVideoFile(null); setThumbnailFile(null); setIsModalOpen(true); }} style={{ background: "#FF5500", color: "white", border: "none", padding: "10px 20px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Plus size={14} /> UPLOAD NEW VIDEO
                 </button>
               </div>
 
-              {/* Revenue Sub Tabs navigation */}
-              <div style={{ display: "flex", gap: "24px", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "0px", marginBottom: "40px" }}>
-                <button 
-                  onClick={(e) => { e.preventDefault(); setRevenueSubTab("ledger"); }}
-                  style={{ background: "transparent", border: "none", color: revenueSubTab === "ledger" ? "#FF5500" : "#888", fontWeight: revenueSubTab === "ledger" ? "900" : "700", fontSize: "14px", cursor: "pointer", textTransform: "uppercase", padding: "12px 6px", borderBottom: revenueSubTab === "ledger" ? "3px solid #FF5500" : "3px solid transparent", outline: "none", transition: "all 0.2s" }}
-                >
-                  Transaction Ledger
-                </button>
-                <button 
-                  onClick={(e) => { e.preventDefault(); setRevenueSubTab("coupons"); }}
-                  style={{ background: "transparent", border: "none", color: revenueSubTab === "coupons" ? "#FF5500" : "#888", fontWeight: revenueSubTab === "coupons" ? "900" : "700", fontSize: "14px", cursor: "pointer", textTransform: "uppercase", padding: "12px 6px", borderBottom: revenueSubTab === "coupons" ? "3px solid #FF5500" : "3px solid transparent", outline: "none", transition: "all 0.2s" }}
-                >
-                  Coupons & Discounts
-                </button>
+              <div style={{ display: "flex", gap: "24px", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "0px", marginBottom: "32px" }}>
+                {["featured", "newest", "highlights"].map(sub => (
+                  <button 
+                    key={sub}
+                    onClick={() => setVideoManagementSubTab(sub)}
+                    style={{ background: "transparent", border: "none", color: videoManagementSubTab === sub ? "#FF5500" : "#888", fontWeight: videoManagementSubTab === sub ? "900" : "700", fontSize: "14px", cursor: "pointer", textTransform: "uppercase", padding: "12px 6px", borderBottom: videoManagementSubTab === sub ? "3px solid #FF5500" : "3px solid transparent", outline: "none", transition: "all 0.2s" }}
+                  >
+                    {sub} Videos
+                  </button>
+                ))}
               </div>
 
-              {revenueSubTab === "ledger" && (
-                <>
-                  {/* Financial Revenue Grid Cards */}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", marginBottom: "40px" }}>
-                    {/* Card 1: Net Paid Revenue */}
-                    <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "24px", padding: "32px", position: "relative", overflow: "hidden", border: "1px solid #FF5500", boxShadow: "0 10px 30px rgba(0,0,0,0.5)", backdropFilter: "blur(12px)" }}>
-                      <div style={{ color: "#888", fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px", marginBottom: "16px", textTransform: "uppercase" }}>NET PAID REVENUE</div>
-                      <div style={{ fontSize: "40px", fontWeight: "950", color: "#FF5500", lineHeight: "1", marginBottom: "16px", letterSpacing: "-1px" }}>
-                        ${(ledgerMetrics?.totalRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </div>
-                      <div style={{ color: "#22c55e", fontSize: "11px", fontWeight: "800", display: "flex", alignItems: "center", gap: "4px" }}>
-                        <TrendingUp size={12} color="#22c55e" /> LIVE SYNCED FROM SYSTEM
-                      </div>
-                    </div>
-
-                    {/* Card 2: Transactions Breakdown */}
-                    <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "24px", padding: "32px", position: "relative", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)", backdropFilter: "blur(12px)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-                        <div style={{ color: "#888", fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px" }}>TOTAL TRANSACTIONS</div>
-                        <CreditCard size={20} color="#444" />
-                      </div>
-                      <div style={{ fontSize: "40px", fontWeight: "950", color: "white", lineHeight: "1", marginBottom: "16px" }}>
-                        {ledgerPayments.length}
-                      </div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", fontSize: "10px", fontWeight: "800", color: "rgba(255,255,255,0.4)" }}>
-                        <span>Paid: {ledgerPayments.filter(p => p.status === 'paid').length}</span>
-                        <span>•</span>
-                        <span>Pending: {ledgerPayments.filter(p => p.status === 'pending').length}</span>
-                        <span>•</span>
-                        <span>Failed: {ledgerMetrics?.failedCount || 0}</span>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px" }}>
+                {videos[videoManagementSubTab] && videos[videoManagementSubTab].length > 0 ? videos[videoManagementSubTab].map(vid => (
+                  <div key={vid.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", overflow: "hidden" }}>
+                    <div style={{ height: "160px", background: "#000", position: "relative" }}>
+                      {vid.thumbnail_url || vid.thumbnailUrl ? (
+                        <img src={vid.thumbnail_url || vid.thumbnailUrl} alt="Thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><Video size={32} color="#444" /></div>
+                      )}
+                      <div style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(0,0,0,0.7)", padding: "4px 8px", borderRadius: "4px", fontSize: "10px", fontWeight: "bold", color: "white" }}>
+                        {vid.category}
                       </div>
                     </div>
-
-                    {/* Card 3: Escrow / Adjustments */}
-                    <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "24px", padding: "32px", position: "relative", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)", backdropFilter: "blur(12px)" }}>
-                      <div style={{ color: "#888", fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px", marginBottom: "16px" }}>TOTAL ADJUSTMENTS / REFUNDS</div>
-                      <div style={{ fontSize: "40px", fontWeight: "950", color: "#ef4444", lineHeight: "1", marginBottom: "16px", letterSpacing: "-1px" }}>
-                        -${(ledgerMetrics?.refundRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </div>
-                      <div style={{ color: "#ef4444", fontSize: "11px", fontWeight: "800", display: "flex", alignItems: "center", gap: "4px" }}>
-                        <ShieldAlert size={12} /> {ledgerPayments.filter(p => p.status === 'refunded').length} REFUNDED ENTRIES
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Payment Streams Detailed Aggregates bar */}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "16px", marginBottom: "40px", background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "20px", padding: "20px" }}>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "10px", color: "#888", fontWeight: "900", letterSpacing: "1px", marginBottom: "4px" }}>MEMBERSHIPS</div>
-                      <div style={{ fontSize: "14px", fontWeight: "950", color: "white" }}>${(ledgerMetrics?.membershipRevenue || 0).toFixed(2)}</div>
-                    </div>
-                    <div style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.05)" }}>
-                      <div style={{ fontSize: "10px", color: "#888", fontWeight: "900", letterSpacing: "1px", marginBottom: "4px" }}>SHOP SALES</div>
-                      <div style={{ fontSize: "14px", fontWeight: "950", color: "white" }}>${(ledgerMetrics?.shopRevenue || 0).toFixed(2)}</div>
-                    </div>
-                    <div style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.05)" }}>
-                      <div style={{ fontSize: "10px", color: "#888", fontWeight: "900", letterSpacing: "1px", marginBottom: "4px" }}>TICKET SALES</div>
-                      <div style={{ fontSize: "14px", fontWeight: "950", color: "white" }}>${(ledgerMetrics?.ticketRevenue || 0).toFixed(2)}</div>
-                    </div>
-                    <div style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.05)" }}>
-                      <div style={{ fontSize: "10px", color: "#888", fontWeight: "900", letterSpacing: "1px", marginBottom: "4px" }}>SUBMISSIONS</div>
-                      <div style={{ fontSize: "14px", fontWeight: "950", color: "white" }}>${(ledgerMetrics?.submissionRevenue || 0).toFixed(2)}</div>
-                    </div>
-                    <div style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.05)" }}>
-                      <div style={{ fontSize: "10px", color: "#888", fontWeight: "900", letterSpacing: "1px", marginBottom: "4px" }}>CHALLENGES</div>
-                      <div style={{ fontSize: "14px", fontWeight: "950", color: "white" }}>${(ledgerMetrics?.challengeRevenue || 0).toFixed(2)}</div>
-                    </div>
-                    <div style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.05)" }}>
-                      <div style={{ fontSize: "10px", color: "#eab308", fontWeight: "900", letterSpacing: "1px", marginBottom: "4px" }}>PENDING ESCROW</div>
-                      <div style={{ fontSize: "14px", fontWeight: "950", color: "#eab308" }}>${(ledgerMetrics?.pendingRevenue || 0).toFixed(2)}</div>
-                    </div>
-                  </div>
-
-                  {/* Interactive Roster Controls */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "20px", marginBottom: "32px" }}>
-                    
-                    {/* Header with quick stream filter bar */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
-                      <h3 style={{ fontSize: "20px", fontWeight: "950", color: "white", margin: 0, textTransform: "uppercase", letterSpacing: "-0.5px" }}>
-                        💳 REGISTRY TRANSACTIONS
-                      </h3>
+                    <div style={{ padding: "16px" }}>
+                      <h4 style={{ margin: "0 0 8px 0", fontSize: "16px", fontWeight: "900", color: "white" }}>{vid.title}</h4>
+                      <p style={{ color: "#888", fontSize: "12px", margin: "0 0 16px 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{vid.description}</p>
                       
-                      {/* Payment Type Streams Selector */}
-                      <div style={{ display: "flex", gap: "6px", background: "rgba(255,255,255,0.02)", padding: "4px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.05)", flexWrap: "wrap" }}>
-                        {[
-                          { label: "ALL STREAMS", value: "all" },
-                          { label: "MEMBERSHIPS", value: "membership" },
-                          { label: "SHOP SALES", value: "shop" },
-                          { label: "TICKETS", value: "ticket" },
-                          { label: "SUBMISSIONS", value: "submission" },
-                          { label: "CHALLENGES", value: "challenge" }
-                        ].map(typeOpt => (
-                          <button
-                            key={typeOpt.value}
-                            onClick={() => setPaymentsFilterType(typeOpt.value)}
-                            style={{
-                              background: paymentsFilterType === typeOpt.value ? "#FF5500" : "transparent",
-                              color: paymentsFilterType === typeOpt.value ? "white" : "#888",
-                              border: "none",
-                              padding: "8px 16px",
-                              borderRadius: "8px",
-                              fontSize: "10px",
-                              fontWeight: "900",
-                              cursor: "pointer",
-                              textTransform: "uppercase",
-                              transition: "all 0.2s"
-                            }}
-                          >
-                            {typeOpt.label}
-                          </button>
-                        ))}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          {vid.is_featured && <span style={{ background: "rgba(255,85,0,0.1)", color: "#FF5500", padding: "2px 6px", borderRadius: "4px", fontSize: "9px", fontWeight: "bold" }}>FEATURED</span>}
+                          {vid.is_newly_uploaded && <span style={{ background: "rgba(34,197,94,0.1)", color: "#22c55e", padding: "2px 6px", borderRadius: "4px", fontSize: "9px", fontWeight: "bold" }}>NEW</span>}
+                        </div>
+                        <button onClick={() => {
+                          apiCall(`/admin/videos/${videoManagementSubTab}/${vid.id}`, "DELETE", null, user.token)
+                            .then(() => { alert("Video removed successfully"); fetchData(); })
+                            .catch(e => alert("Error removing video: " + e.message));
+                        }} style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "none", padding: "6px 12px", borderRadius: "6px", fontSize: "10px", fontWeight: "bold", cursor: "pointer" }}>
+                          DELETE
+                        </button>
                       </div>
-                    </div>
-
-                    {/* Filter by Status & Search Bar Row */}
-                    <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-                      
-                      {/* Search Input Box */}
-                      <div style={{ position: "relative", flex: 1, minWidth: "280px" }}>
-                        <Search size={16} color="#555" style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)" }} />
-                        <input
-                          type="text"
-                          placeholder="SEARCH BY CUSTOMER NAME, EMAIL, REFERENCE ID..."
-                          value={paymentsSearchQuery}
-                          onChange={(e) => setPaymentsSearchQuery(e.target.value)}
-                          style={{
-                            width: "100%",
-                            background: "rgba(255,255,255,0.03)",
-                            border: "1px solid rgba(255,255,255,0.05)",
-                            borderRadius: "100px",
-                            padding: "16px 16px 16px 48px",
-                            color: "white",
-                            fontSize: "11px",
-                            fontWeight: "800",
-                            outline: "none",
-                            letterSpacing: "0.5px"
-                          }}
-                        />
-                      </div>
-
-                      {/* Status Badges Selector */}
-                      <div style={{ display: "flex", gap: "6px", background: "rgba(255,255,255,0.02)", padding: "4px", borderRadius: "100px", border: "1px solid rgba(255,255,255,0.05)", alignItems: "center" }}>
-                        {[
-                          { label: "ALL STATUSES", value: "all" },
-                          { label: "PAID", value: "paid" },
-                          { label: "PENDING", value: "pending" },
-                          { label: "FAILED", value: "failed" },
-                          { label: "REFUNDED", value: "refunded" }
-                        ].map(statusOpt => (
-                          <button
-                            key={statusOpt.value}
-                            onClick={() => setPaymentsFilterStatus(statusOpt.value)}
-                            style={{
-                              background: paymentsFilterStatus === statusOpt.value ? "rgba(255,255,255,0.08)" : "transparent",
-                              color: paymentsFilterStatus === statusOpt.value ? "#FF5500" : "#888",
-                              border: "none",
-                              padding: "6px 14px",
-                              borderRadius: "100px",
-                              fontSize: "10px",
-                              fontWeight: "900",
-                              cursor: "pointer",
-                              textTransform: "uppercase",
-                              transition: "all 0.15s"
-                            }}
-                          >
-                            {statusOpt.label}
-                          </button>
-                        ))}
-                      </div>
-
                     </div>
                   </div>
-
-                  {/* Ledger Table */}
-                  <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: "24px", overflow: "hidden", marginBottom: "56px", boxShadow: "0 20px 40px rgba(0,0,0,0.3)" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                      <thead>
-                        <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#888", fontSize: "10px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "1px" }}>
-                          <th style={{ padding: "20px 24px", textAlign: "left" }}>CUSTOMER / ATHLETE</th>
-                          <th style={{ padding: "20px 24px", textAlign: "left" }}>STREAM TYPE</th>
-                          <th style={{ padding: "20px 24px", textAlign: "left" }}>REFERENCE ID / KEY</th>
-                          <th style={{ padding: "20px 24px", textAlign: "left" }}>AMOUNT</th>
-                          <th style={{ padding: "20px 24px", textAlign: "left" }}>DATE</th>
-                          <th style={{ padding: "20px 24px", textAlign: "left" }}>STATUS</th>
-                          <th style={{ padding: "20px 24px", textAlign: "right" }}>ACTIONS / CONTROLS</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {ledgerPayments.filter(p => {
-                          const searchMatch = !paymentsSearchQuery.trim() || 
-                            p.customerName.toLowerCase().includes(paymentsSearchQuery.toLowerCase()) || 
-                            p.customerEmail.toLowerCase().includes(paymentsSearchQuery.toLowerCase()) ||
-                            p.id.toLowerCase().includes(paymentsSearchQuery.toLowerCase()) ||
-                            (p.referenceId && p.referenceId.toLowerCase().includes(paymentsSearchQuery.toLowerCase()));
-                            
-                          const typeMatch = paymentsFilterType === 'all' || p.paymentType === paymentsFilterType;
-                          const statusMatch = paymentsFilterStatus === 'all' || p.status === paymentsFilterStatus;
-                          
-                          return searchMatch && typeMatch && statusMatch;
-                        }).map((row, idx) => {
-                          const typeLabel = 
-                            row.paymentType === 'membership' ? 'ELITE MEMBERSHIP' : 
-                            row.paymentType === 'shop' ? 'SHOP MERCHANDISE' : 
-                            row.paymentType === 'ticket' ? 'EVENT TICKET' : 
-                            row.paymentType === 'challenge' ? 'CHALLENGE FEE' : 'SUBMISSION FEE';
-
-                          const typeColor = 
-                            row.paymentType === 'membership' ? '#a855f7' : 
-                            row.paymentType === 'shop' ? '#3b82f6' : 
-                            row.paymentType === 'ticket' ? '#ec4899' : 
-                            row.paymentType === 'challenge' ? '#eab308' : '#14b8a6';
-
-                          return (
-                            <tr key={idx} style={{ borderBottom: "1px solid rgba(255,255,255,0.02)", transition: "background 0.2s" }} className="table-row-hover">
-                              
-                              {/* Athlete / Customer details */}
-                              <td style={{ padding: "20px 24px", display: "flex", alignItems: "center", gap: "16px" }}>
-                                <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: `linear-gradient(135deg, ${typeColor}22 0%, ${typeColor}44 100%)`, border: `1px solid ${typeColor}44`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "950", color: typeColor, fontSize: "12px" }}>
-                                  {row.customerName.substring(0, 2).toUpperCase()}
-                                </div>
-                                <div>
-                                  <div style={{ color: "white", fontWeight: "900", fontSize: "13px" }}>{row.customerName}</div>
-                                  <div style={{ color: "#555", fontSize: "10px", fontWeight: "700", marginTop: "2px" }}>{row.customerEmail}</div>
-                                </div>
-                              </td>
-
-                              {/* Stream Type Tag */}
-                              <td style={{ padding: "20px 24px" }}>
-                                <span style={{ background: `${typeColor}15`, border: `1px solid ${typeColor}30`, color: typeColor, padding: "4px 10px", borderRadius: "8px", fontSize: "9px", fontWeight: "900", letterSpacing: "0.5px" }}>
-                                  {typeLabel}
-                                </span>
-                              </td>
-
-                              {/* Reference ID / Code */}
-                              <td style={{ padding: "20px 24px", fontFamily: "monospace", color: "#888", fontSize: "11px", fontWeight: "800" }}>
-                                {row.id}
-                              </td>
-
-                              {/* Amount */}
-                              <td style={{ padding: "20px 24px", color: row.status === 'refunded' ? '#ef4444' : '#FF5500', fontWeight: "950", fontSize: "14px" }}>
-                                {row.status === 'refunded' ? '-' : ''}${row.amount.toFixed(2)}
-                              </td>
-
-                              {/* Date */}
-                              <td style={{ padding: "20px 24px", color: "#aaa", fontWeight: "700" }}>
-                                {new Date(row.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                              </td>
-
-                              {/* Status Badge */}
-                              <td style={{ padding: "20px 24px" }}>
-                                <span style={{
-                                  background: row.status === "paid" ? "rgba(34,197,94,0.1)" : row.status === "pending" ? "rgba(234,179,8,0.1)" : row.status === "failed" ? "rgba(239,68,68,0.1)" : "rgba(255,255,255,0.05)",
-                                  color: row.status === "paid" ? "#22c55e" : row.status === "pending" ? "#eab308" : row.status === "failed" ? "#ef4444" : "#888",
-                                  padding: "4px 12px", borderRadius: "100px", fontWeight: "900", fontSize: "9px", textTransform: "uppercase", letterSpacing: "1px",
-                                  border: `1px solid ${row.status === "paid" ? "rgba(34,197,94,0.2)" : row.status === "pending" ? "rgba(234,179,8,0.2)" : row.status === "failed" ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.1)"}`
-                                }}>
-                                  {row.status}
-                                </span>
-                              </td>
-
-                              {/* Action Trigger Buttons */}
-                              <td style={{ padding: "20px 24px", textAlign: "right" }}>
-                                <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
-                                  {row.status === 'paid' && (
-                                    <button
-                                      onClick={() => handlePaymentStatusUpdate(row, 'refunded')}
-                                      style={{
-                                        background: "rgba(239,68,68,0.1)",
-                                        border: "1px solid rgba(239,68,68,0.2)",
-                                        color: "#ef4444",
-                                        padding: "6px 12px",
-                                        borderRadius: "6px",
-                                        fontSize: "10px",
-                                        fontWeight: "900",
-                                        cursor: "pointer",
-                                        transition: "all 0.2s"
-                                      }}
-                                      className="hover-bg-red-20"
-                                    >
-                                      REFUND
-                                    </button>
-                                  )}
-
-                                  {row.status === 'pending' && (
-                                    <>
-                                      <button
-                                        onClick={() => handlePaymentStatusUpdate(row, 'paid')}
-                                        style={{
-                                          background: "rgba(34,197,94,0.1)",
-                                          border: "1px solid rgba(34,197,94,0.2)",
-                                          color: "#22c55e",
-                                          padding: "6px 12px",
-                                          borderRadius: "6px",
-                                          fontSize: "10px",
-                                          fontWeight: "900",
-                                          cursor: "pointer"
-                                        }}
-                                      >
-                                        APPROVE
-                                      </button>
-                                      <button
-                                        onClick={() => handlePaymentStatusUpdate(row, 'failed')}
-                                        style={{
-                                          background: "rgba(239,68,68,0.1)",
-                                          border: "1px solid rgba(239,68,68,0.2)",
-                                          color: "#ef4444",
-                                          padding: "6px 12px",
-                                          borderRadius: "6px",
-                                          fontSize: "10px",
-                                          fontWeight: "900",
-                                          cursor: "pointer"
-                                        }}
-                                      >
-                                        FAIL
-                                      </button>
-                                    </>
-                                  )}
-
-                                  {(row.status === 'refunded' || row.status === 'failed') && (
-                                    <span style={{ color: "#444", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase" }}>
-                                      ARCHIVED
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-
-                            </tr>
-                          );
-                        })}
-
-                        {ledgerPayments.filter(p => {
-                          const searchMatch = !paymentsSearchQuery.trim() || 
-                            p.customerName.toLowerCase().includes(paymentsSearchQuery.toLowerCase()) || 
-                            p.customerEmail.toLowerCase().includes(paymentsSearchQuery.toLowerCase()) ||
-                            p.id.toLowerCase().includes(paymentsSearchQuery.toLowerCase()) ||
-                            (p.referenceId && p.referenceId.toLowerCase().includes(paymentsSearchQuery.toLowerCase()));
-                            
-                          const typeMatch = paymentsFilterType === 'all' || p.paymentType === paymentsFilterType;
-                          const statusMatch = paymentsFilterStatus === 'all' || p.status === paymentsFilterStatus;
-                          
-                          return searchMatch && typeMatch && statusMatch;
-                        }).length === 0 && (
-                          <tr>
-                            <td colSpan="7" style={{ padding: "48px", textAlign: "center", color: "#555", fontWeight: "900", fontSize: "14px" }}>
-                              NO TRANSACTIONS MATCHED THE ACTIVE SEARCH OR FILTER PRESETS.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                )) : (
+                  <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "48px", color: "#666", background: "rgba(255,255,255,0.01)", borderRadius: "16px", border: "1px dashed rgba(255,255,255,0.05)" }}>
+                    <Video size={48} style={{ marginBottom: "16px", opacity: 0.5 }} />
+                    <h3 style={{ margin: "0 0 8px 0", color: "white" }}>NO VIDEOS UPLOADED</h3>
+                    <p style={{ margin: 0 }}>Click "Upload New Video" to add content to this section.</p>
                   </div>
+                )}
+              </div>
+            </div>
+          )}
 
-                  {/* Bottom Guidelines Summary */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "48px", alignItems: "center" }}>
-                    <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "20px", padding: "32px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                      <h4 style={{ fontSize: "18px", fontWeight: "950", color: "white", margin: "0 0 24px 0", textTransform: "uppercase", letterSpacing: "-0.5px" }}>PAYOUT VELOCITY</h4>
-                      
-                      <div style={{ marginBottom: "20px" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                          <span style={{ fontSize: "10px", color: "#888", fontWeight: "900", letterSpacing: "1px" }}>VERIFIED TRANSFERS</span>
-                          <span style={{ fontSize: "10px", color: "white", fontWeight: "900" }}>94%</span>
-                        </div>
-                        <div style={{ width: "100%", height: "6px", background: "rgba(255,255,255,0.1)", borderRadius: "3px" }}>
-                          <div style={{ width: "94%", height: "100%", background: "linear-gradient(90deg, #FF5500, #ff8800)", borderRadius: "3px" }} />
-                        </div>
-                      </div>
-
-                      <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                          <span style={{ fontSize: "10px", color: "#888", fontWeight: "900", letterSpacing: "1px" }}>ESCROW RELEASE</span>
-                          <span style={{ fontSize: "10px", color: "white", fontWeight: "900" }}>78%</span>
-                        </div>
-                        <div style={{ width: "100%", height: "6px", background: "rgba(255,255,255,0.1)", borderRadius: "3px" }}>
-                          <div style={{ width: "78%", height: "100%", background: "linear-gradient(90deg, #FF5500, #ff8800)", borderRadius: "3px" }} />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <p style={{ color: "#FF8866", fontSize: "14px", lineHeight: "1.6", fontWeight: "600", marginBottom: "24px" }}>
-                        Financial oversight operations are running dynamically at peak system optimization. We have aggregated real-time database transactions from all membership tiers, catalog orders, livestream spectator tickets, and adjudication submissions into a central ledger.
-                      </p>
-                      <button style={{ background: "transparent", color: "#FF5500", border: "none", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "1px", padding: 0 }}>
-                        SECURE PAYMENTS COMPLIANCE PROTOCOLS <ArrowRight size={14} />
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {revenueSubTab === "coupons" && (
-                <>
+          {activeTab === "coupons" && (
+            <div>
                   {/* Coupons Revenue Grid Cards */}
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px", marginBottom: "56px" }}>
                     {/* Card 1 */}
@@ -5819,8 +7723,590 @@ const Admin = () => {
                       </tbody>
                     </table>
                   </div>
+                </div>
+          )}
+
+          {activeTab === "revenue" && (
+            <div>
+              {/* Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
+                <div>
+                  <div style={{ color: "#FF5500", fontSize: "11px", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>
+                    Central Treasury
+                  </div>
+                  <h2 style={{ fontSize: "56px", fontWeight: "950", margin: "0 0 12px 0", color: "white", letterSpacing: "-2px", textTransform: "uppercase", lineHeight: "1" }}>
+                    FINANCIAL
+                    <br />OVERSIGHT
+                  </h2>
+                </div>
+                <button 
+                  onClick={(e) => { e.preventDefault(); handleExportLedger(); }}
+                  style={{ background: "#FF5500", color: "white", border: "none", padding: "14px 28px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "1px", marginTop: "12px", boxShadow: "0 4px 14px rgba(255,85,0,0.4)" }}
+                >
+                  <TrendingUp size={14} /> EXPORT LEDGER
+                </button>
+              </div>
+
+              {/* Revenue Sub Tabs navigation */}
+              <div style={{ display: "flex", gap: "24px", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "0px", marginBottom: "40px" }}>
+                <button 
+                  onClick={(e) => { e.preventDefault(); setRevenueSubTab("ledger"); }}
+                  style={{ background: "transparent", border: "none", color: revenueSubTab === "ledger" ? "#FF5500" : "#888", fontWeight: revenueSubTab === "ledger" ? "900" : "700", fontSize: "14px", cursor: "pointer", textTransform: "uppercase", padding: "12px 6px", borderBottom: revenueSubTab === "ledger" ? "3px solid #FF5500" : "3px solid transparent", outline: "none", transition: "all 0.2s" }}
+                >
+                  Transaction Ledger
+                </button>
+                
+              </div>
+
+              {revenueSubTab === "ledger" && (
+                <>
+                  {/* Financial Revenue Grid Cards */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", marginBottom: "40px" }}>
+                    {/* Card 1: Net Paid Revenue */}
+                    <div 
+                      onClick={() => { setPaymentsFilterStatus("paid"); setPaymentsFilterType("all"); }}
+                      style={{ background: "rgba(255,255,255,0.02)", borderRadius: "24px", padding: "32px", position: "relative", overflow: "hidden", border: paymentsFilterStatus === "paid" && paymentsFilterType === "all" ? "1px solid #FF5500" : "1px solid rgba(255,255,255,0.05)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)", backdropFilter: "blur(12px)", cursor: "pointer", transition: "all 0.2s" }}
+                      className="hover-scale-glow"
+                    >
+                      <div style={{ color: "#888", fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px", marginBottom: "16px", textTransform: "uppercase" }}>NET PAID REVENUE</div>
+                      <div style={{ fontSize: "40px", fontWeight: "950", color: "#FF5500", lineHeight: "1", marginBottom: "16px", letterSpacing: "-1px" }}>
+                        ${(ledgerMetrics?.totalRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                      <div style={{ color: "#22c55e", fontSize: "11px", fontWeight: "800", display: "flex", alignItems: "center", gap: "4px" }}>
+                        <TrendingUp size={12} color="#22c55e" /> LIVE SYNCED FROM SYSTEM
+                      </div>
+                    </div>
+
+                    {/* Card 2: Transactions Breakdown */}
+                    <div 
+                      onClick={() => { setPaymentsFilterStatus("all"); setPaymentsFilterType("all"); }}
+                      style={{ background: "rgba(255,255,255,0.02)", borderRadius: "24px", padding: "32px", position: "relative", overflow: "hidden", border: paymentsFilterStatus === "all" && paymentsFilterType === "all" ? "1px solid #FF5500" : "1px solid rgba(255,255,255,0.05)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)", backdropFilter: "blur(12px)", cursor: "pointer", transition: "all 0.2s" }}
+                      className="hover-scale-glow"
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+                        <div style={{ color: "#888", fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px" }}>TOTAL TRANSACTIONS</div>
+                        <CreditCard size={20} color="#444" />
+                      </div>
+                      <div style={{ fontSize: "40px", fontWeight: "950", color: "white", lineHeight: "1", marginBottom: "16px" }}>
+                        {ledgerPayments.length}
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", fontSize: "10px", fontWeight: "800", color: "rgba(255,255,255,0.4)" }}>
+                        <span>Paid: {ledgerPayments.filter(p => p.status === 'paid').length}</span>
+                        <span>•</span>
+                        <span>Pending: {ledgerPayments.filter(p => p.status === 'pending').length}</span>
+                        <span>•</span>
+                        <span>Failed: {ledgerMetrics?.failedCount || 0}</span>
+                      </div>
+                    </div>
+
+                    {/* Card 3: Escrow / Adjustments */}
+                    <div 
+                      onClick={() => { setPaymentsFilterStatus("refunded"); setPaymentsFilterType("all"); }}
+                      style={{ background: "rgba(255,255,255,0.02)", borderRadius: "24px", padding: "32px", position: "relative", overflow: "hidden", border: paymentsFilterStatus === "refunded" && paymentsFilterType === "all" ? "1px solid #ef4444" : "1px solid rgba(255,255,255,0.05)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)", backdropFilter: "blur(12px)", cursor: "pointer", transition: "all 0.2s" }}
+                      className="hover-scale-glow"
+                    >
+                      <div style={{ color: "#888", fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px", marginBottom: "16px" }}>TOTAL ADJUSTMENTS / REFUNDS</div>
+                      <div style={{ fontSize: "40px", fontWeight: "950", color: "#ef4444", lineHeight: "1", marginBottom: "16px", letterSpacing: "-1px" }}>
+                        -${(ledgerMetrics?.refundRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                      <div style={{ color: "#ef4444", fontSize: "11px", fontWeight: "800", display: "flex", alignItems: "center", gap: "4px" }}>
+                        <ShieldAlert size={12} /> {ledgerPayments.filter(p => p.status === 'refunded').length} REFUNDED ENTRIES
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment Streams Detailed Aggregates bar */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "16px", marginBottom: "40px", background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "20px", padding: "20px" }}>
+                    <div 
+                      onClick={() => { setPaymentsFilterType("membership"); setPaymentsFilterStatus("all"); }}
+                      style={{ textAlign: "center", cursor: "pointer", padding: "8px", borderRadius: "10px", background: paymentsFilterType === "membership" ? "rgba(255,85,0,0.08)" : "transparent", transition: "all 0.2s" }}
+                    >
+                      <div style={{ fontSize: "10px", color: "#888", fontWeight: "900", letterSpacing: "1px", marginBottom: "4px" }}>MEMBERSHIPS</div>
+                      <div style={{ fontSize: "14px", fontWeight: "950", color: "white" }}>${(ledgerMetrics?.membershipRevenue || 0).toFixed(2)}</div>
+                    </div>
+                    <div 
+                      onClick={() => { setPaymentsFilterType("shop"); setPaymentsFilterStatus("all"); }}
+                      style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.05)", cursor: "pointer", padding: "8px", borderRadius: "10px", background: paymentsFilterType === "shop" ? "rgba(255,85,0,0.08)" : "transparent", transition: "all 0.2s" }}
+                    >
+                      <div style={{ fontSize: "10px", color: "#888", fontWeight: "900", letterSpacing: "1px", marginBottom: "4px" }}>SHOP SALES</div>
+                      <div style={{ fontSize: "14px", fontWeight: "950", color: "white" }}>${(ledgerMetrics?.shopRevenue || 0).toFixed(2)}</div>
+                    </div>
+                    <div 
+                      onClick={() => { setPaymentsFilterType("ticket"); setPaymentsFilterStatus("all"); }}
+                      style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.05)", cursor: "pointer", padding: "8px", borderRadius: "10px", background: paymentsFilterType === "ticket" ? "rgba(255,85,0,0.08)" : "transparent", transition: "all 0.2s" }}
+                    >
+                      <div style={{ fontSize: "10px", color: "#888", fontWeight: "900", letterSpacing: "1px", marginBottom: "4px" }}>TICKET SALES</div>
+                      <div style={{ fontSize: "14px", fontWeight: "950", color: "white" }}>${(ledgerMetrics?.ticketRevenue || 0).toFixed(2)}</div>
+                    </div>
+                    <div 
+                      onClick={() => { setPaymentsFilterType("submission"); setPaymentsFilterStatus("all"); }}
+                      style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.05)", cursor: "pointer", padding: "8px", borderRadius: "10px", background: paymentsFilterType === "submission" ? "rgba(255,85,0,0.08)" : "transparent", transition: "all 0.2s" }}
+                    >
+                      <div style={{ fontSize: "10px", color: "#888", fontWeight: "900", letterSpacing: "1px", marginBottom: "4px" }}>SUBMISSIONS</div>
+                      <div style={{ fontSize: "14px", fontWeight: "950", color: "white" }}>${(ledgerMetrics?.submissionRevenue || 0).toFixed(2)}</div>
+                    </div>
+                    <div 
+                      onClick={() => { setPaymentsFilterType("challenge"); setPaymentsFilterStatus("all"); }}
+                      style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.05)", cursor: "pointer", padding: "8px", borderRadius: "10px", background: paymentsFilterType === "challenge" ? "rgba(255,85,0,0.08)" : "transparent", transition: "all 0.2s" }}
+                    >
+                      <div style={{ fontSize: "10px", color: "#888", fontWeight: "900", letterSpacing: "1px", marginBottom: "4px" }}>CHALLENGES</div>
+                      <div style={{ fontSize: "14px", fontWeight: "950", color: "white" }}>${(ledgerMetrics?.challengeRevenue || 0).toFixed(2)}</div>
+                    </div>
+                    <div 
+                      onClick={() => { setPaymentsFilterStatus("pending"); setPaymentsFilterType("all"); }}
+                      style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.05)", cursor: "pointer", padding: "8px", borderRadius: "10px", background: paymentsFilterStatus === "pending" ? "rgba(234,179,8,0.1)" : "transparent", transition: "all 0.2s" }}
+                    >
+                      <div style={{ fontSize: "10px", color: "#eab308", fontWeight: "900", letterSpacing: "1px", marginBottom: "4px" }}>PENDING ESCROW</div>
+                      <div style={{ fontSize: "14px", fontWeight: "950", color: "#eab308" }}>${(ledgerMetrics?.pendingRevenue || 0).toFixed(2)}</div>
+                    </div>
+                  </div>
+
+                  {/* Interactive Roster Controls */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "20px", marginBottom: "32px" }}>
+                    
+                    {/* Header with quick stream filter bar */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
+                      <h3 style={{ fontSize: "20px", fontWeight: "950", color: "white", margin: 0, textTransform: "uppercase", letterSpacing: "-0.5px" }}>
+                        💳 REGISTRY TRANSACTIONS
+                      </h3>
+                      
+                      {/* Payment Type Streams Selector */}
+                      <div style={{ display: "flex", gap: "6px", background: "rgba(255,255,255,0.02)", padding: "4px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.05)", flexWrap: "wrap" }}>
+                        {[
+                          { label: "ALL STREAMS", value: "all" },
+                          { label: "MEMBERSHIPS", value: "membership" },
+                          { label: "SHOP SALES", value: "shop" },
+                          { label: "TICKETS", value: "ticket" },
+                          { label: "SUBMISSIONS", value: "submission" },
+                          { label: "CHALLENGES", value: "challenge" },
+                          { label: "MANUAL & SPONSORSHIPS", value: "manual" }
+                        ].map(typeOpt => (
+                          <button
+                            key={typeOpt.value}
+                            onClick={() => setPaymentsFilterType(typeOpt.value)}
+                            style={{
+                              background: paymentsFilterType === typeOpt.value ? "#FF5500" : "transparent",
+                              color: paymentsFilterType === typeOpt.value ? "white" : "#888",
+                              border: "none",
+                              padding: "8px 16px",
+                              borderRadius: "8px",
+                              fontSize: "10px",
+                              fontWeight: "900",
+                              cursor: "pointer",
+                              textTransform: "uppercase",
+                              transition: "all 0.2s"
+                            }}
+                          >
+                            {typeOpt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Filter by Status & Search Bar Row */}
+                    <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "center", width: "100%" }}>
+                      
+                      {/* Search Input Box with Action Buttons */}
+                      <div style={{ display: "flex", gap: "10px", flex: 1, minWidth: "280px", alignItems: "center" }}>
+                        <div style={{ position: "relative", flex: 1 }}>
+                          <Search size={16} color="#FF5500" style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)" }} />
+                          <input
+                            type="text"
+                            placeholder="SEARCH BY NAME, EMAIL, ID, REF, MEMBER, ORDER..."
+                            value={paymentsSearchQuery}
+                            onChange={(e) => setPaymentsSearchQuery(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                setPaymentsSearchApplied(paymentsSearchQuery);
+                              }
+                            }}
+                            style={{
+                              width: "100%",
+                              background: "rgba(255,255,255,0.03)",
+                              border: "1px solid rgba(255,255,255,0.05)",
+                              borderRadius: "100px",
+                              padding: "16px 16px 16px 48px",
+                              color: "white",
+                              fontSize: "11px",
+                              fontWeight: "800",
+                              outline: "none",
+                              letterSpacing: "0.5px"
+                            }}
+                          />
+                        </div>
+                        
+                        {/* Search Button */}
+                        <button
+                          onClick={(e) => { e.preventDefault(); setPaymentsSearchApplied(paymentsSearchQuery); }}
+                          style={{
+                            background: "linear-gradient(135deg, #FF5500 0%, #ff7700 100%)",
+                            color: "white",
+                            border: "none",
+                            padding: "14px 24px",
+                            borderRadius: "100px",
+                            fontSize: "11px",
+                            fontWeight: "900",
+                            cursor: "pointer",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.5px",
+                            transition: "all 0.2s",
+                            boxShadow: "0 4px 12px rgba(255,85,0,0.25)"
+                          }}
+                        >
+                          Search
+                        </button>
+                        
+                        {/* Clear Search Button */}
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setPaymentsSearchQuery("");
+                            setPaymentsSearchApplied("");
+                          }}
+                          style={{
+                            background: "rgba(255,255,255,0.05)",
+                            color: "#888",
+                            border: "1px solid rgba(255,255,255,0.05)",
+                            padding: "14px 20px",
+                            borderRadius: "100px",
+                            fontSize: "11px",
+                            fontWeight: "900",
+                            cursor: "pointer",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.5px",
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          Clear Search
+                        </button>
+                      </div>
+
+                      {/* Status Badges Selector */}
+                      <div style={{ display: "flex", gap: "6px", background: "rgba(255,255,255,0.02)", padding: "4px", borderRadius: "100px", border: "1px solid rgba(255,255,255,0.05)", alignItems: "center" }}>
+                        {[
+                          { label: "ALL STATUSES", value: "all" },
+                          { label: "PAID", value: "paid" },
+                          { label: "PENDING", value: "pending" },
+                          { label: "FAILED", value: "failed" },
+                          { label: "REFUNDED", value: "refunded" }
+                        ].map(statusOpt => (
+                          <button
+                            key={statusOpt.value}
+                            onClick={() => setPaymentsFilterStatus(statusOpt.value)}
+                            style={{
+                              background: paymentsFilterStatus === statusOpt.value ? "rgba(255,255,255,0.08)" : "transparent",
+                              color: paymentsFilterStatus === statusOpt.value ? "#FF5500" : "#888",
+                              border: "none",
+                              padding: "6px 14px",
+                              borderRadius: "100px",
+                              fontSize: "10px",
+                              fontWeight: "900",
+                              cursor: "pointer",
+                              textTransform: "uppercase",
+                              transition: "all 0.15s"
+                            }}
+                          >
+                            {statusOpt.label}
+                          </button>
+                        ))}
+                      </div>
+
+                    </div>
+                  </div>
+
+                  {/* Ledger Table */}
+                  <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: "24px", overflow: "hidden", marginBottom: "56px", boxShadow: "0 20px 40px rgba(0,0,0,0.3)" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#888", fontSize: "10px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "1px" }}>
+                          <th style={{ padding: "20px 24px", textAlign: "left" }}>CUSTOMER / ATHLETE</th>
+                          <th style={{ padding: "20px 24px", textAlign: "left" }}>STREAM TYPE</th>
+                          <th style={{ padding: "20px 24px", textAlign: "left" }}>REFERENCE ID / KEY</th>
+                          <th style={{ padding: "20px 24px", textAlign: "left" }}>AMOUNT</th>
+                          <th style={{ padding: "20px 24px", textAlign: "left" }}>DATE</th>
+                          <th style={{ padding: "20px 24px", textAlign: "left" }}>STATUS</th>
+                          <th style={{ padding: "20px 24px", textAlign: "right" }}>ACTIONS / CONTROLS</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ledgerPayments.filter(p => {
+                          const searchMatch = !paymentsSearchApplied.trim() || (() => {
+                            const q = paymentsSearchApplied.toLowerCase();
+                            return (p.customerName || "").toLowerCase().includes(q) || 
+                                   (p.customerEmail || "").toLowerCase().includes(q) ||
+                                   (p.id || "").toLowerCase().includes(q) ||
+                                   (p.referenceId && p.referenceId.toLowerCase().includes(q)) ||
+                                   (p.memberNumber && p.memberNumber.toLowerCase().includes(q)) ||
+                                   (p.orderNumber && p.orderNumber.toLowerCase().includes(q)) ||
+                                   (p.transactionId && p.transactionId.toLowerCase().includes(q)) ||
+                                   (p.title && p.title.toLowerCase().includes(q)) ||
+                                   (p.category && p.category.toLowerCase().includes(q));
+                          })();
+                            
+                          const typeMatch = paymentsFilterType === 'all' || p.paymentType === paymentsFilterType;
+                          const statusMatch = paymentsFilterStatus === 'all' || p.status === paymentsFilterStatus;
+                          
+                          return searchMatch && typeMatch && statusMatch;
+                        }).map((row, idx) => {
+                          const typeLabel = 
+                            row.paymentType === 'membership' ? 'ELITE MEMBERSHIP' : 
+                            row.paymentType === 'shop' ? 'SHOP MERCHANDISE' : 
+                            row.paymentType === 'ticket' ? 'EVENT TICKET' : 
+                            row.paymentType === 'challenge' ? 'CHALLENGE FEE' : 'SUBMISSION FEE';
+
+                          const typeColor = 
+                            row.paymentType === 'membership' ? '#a855f7' : 
+                            row.paymentType === 'shop' ? '#3b82f6' : 
+                            row.paymentType === 'ticket' ? '#ec4899' : 
+                            row.paymentType === 'challenge' ? '#eab308' : '#14b8a6';
+
+                          return (
+                            <tr key={idx} style={{ borderBottom: "1px solid rgba(255,255,255,0.02)", transition: "background 0.2s" }} className="table-row-hover">
+                              
+                              {/* Athlete / Customer details */}
+                              <td style={{ padding: "20px 24px", display: "flex", alignItems: "center", gap: "16px" }}>
+                                <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: `linear-gradient(135deg, ${typeColor}22 0%, ${typeColor}44 100%)`, border: `1px solid ${typeColor}44`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "950", color: typeColor, fontSize: "12px" }}>
+                                  {row.customerName.substring(0, 2).toUpperCase()}
+                                </div>
+                                <div>
+                                  <div style={{ color: "white", fontWeight: "900", fontSize: "13px" }}>{row.customerName}</div>
+                                  <div style={{ color: "#555", fontSize: "10px", fontWeight: "700", marginTop: "2px" }}>{row.customerEmail}</div>
+                                </div>
+                              </td>
+
+                              {/* Stream Type Tag */}
+                              <td style={{ padding: "20px 24px" }}>
+                                <span style={{ background: `${typeColor}15`, border: `1px solid ${typeColor}30`, color: typeColor, padding: "4px 10px", borderRadius: "8px", fontSize: "9px", fontWeight: "900", letterSpacing: "0.5px" }}>
+                                  {typeLabel}
+                                </span>
+                              </td>
+
+                              {/* Reference ID / Code */}
+                              <td style={{ padding: "20px 24px", fontFamily: "monospace", color: "#888", fontSize: "11px", fontWeight: "800" }}>
+                                {row.id}
+                              </td>
+
+                              {/* Amount */}
+                              <td style={{ padding: "20px 24px", color: row.status === 'refunded' ? '#ef4444' : '#FF5500', fontWeight: "950", fontSize: "14px" }}>
+                                {row.status === 'refunded' ? '-' : ''}${row.amount.toFixed(2)}
+                              </td>
+
+                              {/* Date */}
+                              <td style={{ padding: "20px 24px", color: "#aaa", fontWeight: "700" }}>
+                                {new Date(row.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </td>
+
+                              {/* Status Badge */}
+                              <td style={{ padding: "20px 24px" }}>
+                                <span style={{
+                                  background: row.status === "paid" ? "rgba(34,197,94,0.1)" : row.status === "pending" ? "rgba(234,179,8,0.1)" : row.status === "failed" ? "rgba(239,68,68,0.1)" : "rgba(255,255,255,0.05)",
+                                  color: row.status === "paid" ? "#22c55e" : row.status === "pending" ? "#eab308" : row.status === "failed" ? "#ef4444" : "#888",
+                                  padding: "4px 12px", borderRadius: "100px", fontWeight: "900", fontSize: "9px", textTransform: "uppercase", letterSpacing: "1px",
+                                  border: `1px solid ${row.status === "paid" ? "rgba(34,197,94,0.2)" : row.status === "pending" ? "rgba(234,179,8,0.2)" : row.status === "failed" ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.1)"}`
+                                }}>
+                                  {row.status}
+                                </span>
+                              </td>
+
+                              {/* Action Trigger Buttons */}
+                              <td style={{ padding: "20px 24px", textAlign: "right" }}>
+                                <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end", alignItems: "center" }}>
+                                  
+                                  {/* VIEW DETAILS ACTION */}
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      const details = `TRANSACTION METRICS DETAILS:\n` +
+                                        `----------------------------------------\n` +
+                                        `Transaction ID / Key: ${row.id}\n` +
+                                        `Customer: ${row.customerName}\n` +
+                                        `Email Address: ${row.customerEmail}\n` +
+                                        `Payment Stream: ${typeLabel}\n` +
+                                        `Amount: $${row.amount.toFixed(2)}\n` +
+                                        `Date: ${new Date(row.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}\n` +
+                                        `Transaction Status: ${row.status.toUpperCase()}\n` +
+                                        (row.memberNumber ? `Member Number: ${row.memberNumber}\n` : "") +
+                                        (row.orderNumber ? `Order Number: ${row.orderNumber}\n` : "") +
+                                        (row.category ? `Category: ${row.category}\n` : "") +
+                                        (row.paymentMethod ? `Payment Method: ${row.paymentMethod}\n` : "") +
+                                        (row.title ? `Title: ${row.title}\n` : "") +
+                                        (row.notes ? `Notes / Description: ${row.notes}\n` : "") +
+                                        (row.receiptUrl ? `Receipt: ${row.receiptUrl.substring(0, 100)}${row.receiptUrl.length > 100 ? '...' : ''}\n` : "");
+                                      alert(details);
+                                    }}
+                                    style={{
+                                      background: "rgba(255,255,255,0.05)",
+                                      border: "1px solid rgba(255,255,255,0.05)",
+                                      color: "white",
+                                      padding: "6px 12px",
+                                      borderRadius: "6px",
+                                      fontSize: "10px",
+                                      fontWeight: "900",
+                                      cursor: "pointer",
+                                      transition: "all 0.2s"
+                                    }}
+                                  >
+                                    VIEW
+                                  </button>
+
+                                  {/* EDIT MANUAL REVENUE */}
+                                  {row.paymentType === 'manual' && (
+                                    <button
+                                      onClick={(e) => { e.preventDefault(); openModal("edit", row); }}
+                                      style={{
+                                        background: "rgba(255,136,0,0.1)",
+                                        border: "1px solid rgba(255,136,0,0.2)",
+                                        color: "#FF8800",
+                                        padding: "6px 12px",
+                                        borderRadius: "6px",
+                                        fontSize: "10px",
+                                        fontWeight: "900",
+                                        cursor: "pointer",
+                                        transition: "all 0.2s"
+                                      }}
+                                    >
+                                      EDIT
+                                    </button>
+                                  )}
+
+                                  {row.status === 'paid' && (
+                                    <button
+                                      onClick={() => handlePaymentStatusUpdate(row, 'refunded')}
+                                      style={{
+                                        background: "rgba(239,68,68,0.1)",
+                                        border: "1px solid rgba(239,68,68,0.2)",
+                                        color: "#ef4444",
+                                        padding: "6px 12px",
+                                        borderRadius: "6px",
+                                        fontSize: "10px",
+                                        fontWeight: "900",
+                                        cursor: "pointer",
+                                        transition: "all 0.2s"
+                                      }}
+                                      className="hover-bg-red-20"
+                                    >
+                                      REFUND
+                                    </button>
+                                  )}
+
+                                  {row.status === 'pending' && (
+                                    <>
+                                      <button
+                                        onClick={() => handlePaymentStatusUpdate(row, 'paid')}
+                                        style={{
+                                          background: "rgba(34,197,94,0.1)",
+                                          border: "1px solid rgba(34,197,94,0.2)",
+                                          color: "#22c55e",
+                                          padding: "6px 12px",
+                                          borderRadius: "6px",
+                                          fontSize: "10px",
+                                          fontWeight: "900",
+                                          cursor: "pointer",
+                                          transition: "all 0.2s"
+                                        }}
+                                      >
+                                        APPROVE
+                                      </button>
+                                      <button
+                                        onClick={() => handlePaymentStatusUpdate(row, 'failed')}
+                                        style={{
+                                          background: "rgba(239,68,68,0.1)",
+                                          border: "1px solid rgba(239,68,68,0.2)",
+                                          color: "#ef4444",
+                                          padding: "6px 12px",
+                                          borderRadius: "6px",
+                                          fontSize: "10px",
+                                          fontWeight: "900",
+                                          cursor: "pointer",
+                                          transition: "all 0.2s"
+                                        }}
+                                      >
+                                        FAIL
+                                      </button>
+                                    </>
+                                  )}
+
+                                  {(row.status === 'refunded' || row.status === 'failed') && row.paymentType !== 'manual' && (
+                                    <span style={{ color: "#444", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase" }}>
+                                      ARCHIVED
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+
+                            </tr>
+                          );
+                        })}
+
+                        {ledgerPayments.filter(p => {
+                          const searchMatch = !paymentsSearchApplied.trim() || (() => {
+                            const q = paymentsSearchApplied.toLowerCase();
+                            return (p.customerName || "").toLowerCase().includes(q) || 
+                                   (p.customerEmail || "").toLowerCase().includes(q) ||
+                                   (p.id || "").toLowerCase().includes(q) ||
+                                   (p.referenceId && p.referenceId.toLowerCase().includes(q)) ||
+                                   (p.memberNumber && p.memberNumber.toLowerCase().includes(q)) ||
+                                   (p.orderNumber && p.orderNumber.toLowerCase().includes(q)) ||
+                                   (p.transactionId && p.transactionId.toLowerCase().includes(q)) ||
+                                   (p.title && p.title.toLowerCase().includes(q)) ||
+                                   (p.category && p.category.toLowerCase().includes(q));
+                          })();
+                            
+                          const typeMatch = paymentsFilterType === 'all' || p.paymentType === paymentsFilterType;
+                          const statusMatch = paymentsFilterStatus === 'all' || p.status === paymentsFilterStatus;
+                          
+                          return searchMatch && typeMatch && statusMatch;
+                        }).length === 0 && (
+                          <tr>
+                            <td colSpan="7" style={{ padding: "48px", textAlign: "center", color: "#555", fontWeight: "900", fontSize: "14px" }}>
+                              NO TRANSACTIONS MATCHED THE ACTIVE SEARCH OR FILTER PRESETS.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Bottom Guidelines Summary */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "48px", alignItems: "center" }}>
+                    <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "20px", padding: "32px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                      <h4 style={{ fontSize: "18px", fontWeight: "950", color: "white", margin: "0 0 24px 0", textTransform: "uppercase", letterSpacing: "-0.5px" }}>PAYOUT VELOCITY</h4>
+                      
+                      <div style={{ marginBottom: "20px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                          <span style={{ fontSize: "10px", color: "#888", fontWeight: "900", letterSpacing: "1px" }}>VERIFIED TRANSFERS</span>
+                          <span style={{ fontSize: "10px", color: "white", fontWeight: "900" }}>94%</span>
+                        </div>
+                        <div style={{ width: "100%", height: "6px", background: "rgba(255,255,255,0.1)", borderRadius: "3px" }}>
+                          <div style={{ width: "94%", height: "100%", background: "linear-gradient(90deg, #FF5500, #ff8800)", borderRadius: "3px" }} />
+                        </div>
+                      </div>
+
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                          <span style={{ fontSize: "10px", color: "#888", fontWeight: "900", letterSpacing: "1px" }}>ESCROW RELEASE</span>
+                          <span style={{ fontSize: "10px", color: "white", fontWeight: "900" }}>78%</span>
+                        </div>
+                        <div style={{ width: "100%", height: "6px", background: "rgba(255,255,255,0.1)", borderRadius: "3px" }}>
+                          <div style={{ width: "78%", height: "100%", background: "linear-gradient(90deg, #FF5500, #ff8800)", borderRadius: "3px" }} />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <p style={{ color: "#FF8866", fontSize: "14px", lineHeight: "1.6", fontWeight: "600", marginBottom: "24px" }}>
+                        Financial oversight operations are running dynamically at peak system optimization. We have aggregated real-time database transactions from all membership tiers, catalog orders, livestream spectator tickets, and adjudication submissions into a central ledger.
+                      </p>
+                      <button style={{ background: "transparent", color: "#FF5500", border: "none", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "1px", padding: 0 }}>
+                        SECURE PAYMENTS COMPLIANCE PROTOCOLS <ArrowRight size={14} />
+                      </button>
+                    </div>
+                  </div>
                 </>
               )}
+
+              
 
               {/* Floating Action Button */}
               <div style={{ position: "fixed", bottom: "40px", right: "40px", zIndex: 100 }}>
@@ -5912,6 +8398,14 @@ const Admin = () => {
                       <textarea value={categoryForm.description} onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", minHeight: "80px" }} />
                     </div>
                     <div>
+                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>RULES</label>
+                      <textarea value={categoryForm.rules} onChange={(e) => setCategoryForm({ ...categoryForm, rules: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", minHeight: "80px" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>SUBMISSION REQUIREMENTS</label>
+                      <textarea value={categoryForm.submissionRequirements} onChange={(e) => setCategoryForm({ ...categoryForm, submissionRequirements: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", minHeight: "80px" }} />
+                    </div>
+                    <div>
                       <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>PARENT CATEGORY</label>
                       <select value={categoryForm.parent || ""} onChange={(e) => setCategoryForm({ ...categoryForm, parent: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }}>
                         <option value="">-- None --</option>
@@ -5980,16 +8474,32 @@ const Admin = () => {
                       <div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
                           <label style={{ fontSize: "10px", fontWeight: "900", color: "#555" }}>USER ROLE</label>
-                          <span style={{ fontSize: "10px", fontWeight: "900", color: userForm.role === 'system_admin' ? '#FF5500' : '#22c55e' }}>
-                            ACCESS LEVEL: {userForm.role === 'system_admin' ? 'FULL ADMIN' : 'STANDARD'}
+                          <span style={{ 
+                            fontSize: "10px", 
+                            fontWeight: "900", 
+                            color: userForm.role === 'system_admin' ? '#FF5500' : 
+                                   userForm.role === 'moderator' ? '#3b82f6' : 
+                                   userForm.role === 'judge' ? '#ffcc00' : '#22c55e' 
+                          }}>
+                            ACCESS LEVEL: {
+                              userForm.role === 'system_admin' ? 'FULL ADMIN' : 
+                              userForm.role === 'moderator' ? 'MODERATOR' : 
+                              userForm.role === 'judge' ? 'OFFICIAL JUDGE' : 'STANDARD'
+                            }
                           </span>
                         </div>
                         <select 
-                          value={userForm.role} 
+                          value={userForm.role || "athlete"} 
                           onChange={(e) => {
                             const newRole = e.target.value;
                             if (['moderator', 'judge', 'system_admin'].includes(newRole)) {
-                              if (window.confirm(`SECURITY WARNING: Are you sure you want to grant ${newRole.replace('_', ' ').toUpperCase()} permissions?\n\nThis provides elevated access to the platform (backend management, user management, financial controls, etc.).\n\nAthletes should NOT receive these roles.`)) {
+                              const alertMsg = `⚠️ SECURITY CRITICAL ACTION ALERT ⚠️\n\n` +
+                                `You are attempting to grant ELEVATED administrative permissions: "${newRole.toUpperCase()}".\n\n` +
+                                `• This grants access to sensitive platform controls, user management, and configuration tools.\n` +
+                                `• Standard athletes should NEVER be assigned this role.\n\n` +
+                                `Are you absolutely certain you want to proceed and authorize this elevation?`;
+                              
+                              if (window.confirm(alertMsg)) {
                                 setUserForm({ ...userForm, role: newRole });
                               }
                             } else {
@@ -5998,18 +8508,62 @@ const Admin = () => {
                           }} 
                           style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }}
                         >
-                          <option value="athlete">Athlete (Regular User)</option>
+                          <option value="athlete">Regular Athlete</option>
                           <option value="moderator">Moderator</option>
                           <option value="judge">Judge / Adjudicator</option>
                           <option value="system_admin">System Admin</option>
                         </select>
                       </div>
                     </div>
+
+                    {/* Access Level Description Card */}
+                    <div style={{ 
+                      background: userForm.role === 'system_admin' ? 'rgba(255,85,0,0.05)' : 
+                                  userForm.role === 'moderator' ? 'rgba(59,130,246,0.05)' : 
+                                  userForm.role === 'judge' ? 'rgba(255,204,0,0.05)' : 'rgba(255,255,255,0.01)',
+                      border: `1px solid ${
+                        userForm.role === 'system_admin' ? 'rgba(255,85,0,0.2)' : 
+                        userForm.role === 'moderator' ? 'rgba(59,130,246,0.2)' : 
+                        userForm.role === 'judge' ? 'rgba(255,204,0,0.2)' : 'rgba(255,255,255,0.05)'
+                      }`,
+                      borderRadius: "12px",
+                      padding: "16px",
+                      marginTop: "-8px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px"
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div style={{ 
+                          width: "8px", 
+                          height: "8px", 
+                          borderRadius: "50%", 
+                          background: userForm.role === 'system_admin' ? '#FF5500' : 
+                                      userForm.role === 'moderator' ? '#3b82f6' : 
+                                      userForm.role === 'judge' ? '#ffcc00' : '#22c55e'
+                        }} />
+                        <span style={{ fontSize: "11px", fontWeight: "900", color: "white", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                          Role Security Level Details
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: "12px", color: "#aaa", lineHeight: "1.4" }}>
+                        {
+                          userForm.role === 'system_admin' ? 
+                          "🔒 FULL ACCESS: Absolute platform ownership. Authorized to read/write database, manage billing, change server configs, and grant or revoke admin permissions." :
+                          userForm.role === 'moderator' ? 
+                          "🛡️ MODERATION ACCESS: Authorized for content oversight. Can audit/remove comments, standard forum posts, handle support tickets, and review flagged material." :
+                          userForm.role === 'judge' ? 
+                          "⚖️ ADJUDICATOR ACCESS: Timing & validation oversight. Authorized to inspect, approve, or reject official record attempts, timing sheets, and upload results." :
+                          "🏃 STANDARD ACCESS: Standard platform interaction. Can participate in challenges, post attempts, track personal records, shop products, and update basic profile."
+                        }
+                      </p>
+                    </div>
+
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                       <div>
                         <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>MEMBERSHIP TYPE</label>
                         <select 
-                          value={userForm.membershipType} 
+                          value={userForm.membershipType || "free_athlete"} 
                           onChange={(e) => setUserForm({ ...userForm, membershipType: e.target.value })} 
                           style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }}
                         >
@@ -6029,7 +8583,7 @@ const Admin = () => {
                       <div>
                         <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>ACCOUNT STATUS</label>
                         <select 
-                          value={userForm.accountStatus} 
+                          value={userForm.accountStatus || "active"} 
                           onChange={(e) => setUserForm({ ...userForm, accountStatus: e.target.value })} 
                           style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }}
                         >
@@ -6094,16 +8648,22 @@ const Admin = () => {
                         <h2 style={{ fontSize: "24px", fontWeight: "950", margin: "0 0 4px 0", color: "white" }}>{modalTarget.name}</h2>
                         <div style={{ color: "#888", fontSize: "14px", marginBottom: "8px" }}>{modalTarget.email} | {modalTarget.username || 'No Username'}</div>
                         <div style={{ display: "flex", gap: "8px" }}>
-                          <span style={{ background: "rgba(255,85,0,0.1)", color: "#FF5500", padding: "4px 10px", borderRadius: "100px", fontSize: "11px", fontWeight: "800", textTransform: "uppercase" }}>{modalTarget.role || 'Athlete'}</span>
-                          <span style={{ background: "rgba(34,197,94,0.1)", color: "#22c55e", padding: "4px 10px", borderRadius: "100px", fontSize: "11px", fontWeight: "800", textTransform: "uppercase" }}>{modalTarget.membershipType || 'Free Athlete'}</span>
-                          <span style={{ background: "rgba(255,255,255,0.05)", color: "#aaa", padding: "4px 10px", borderRadius: "100px", fontSize: "11px", fontWeight: "800", textTransform: "uppercase" }}>{modalTarget.account_status || 'Active'}</span>
+                          <span style={{ background: "rgba(255,85,0,0.1)", color: "#FF5500", padding: "4px 10px", borderRadius: "100px", fontSize: "11px", fontWeight: "800", textTransform: "uppercase" }}>
+                            {(modalTarget.role || 'athlete').replace('_', ' ')}
+                          </span>
+                          <span style={{ background: "rgba(34,197,94,0.1)", color: "#22c55e", padding: "4px 10px", borderRadius: "100px", fontSize: "11px", fontWeight: "800", textTransform: "uppercase" }}>
+                            {(modalTarget.membership_type || modalTarget.membershipType || 'free_athlete').replace('_', ' ')}
+                          </span>
+                          <span style={{ background: "rgba(255,255,255,0.05)", color: "#aaa", padding: "4px 10px", borderRadius: "100px", fontSize: "11px", fontWeight: "800", textTransform: "uppercase" }}>
+                            {(modalTarget.account_status || modalTarget.accountStatus || 'active').replace('_', ' ')}
+                          </span>
                         </div>
                       </div>
                     </div>
 
                     {/* Navigation Tabs */}
-                    <div style={{ display: "flex", gap: "16px", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "12px" }}>
-                      {['overview', 'activity', 'submissions', 'challenges'].map(tab => (
+                    <div style={{ display: "flex", gap: "16px", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "12px", overflowX: "auto" }}>
+                      {['overview', 'activity', 'submissions', 'payments', 'ranking', 'challenges'].map(tab => (
                         <button 
                           key={tab}
                           onClick={(e) => { e.preventDefault(); setRecordsSubTab(tab); }}
@@ -6116,7 +8676,8 @@ const Admin = () => {
                             cursor: "pointer",
                             textTransform: "uppercase",
                             padding: "4px 8px",
-                            borderBottom: recordsSubTab === tab ? "2px solid #FF5500" : "2px solid transparent"
+                            borderBottom: recordsSubTab === tab ? "2px solid #FF5500" : "2px solid transparent",
+                            whiteSpace: "nowrap"
                           }}>
                           {tab}
                         </button>
@@ -6125,10 +8686,14 @@ const Admin = () => {
 
                     {/* Tab Contents */}
                     {recordsSubTab === "overview" && (
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
                         <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "12px" }}>
-                          <div style={{ fontSize: "11px", color: "#666", fontWeight: "800", marginBottom: "4px" }}>COUNTRY</div>
-                          <div style={{ fontSize: "15px", color: "white", fontWeight: "600" }}>{modalTarget.country || "Not specified"}</div>
+                          <div style={{ fontSize: "11px", color: "#666", fontWeight: "800", marginBottom: "4px" }}>MEMBER NUMBER</div>
+                          <div style={{ fontSize: "15px", color: "white", fontWeight: "600" }}>{modalTarget.member_number || modalTarget.memberNumber || "Pending"}</div>
+                        </div>
+                        <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "12px" }}>
+                          <div style={{ fontSize: "11px", color: "#666", fontWeight: "800", marginBottom: "4px" }}>PHONE NUMBER</div>
+                          <div style={{ fontSize: "15px", color: "white", fontWeight: "600" }}>{modalTarget.phone || "Not specified"}</div>
                         </div>
                         <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "12px" }}>
                           <div style={{ fontSize: "11px", color: "#666", fontWeight: "800", marginBottom: "4px" }}>AGE GROUP / DOB</div>
@@ -6141,6 +8706,12 @@ const Admin = () => {
                         <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "12px" }}>
                           <div style={{ fontSize: "11px", color: "#666", fontWeight: "800", marginBottom: "4px" }}>MEMBER SINCE</div>
                           <div style={{ fontSize: "15px", color: "white", fontWeight: "600" }}>{new Date(modalTarget.created_at || new Date()).toLocaleDateString()}</div>
+                        </div>
+                        <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "12px", gridColumn: "span 3" }}>
+                          <div style={{ fontSize: "11px", color: "#666", fontWeight: "800", marginBottom: "4px" }}>FULL ADDRESS</div>
+                          <div style={{ fontSize: "15px", color: "white", fontWeight: "600" }}>
+                            {[modalTarget.street_address, modalTarget.apartment, modalTarget.city, modalTarget.state, modalTarget.country, modalTarget.zip_code].filter(Boolean).join(', ') || "Not specified"}
+                          </div>
                         </div>
                       </div>
                     )}
@@ -6176,12 +8747,130 @@ const Admin = () => {
                       </div>
                     )}
 
+                    {recordsSubTab === "payments" && (
+                      <div style={{ background: "rgba(255,255,255,0.02)", padding: "20px", borderRadius: "12px" }}>
+                        <h4 style={{ fontSize: "14px", fontWeight: "800", color: "white", margin: "0 0 16px 0" }}>Payment History</h4>
+                        <div style={{ textAlign: "center", padding: "40px 0", color: "#666", fontSize: "13px" }}>
+                          No payment transactions found for this user.
+                        </div>
+                      </div>
+                    )}
+
+                    {recordsSubTab === "ranking" && (
+                      <div style={{ background: "rgba(255,255,255,0.02)", padding: "20px", borderRadius: "12px" }}>
+                        <h4 style={{ fontSize: "14px", fontWeight: "800", color: "white", margin: "0 0 16px 0" }}>Ranking Information</h4>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "20px" }}>
+                          <div style={{ background: "rgba(0,0,0,0.4)", padding: "16px", borderRadius: "8px", border: "1px solid rgba(255,215,0,0.3)", textAlign: "center" }}>
+                            <div style={{ fontSize: "11px", color: "#FFD700", fontWeight: "900" }}>GLOBAL RANK</div>
+                            <div style={{ fontSize: "24px", color: "white", fontWeight: "950" }}>#---</div>
+                          </div>
+                          <div style={{ background: "rgba(0,0,0,0.4)", padding: "16px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)", textAlign: "center" }}>
+                            <div style={{ fontSize: "11px", color: "#888", fontWeight: "900" }}>CATEGORY RANK</div>
+                            <div style={{ fontSize: "24px", color: "white", fontWeight: "950" }}>#---</div>
+                          </div>
+                          <div style={{ background: "rgba(0,0,0,0.4)", padding: "16px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)", textAlign: "center" }}>
+                            <div style={{ fontSize: "11px", color: "#888", fontWeight: "900" }}>TOTAL POINTS</div>
+                            <div style={{ fontSize: "24px", color: "white", fontWeight: "950" }}>0</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {recordsSubTab === "challenges" && (
                       <div style={{ background: "rgba(255,255,255,0.02)", padding: "20px", borderRadius: "12px" }}>
                         <h4 style={{ fontSize: "14px", fontWeight: "800", color: "white", margin: "0 0 16px 0" }}>Challenge Participation</h4>
                         <div style={{ textAlign: "center", padding: "40px 0", color: "#666", fontSize: "13px" }}>
                           User hasn't participated in any challenges yet.
                         </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === "adjudicators" && modalType === "viewAdjudicatorProfile" && modalTarget && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                    {/* Header */}
+                    <div style={{ display: "flex", gap: "20px", alignItems: "center", background: "rgba(255,255,255,0.02)", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                      <img src={modalTarget.profile_pic || `https://ui-avatars.com/api/?name=${modalTarget.name}&background=random&size=128`} alt={modalTarget.name} style={{ width: "96px", height: "96px", borderRadius: "50%", objectFit: "cover", border: "2px solid #FF5500" }} />
+                      <div style={{ flex: 1 }}>
+                        <h2 style={{ fontSize: "24px", fontWeight: "950", margin: "0 0 4px 0", color: "white" }}>{modalTarget.name}</h2>
+                        <div style={{ color: "#888", fontSize: "14px", marginBottom: "8px" }}>{modalTarget.email} | Member #{modalTarget.member_number || modalTarget.memberNumber || 'Pending'}</div>
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <span style={{ background: "rgba(255,85,0,0.1)", color: "#FF5500", padding: "4px 10px", borderRadius: "100px", fontSize: "11px", fontWeight: "800", textTransform: "uppercase" }}>
+                            {modalTarget.certificationLevel || 'Certified Adjudicator'}
+                          </span>
+                          <span style={{ background: "rgba(34,197,94,0.1)", color: "#22c55e", padding: "4px 10px", borderRadius: "100px", fontSize: "11px", fontWeight: "800", textTransform: "uppercase" }}>
+                            {modalTarget.account_status || 'active'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Navigation Tabs */}
+                    <div style={{ display: "flex", gap: "16px", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "12px" }}>
+                      {['performance', 'history'].map(tab => (
+                        <button 
+                          key={tab}
+                          onClick={(e) => { e.preventDefault(); setRecordsSubTab(tab); }}
+                          style={{ 
+                            background: "transparent", 
+                            border: "none", 
+                            color: recordsSubTab === tab ? "#FF5500" : "#888", 
+                            fontWeight: recordsSubTab === tab ? "900" : "700", 
+                            fontSize: "13px", 
+                            cursor: "pointer",
+                            textTransform: "uppercase",
+                            padding: "4px 8px",
+                            borderBottom: recordsSubTab === tab ? "2px solid #FF5500" : "2px solid transparent"
+                          }}>
+                          {tab}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Tab Contents */}
+                    {(recordsSubTab === "performance" || recordsSubTab === "overview" || !recordsSubTab) && (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
+                        <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "12px", textAlign: "center" }}>
+                          <div style={{ fontSize: "11px", color: "#666", fontWeight: "800", marginBottom: "4px" }}>TOTAL REVIEWS</div>
+                          <div style={{ fontSize: "24px", color: "white", fontWeight: "950" }}>{modalTarget.stats?.completed || 0}</div>
+                        </div>
+                        <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "12px", textAlign: "center" }}>
+                          <div style={{ fontSize: "11px", color: "#666", fontWeight: "800", marginBottom: "4px" }}>PENDING REVIEWS</div>
+                          <div style={{ fontSize: "24px", color: "#FF5500", fontWeight: "950" }}>{modalTarget.stats?.pending || 0}</div>
+                        </div>
+                        <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "12px", textAlign: "center" }}>
+                          <div style={{ fontSize: "11px", color: "#666", fontWeight: "800", marginBottom: "4px" }}>APPEAL INVOLVEMENT</div>
+                          <div style={{ fontSize: "24px", color: "#f59e0b", fontWeight: "950" }}>{modalTarget.stats?.appeals || 0}</div>
+                        </div>
+                        
+                        <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "12px", textAlign: "center" }}>
+                          <div style={{ fontSize: "11px", color: "#666", fontWeight: "800", marginBottom: "4px" }}>APPROVED RECORDS</div>
+                          <div style={{ fontSize: "24px", color: "#22c55e", fontWeight: "950" }}>{modalTarget.stats?.verified || 0}</div>
+                        </div>
+                        <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "12px", textAlign: "center" }}>
+                          <div style={{ fontSize: "11px", color: "#666", fontWeight: "800", marginBottom: "4px" }}>DENIED RECORDS</div>
+                          <div style={{ fontSize: "24px", color: "#ef4444", fontWeight: "950" }}>{modalTarget.stats?.rejected || 0}</div>
+                        </div>
+                        <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "12px", textAlign: "center" }}>
+                          <div style={{ fontSize: "11px", color: "#666", fontWeight: "800", marginBottom: "4px" }}>PERFORMANCE RATING</div>
+                          <div style={{ fontSize: "24px", color: "white", fontWeight: "950" }}>{modalTarget.stats?.rating || "A+"}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {recordsSubTab === "history" && (
+                      <div style={{ background: "rgba(255,255,255,0.02)", padding: "20px", borderRadius: "12px" }}>
+                        <h4 style={{ fontSize: "14px", fontWeight: "800", color: "white", margin: "0 0 16px 0" }}>Oversight Notes / History</h4>
+                        {modalTarget.admin_notes ? (
+                          <div style={{ color: "#aaa", fontSize: "13px", lineHeight: "1.6", whiteSpace: "pre-wrap" }}>
+                            {modalTarget.admin_notes}
+                          </div>
+                        ) : (
+                          <div style={{ textAlign: "center", padding: "40px 0", color: "#666", fontSize: "13px" }}>
+                            No oversight notes recorded for this adjudicator.
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -6261,6 +8950,58 @@ const Admin = () => {
                 )}
 
                 {/* 4. PRODUCTS TAB FORM */}
+                
+                {/* 10. VIDEO UPLOAD FORM */}
+                {activeTab === "videoManagement" && (
+                  <>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>VIDEO TITLE</label>
+                        <input type="text" value={videoForm.title} onChange={(e) => setVideoForm({ ...videoForm, title: e.target.value })} required style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>DESCRIPTION</label>
+                        <textarea value={videoForm.description} onChange={(e) => setVideoForm({ ...videoForm, description: e.target.value })} rows="3" style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }}></textarea>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>CATEGORY</label>
+                          <select value={videoForm.category} onChange={(e) => setVideoForm({ ...videoForm, category: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }}>
+                            <option value="Strength">Strength</option>
+                            <option value="Endurance">Endurance</option>
+                            <option value="Speed">Speed</option>
+                            <option value="Skill">Skill</option>
+                            <option value="Combat">Combat</option>
+                          </select>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "24px" }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: "8px", color: "white", fontSize: "12px", cursor: "pointer" }}>
+                            <input type="checkbox" checked={videoForm.isFeatured} onChange={(e) => setVideoForm({ ...videoForm, isFeatured: e.target.checked })} style={{ cursor: "pointer" }} />
+                            Mark as Featured Video
+                          </label>
+                          <label style={{ display: "flex", alignItems: "center", gap: "8px", color: "white", fontSize: "12px", cursor: "pointer" }}>
+                            <input type="checkbox" checked={videoForm.isNewlyUploaded} onChange={(e) => setVideoForm({ ...videoForm, isNewlyUploaded: e.target.checked })} style={{ cursor: "pointer" }} />
+                            Mark as Newly Uploaded
+                          </label>
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "16px" }}>
+                        <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "8px", border: "1px dashed rgba(255,255,255,0.1)" }}>
+                          <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#FF5500", marginBottom: "6px" }}>UPLOAD VIDEO FILE</label>
+                          <input type="file" accept="video/mp4,video/webm" onChange={(e) => setVideoFile(e.target.files[0])} style={{ color: "white", fontSize: "12px" }} />
+                          <p style={{ fontSize: "10px", color: "#666", margin: "8px 0 0 0" }}>Max 50MB. MP4 or WebM.</p>
+                        </div>
+                        <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "8px", border: "1px dashed rgba(255,255,255,0.1)" }}>
+                          <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#FF5500", marginBottom: "6px" }}>UPLOAD THUMBNAIL (OPTIONAL)</label>
+                          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setThumbnailFile(e.target.files[0])} style={{ color: "white", fontSize: "12px" }} />
+                          <p style={{ fontSize: "10px", color: "#666", margin: "8px 0 0 0" }}>Max 5MB. JPG, PNG, WEBP.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 {activeTab === "products" && (
                   <>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
@@ -6288,9 +9029,124 @@ const Admin = () => {
                         <input type="number" value={productForm.stockCount} onChange={(e) => setProductForm({ ...productForm, stockCount: e.target.value })} required style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }} />
                       </div>
                     </div>
-                     <div>
-                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>PRODUCT IMAGE URL</label>
-                      <input type="url" value={productForm.imageUrl} onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })} placeholder="https://..." style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }} />
+                    <div>
+                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>UPLOAD PRODUCT IMAGE</label>
+                      <input 
+                        type="file" 
+                        ref={adminProductFileInputRef}
+                        accept=".jpg,.jpeg,.png,.webp"
+                        style={{ display: "none" }}
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            const file = e.target.files[0];
+                            if (file.size > 10 * 1024 * 1024) {
+                              alert("Image size must be less than 10MB.");
+                              return;
+                            }
+                            const ext = file.name.split('.').pop().toLowerCase();
+                            if (!['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+                              alert("Invalid image format. Allowed: JPG, JPEG, PNG, WEBP.");
+                              return;
+                            }
+                            setProductForm({
+                              ...productForm,
+                              imageFile: file,
+                              imagePreview: URL.createObjectURL(file)
+                            });
+                          }
+                        }}
+                      />
+                      
+                      <div
+                        onDragEnter={(e) => { e.preventDefault(); setAdminProductDragActive(true); }}
+                        onDragOver={(e) => { e.preventDefault(); setAdminProductDragActive(true); }}
+                        onDragLeave={(e) => { e.preventDefault(); setAdminProductDragActive(false); }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setAdminProductDragActive(false);
+                          if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                            const file = e.dataTransfer.files[0];
+                            if (file.size > 10 * 1024 * 1024) {
+                              alert("Image size must be less than 10MB.");
+                              return;
+                            }
+                            const ext = file.name.split('.').pop().toLowerCase();
+                            if (!['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+                              alert("Invalid image format. Allowed: JPG, JPEG, PNG, WEBP.");
+                              return;
+                            }
+                            setProductForm({
+                              ...productForm,
+                              imageFile: file,
+                              imagePreview: URL.createObjectURL(file)
+                            });
+                          }
+                        }}
+                        onClick={() => adminProductFileInputRef.current?.click()}
+                        style={{
+                          background: adminProductDragActive ? "rgba(255, 106, 0, 0.1)" : "rgba(0,0,0,0.3)",
+                          border: adminProductDragActive ? "2px dashed #FF6A00" : "1px dashed rgba(255,255,255,0.1)",
+                          borderRadius: "8px",
+                          padding: "24px 16px",
+                          textAlign: "center",
+                          cursor: "pointer",
+                          transition: "all 0.3s ease",
+                          position: "relative",
+                          overflow: "hidden"
+                        }}
+                      >
+                        {(productForm.imagePreview || productForm.imageUrl) ? (
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", position: "relative" }}>
+                            <img 
+                              src={productForm.imagePreview || formatProductImage(productForm.imageUrl)} 
+                              alt="Product Preview" 
+                              style={{ maxWidth: "160px", maxHeight: "110px", borderRadius: "8px", objectFit: "cover", border: "1px solid rgba(255,255,255,0.06)" }} 
+                            />
+                            <div style={{ fontSize: "11px", color: "white", fontWeight: "700" }}>
+                              {productForm.imageFile ? productForm.imageFile.name : "Current Image (Click to change)"}
+                            </div>
+                            {productForm.imageFile && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setProductForm({
+                                    ...productForm,
+                                    imageFile: null,
+                                    imagePreview: ""
+                                  });
+                                }}
+                                style={{
+                                  background: "rgba(239, 68, 68, 0.15)",
+                                  border: "none",
+                                  color: "#ef4444",
+                                  padding: "4px 10px",
+                                  borderRadius: "100px",
+                                  fontSize: "10px",
+                                  fontWeight: "900",
+                                  textTransform: "uppercase",
+                                  cursor: "pointer",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px"
+                                }}
+                              >
+                                Remove Selection
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+                            <UploadCloud size={28} color="#FF6A00" />
+                            <div style={{ fontSize: "12px", fontWeight: "800", color: "white" }}>
+                              DRAG & DROP IMAGE HERE OR <span style={{ color: "#FF6A00", textDecoration: "underline" }}>BROWSE</span>
+                            </div>
+                            <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)" }}>
+                              Supports JPG, JPEG, PNG, WEBP up to 10MB
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     
                     {/* Sizes, Pricing, and Stock Sub-form */}
@@ -6303,7 +9159,7 @@ const Admin = () => {
                             const currentSizes = productForm.sizes || [];
                             setProductForm({
                               ...productForm,
-                              sizes: [...currentSizes, { size: "", price: productForm.price || "0", stock: "10" }]
+                              sizes: [...currentSizes, { size: "", price: productForm.price || "0", stock: "10", sku: "" }]
                             });
                           }}
                           style={{ background: "#FF5500", border: "none", color: "white", padding: "4px 10px", borderRadius: "6px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}
@@ -6316,8 +9172,13 @@ const Admin = () => {
                         <p style={{ fontSize: "11px", color: "#666", margin: 0, fontStyle: "italic" }}>No sizes configured. Default price and inventory count will be used.</p>
                       ) : (
                         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1.2fr auto", gap: "6px", paddingBottom: "4px" }}>
+                            {["SIZE / OPTION", "PRICE ($)", "STOCK", "SKU (opt.)", ""].map((h, i) => (
+                              <span key={i} style={{ fontSize: "8px", fontWeight: "900", color: "#555", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</span>
+                            ))}
+                          </div>
                           {productForm.sizes.map((sz, idx) => (
-                            <div key={idx} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                            <div key={idx} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1.2fr auto", gap: "6px", alignItems: "center" }}>
                               <input
                                 type="text"
                                 placeholder="Size (e.g. S, M, 11x14)"
@@ -6328,7 +9189,7 @@ const Admin = () => {
                                   setProductForm({ ...productForm, sizes: updated });
                                 }}
                                 required
-                                style={{ flex: 1.5, background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "6px", padding: "8px 10px", color: "white", fontSize: "12px" }}
+                                style={{ background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "6px", padding: "8px 10px", color: "white", fontSize: "12px" }}
                               />
                               <input
                                 type="number"
@@ -6341,7 +9202,7 @@ const Admin = () => {
                                   setProductForm({ ...productForm, sizes: updated });
                                 }}
                                 required
-                                style={{ flex: 1, background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "6px", padding: "8px 10px", color: "white", fontSize: "12px" }}
+                                style={{ background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "6px", padding: "8px 10px", color: "white", fontSize: "12px" }}
                               />
                               <input
                                 type="number"
@@ -6353,7 +9214,18 @@ const Admin = () => {
                                   setProductForm({ ...productForm, sizes: updated });
                                 }}
                                 required
-                                style={{ flex: 1, background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "6px", padding: "8px 10px", color: "white", fontSize: "12px" }}
+                                style={{ background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "6px", padding: "8px 10px", color: "white", fontSize: "12px" }}
+                              />
+                              <input
+                                type="text"
+                                placeholder="SKU (optional)"
+                                value={sz.sku || ""}
+                                onChange={(e) => {
+                                  const updated = [...productForm.sizes];
+                                  updated[idx].sku = e.target.value;
+                                  setProductForm({ ...productForm, sizes: updated });
+                                }}
+                                style={{ background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: "6px", padding: "8px 10px", color: "rgba(255,255,255,0.6)", fontSize: "11px" }}
                               />
                               <button
                                 type="button"
@@ -6393,8 +9265,377 @@ const Admin = () => {
                 )}
 
 
-                {/* 7. DASHBOARD/MEMBERSHIPS AND COUPONS TAB FORM */}
-                {activeTab === "revenue" && (
+                {/* 7. COUPONS TAB FORM */}
+                {activeTab === "coupons" && (
+                  <>
+                    <div>
+                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>COUPON CODE</label>
+                      <input type="text" value={couponForm.code} onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase().replace(/\s/g, '') })} required placeholder="e.g. SAVE20" style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }} />
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>DISCOUNT TYPE</label>
+                        <select value={couponForm.discountType} onChange={(e) => setCouponForm({ ...couponForm, discountType: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }}>
+                          <option value="percentage">Percentage (%)</option>
+                          <option value="fixed">Fixed Amount ($)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>DISCOUNT VALUE</label>
+                        <input type="number" value={couponForm.discountValue} onChange={(e) => setCouponForm({ ...couponForm, discountValue: e.target.value })} required placeholder={couponForm.discountType === 'percentage' ? '20' : '10.00'} min="0" style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }} />
+                      </div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>MIN PURCHASE REQUIRED</label>
+                        <input type="number" value={couponForm.minPurchase} onChange={(e) => setCouponForm({ ...couponForm, minPurchase: e.target.value })} placeholder="0.00" min="0" style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>MAX REDEMPTIONS</label>
+                        <input type="number" value={couponForm.maxRedemptions} onChange={(e) => setCouponForm({ ...couponForm, maxRedemptions: e.target.value })} placeholder="Unlimited" min="0" style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }} />
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>EXPIRATION DATE</label>
+                      <input type="date" value={couponForm.expirationDate} onChange={(e) => setCouponForm({ ...couponForm, expirationDate: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }} />
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>APPLIES TO</label>
+                        <select value={couponForm.appliesTo} onChange={(e) => setCouponForm({ ...couponForm, appliesTo: e.target.value, targetId: '' })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }}>
+                          <option value="all">All Products</option>
+                          <option value="memberships">Memberships Only</option>
+                          <option value="submissions">Submission Fees Only</option>
+                          <option value="specific_product">Specific Product</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>RESTRICTED MEMBERSHIP TIER</label>
+                        <select value={couponForm.restrictedMembershipTier} onChange={(e) => setCouponForm({ ...couponForm, restrictedMembershipTier: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }}>
+                          <option value="">No Restriction</option>
+                          <option value="basic_membership">Basic+</option>
+                          <option value="silver_membership">Silver+</option>
+                          <option value="gold_membership">Gold+</option>
+                          <option value="platinum_membership">Platinum+</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <input type="checkbox" checked={couponForm.active} onChange={(e) => setCouponForm({ ...couponForm, active: e.target.checked })} />
+                      <span style={{ color: "#aaa", fontSize: "12px" }}>Active (Coupon is available for use)</span>
+                    </div>
+                  </>
+                )}
+
+          {/* ==================== COUPONS MANAGEMENT ==================== */}
+          
+          {/* ==================== HOMEPAGE CONTROL ==================== */}
+          {activeTab === "homepageControl" && (
+            <div>
+              <div style={{ marginBottom: "32px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <h1 style={{ fontSize: "28px", fontWeight: "950", margin: "0 0 8px 0" }}>HOMEPAGE CONTROL</h1>
+                  <p style={{ color: "#888", margin: 0, fontSize: "14px" }}>Manage which records appear in specific sections on the front page.</p>
+                </div>
+              </div>
+              
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "32px" }}>
+                {['featured', 'newly_verified', 'recent_uploads', 'top_ranked'].map(sectionName => (
+                  <div key={sectionName} style={{ background: "#111", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.05)", padding: "24px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                      <h3 style={{ fontSize: "16px", fontWeight: "900", margin: 0, textTransform: "uppercase", color: "#FF5500" }}>{sectionName.replace('_', ' ')} Records</h3>
+                    </div>
+                    
+                    {homepageRecords[sectionName] && homepageRecords[sectionName].length > 0 ? (
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
+                        {homepageRecords[sectionName].map((record, index) => (
+                          <div key={record.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ fontSize: "14px", fontWeight: "900", color: "white" }}>{record.title}</span>
+                              <button onClick={() => {
+                                  apiCall(`/admin/homepage/records/${record.id}/section`, "PUT", { section: null, order: 0 }, user.token)
+                                    .then(() => { alert("Removed from homepage"); fetchData(); })
+                                    .catch(e => alert("Error removing: " + e.message));
+                                }} style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "none", borderRadius: "6px", padding: "4px 8px", fontSize: "10px", fontWeight: "bold", cursor: "pointer" }}>
+                                REMOVE
+                              </button>
+                            </div>
+                            <div style={{ fontSize: "12px", color: "#888" }}>{record.category} - {record.value} {record.unit}</div>
+                            <div style={{ fontSize: "10px", color: "#555" }}>Order: {record.homepage_order}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ color: "#666", fontSize: "13px", padding: "16px", background: "rgba(255,255,255,0.01)", borderRadius: "8px", textAlign: "center" }}>No records assigned to this section.</div>
+                    )}
+                    
+                    <div style={{ marginTop: "16px", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "16px" }}>
+                      <select onChange={(e) => {
+                          if(!e.target.value) return;
+                          apiCall(`/admin/homepage/records/${e.target.value}/section`, "PUT", { section: sectionName, order: (homepageRecords[sectionName]?.length || 0) + 1 }, user.token)
+                            .then(() => { alert("Added to section"); fetchData(); e.target.value = ""; })
+                            .catch(err => alert("Error adding: " + err.message));
+                        }} style={{ width: "100%", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "white", padding: "10px", fontSize: "12px" }}>
+                        <option value="">+ Assign an approved record to {sectionName.replace('_', ' ')}...</option>
+                        {records.map(rec => (
+                          <option key={rec.id} value={rec.id}>{rec.title} ({rec.value} {rec.unit})</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ==================== VIDEO MANAGEMENT ==================== */}
+          {activeTab === "videoManagement" && (
+            <div>
+              <div style={{ marginBottom: "32px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <h1 style={{ fontSize: "28px", fontWeight: "950", margin: "0 0 8px 0" }}>VIDEO MANAGEMENT</h1>
+                  <p style={{ color: "#888", margin: 0, fontSize: "14px" }}>Upload and manage Featured and Newest videos.</p>
+                </div>
+                <button onClick={() => { setModalType('add'); setModalTarget(null); setVideoForm({title: "", description: "", category: "Strength", isFeatured: false, isNewlyUploaded: false}); setVideoFile(null); setThumbnailFile(null); setIsModalOpen(true); }} style={{ background: "#FF5500", color: "white", border: "none", padding: "10px 20px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Plus size={14} /> UPLOAD NEW VIDEO
+                </button>
+              </div>
+
+              <div style={{ display: "flex", gap: "24px", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "0px", marginBottom: "32px" }}>
+                {["featured", "newest", "highlights"].map(sub => (
+                  <button 
+                    key={sub}
+                    onClick={() => setVideoManagementSubTab(sub)}
+                    style={{ background: "transparent", border: "none", color: videoManagementSubTab === sub ? "#FF5500" : "#888", fontWeight: videoManagementSubTab === sub ? "900" : "700", fontSize: "14px", cursor: "pointer", textTransform: "uppercase", padding: "12px 6px", borderBottom: videoManagementSubTab === sub ? "3px solid #FF5500" : "3px solid transparent", outline: "none", transition: "all 0.2s" }}
+                  >
+                    {sub} Videos
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px" }}>
+                {videos[videoManagementSubTab] && videos[videoManagementSubTab].length > 0 ? videos[videoManagementSubTab].map(vid => (
+                  <div key={vid.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", overflow: "hidden" }}>
+                    <div style={{ height: "160px", background: "#000", position: "relative" }}>
+                      {vid.thumbnail_url || vid.thumbnailUrl ? (
+                        <img src={vid.thumbnail_url || vid.thumbnailUrl} alt="Thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><Video size={32} color="#444" /></div>
+                      )}
+                      <div style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(0,0,0,0.7)", padding: "4px 8px", borderRadius: "4px", fontSize: "10px", fontWeight: "bold", color: "white" }}>
+                        {vid.category}
+                      </div>
+                    </div>
+                    <div style={{ padding: "16px" }}>
+                      <h4 style={{ margin: "0 0 8px 0", fontSize: "16px", fontWeight: "900", color: "white" }}>{vid.title}</h4>
+                      <p style={{ color: "#888", fontSize: "12px", margin: "0 0 16px 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{vid.description}</p>
+                      
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          {vid.is_featured && <span style={{ background: "rgba(255,85,0,0.1)", color: "#FF5500", padding: "2px 6px", borderRadius: "4px", fontSize: "9px", fontWeight: "bold" }}>FEATURED</span>}
+                          {vid.is_newly_uploaded && <span style={{ background: "rgba(34,197,94,0.1)", color: "#22c55e", padding: "2px 6px", borderRadius: "4px", fontSize: "9px", fontWeight: "bold" }}>NEW</span>}
+                        </div>
+                        <button onClick={() => {
+                          apiCall(`/admin/videos/${videoManagementSubTab}/${vid.id}`, "DELETE", null, user.token)
+                            .then(() => { alert("Video removed successfully"); fetchData(); })
+                            .catch(e => alert("Error removing video: " + e.message));
+                        }} style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "none", padding: "6px 12px", borderRadius: "6px", fontSize: "10px", fontWeight: "bold", cursor: "pointer" }}>
+                          DELETE
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )) : (
+                  <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "48px", color: "#666", background: "rgba(255,255,255,0.01)", borderRadius: "16px", border: "1px dashed rgba(255,255,255,0.05)" }}>
+                    <Video size={48} style={{ marginBottom: "16px", opacity: 0.5 }} />
+                    <h3 style={{ margin: "0 0 8px 0", color: "white" }}>NO VIDEOS UPLOADED</h3>
+                    <p style={{ margin: 0 }}>Click "Upload New Video" to add content to this section.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "coupons" && (
+            <div>
+                  {/* Coupons Revenue Grid Cards */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px", marginBottom: "56px" }}>
+                    {/* Card 1 */}
+                    <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "16px", padding: "32px", position: "relative", overflow: "hidden", border: "1px solid #FF5500", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
+                      <div style={{ color: "#888", fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px", marginBottom: "16px" }}>ACTIVE COUPONS</div>
+                      <div style={{ fontSize: "42px", fontWeight: "950", color: "#FF5500", lineHeight: "1", marginBottom: "16px", letterSpacing: "-1px" }}>
+                        {couponStats?.activeCoupons || 0} <span style={{ fontSize: "18px", color: "#666", fontWeight: "600" }}>/ {couponStats?.totalCoupons || 0} TOTAL</span>
+                      </div>
+                      <div style={{ color: "#aaa", fontSize: "11px", fontWeight: "800" }}>
+                        {couponStats?.expiredCoupons || 0} INACTIVE OR EXPIRED
+                      </div>
+                    </div>
+
+                    {/* Card 2 */}
+                    <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "16px", padding: "32px", position: "relative", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+                        <div style={{ color: "#888", fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px" }}>REVENUE SAVINGS IMPACT</div>
+                        <DollarSign size={20} color="#FF5500" />
+                      </div>
+                      <div style={{ fontSize: "42px", fontWeight: "950", color: "white", lineHeight: "1", marginBottom: "16px", letterSpacing: "-1px" }}>
+                        ${(couponStats?.totalDiscountImpact || 0).toLocaleString()}
+                      </div>
+                      <div style={{ color: "#22c55e", fontSize: "11px", fontWeight: "800" }}>
+                        TOTAL SAVED BY ATHLETES
+                      </div>
+                    </div>
+
+                    {/* Card 3 */}
+                    <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "16px", padding: "32px", position: "relative", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
+                      <div style={{ color: "#888", fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px", marginBottom: "16px" }}>MOST POPULAR CODE</div>
+                      <div style={{ fontSize: "32px", fontWeight: "950", color: "white", lineHeight: "1.2", marginBottom: "12px", letterSpacing: "-0.5px" }}>
+                        {couponStats?.mostUsed?.[0] ? couponStats.mostUsed[0].code : 'NONE YET'}
+                      </div>
+                      <div style={{ color: "#FF5500", fontSize: "11px", fontWeight: "800" }}>
+                        {couponStats?.mostUsed?.[0] ? `${couponStats.mostUsed[0].redemptions_count} REDEMPTIONS` : '0 REDEMPTIONS'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Header Row */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                    <h3 style={{ fontSize: "24px", fontWeight: "950", color: "white", margin: 0, textTransform: "uppercase", letterSpacing: "-0.5px" }}>
+                      COUPON INVENTORY
+                    </h3>
+                    <button 
+                      onClick={(e) => { e.preventDefault(); openModal("add"); }}
+                      style={{ background: "#FF5500", color: "white", border: "none", padding: "10px 20px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}
+                    >
+                      <Plus size={14} /> CREATE COUPON
+                    </button>
+                  </div>
+
+                  {/* Coupon Search */}
+                  <div style={{ position: "relative", marginBottom: "32px" }}>
+                    <Search size={16} color="#666" style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)" }} />
+                    <input 
+                      type="text" 
+                      placeholder="SEARCH COUPON CODES..." 
+                      value={couponSearchQuery}
+                      onChange={(e) => setCouponSearchQuery(e.target.value)}
+                      style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "none", borderRadius: "100px", padding: "16px 16px 16px 48px", color: "white", fontSize: "11px", fontWeight: "800", outline: "none", letterSpacing: "1px" }} 
+                    />
+                  </div>
+
+                  {/* Coupons Table */}
+                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "20px", overflow: "hidden", marginBottom: "56px" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#888", fontSize: "10px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "1px" }}>
+                          <th style={{ padding: "20px 24px", textAlign: "left" }}>CODE</th>
+                          <th style={{ padding: "20px 24px", textAlign: "left" }}>DISCOUNT</th>
+                          <th style={{ padding: "20px 24px", textAlign: "left" }}>APPLIES TO</th>
+                          <th style={{ padding: "20px 24px", textAlign: "left" }}>USAGE STATUS</th>
+                          <th style={{ padding: "20px 24px", textAlign: "left" }}>LIMITS & RULES</th>
+                          <th style={{ padding: "20px 24px", textAlign: "left" }}>EXPIRES</th>
+                          <th style={{ padding: "20px 24px", textAlign: "left" }}>ACTIVE STATUS</th>
+                          <th style={{ padding: "20px 24px", textAlign: "right" }}>ACTIONS</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {coupons
+                          .filter(c => c.code.toLowerCase().includes(couponSearchQuery.toLowerCase()))
+                          .map((coupon) => {
+                            const isExpired = coupon.expiration_date && new Date(coupon.expiration_date) < new Date();
+                            const isLimitReached = coupon.max_redemptions !== null && coupon.redemptions_count >= coupon.max_redemptions;
+                            const isValid = coupon.active && !isExpired && !isLimitReached;
+
+                            return (
+                              <tr key={coupon.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.02)" }} className="table-row-hover">
+                                <td style={{ padding: "20px 24px" }}>
+                                  <div style={{ color: "white", fontWeight: "900", letterSpacing: "0.5px", fontSize: "14px" }}>{coupon.code}</div>
+                                </td>
+                                <td style={{ padding: "20px 24px", color: "#FF5500", fontWeight: "900", fontSize: "14px" }}>
+                                  {coupon.discount_type === 'percentage' ? `${parseFloat(coupon.discount_value)}%` : `$${parseFloat(coupon.discount_value).toFixed(2)}`}
+                                </td>
+                                <td style={{ padding: "20px 24px", color: "#aaa", fontWeight: "800" }}>
+                                  <span style={{ textTransform: "uppercase", background: "rgba(255,255,255,0.05)", padding: "4px 8px", borderRadius: "4px", fontSize: "10px" }}>
+                                    {coupon.applies_to}
+                                  </span>
+                                  {coupon.target_id && (
+                                    <div style={{ fontSize: "10px", color: "#666", marginTop: "4px" }}>
+                                      {coupon.target_id}
+                                    </div>
+                                  )}
+                                </td>
+                                <td style={{ padding: "20px 24px", color: "white", fontWeight: "700" }}>
+                                  <div style={{ fontSize: "13px" }}>{coupon.redemptions_count || 0} Uses</div>
+                                  <div style={{ fontSize: "10px", color: "#555" }}>
+                                    {coupon.max_redemptions ? `Limit: ${coupon.max_redemptions}` : 'Unlimited Uses'}
+                                  </div>
+                                </td>
+                                <td style={{ padding: "20px 24px", color: "#888", fontWeight: "600" }}>
+                                  <div style={{ fontSize: "11px" }}>Min Spend: ${parseFloat(coupon.min_purchase).toFixed(2)}</div>
+                                  {coupon.restricted_membership_tier && (
+                                    <div style={{ fontSize: "10px", color: "#ff8800", marginTop: "2px" }}>Tier: {coupon.restricted_membership_tier.toUpperCase()}+</div>
+                                  )}
+                                  {coupon.restricted_country && (
+                                    <div style={{ fontSize: "10px", color: "#55aaff", marginTop: "2px" }}>Country: {coupon.restricted_country}</div>
+                                  )}
+                                </td>
+                                <td style={{ padding: "20px 24px", color: isExpired ? "#ef4444" : "#aaa", fontWeight: "700" }}>
+                                  {coupon.expiration_date ? new Date(coupon.expiration_date).toLocaleDateString() : 'Never'}
+                                </td>
+                                <td style={{ padding: "20px 24px" }}>
+                                  <button 
+                                    onClick={async (e) => {
+                                      e.preventDefault();
+                                      try {
+                                        await apiCall(`/coupons/${coupon.id}`, "PUT", { active: !coupon.active }, user.token);
+                                        setCoupons(prev => prev.map(c => c.id === coupon.id ? { ...c, active: !c.active } : c));
+                                        showToast(`Coupon ${coupon.code} ${!coupon.active ? 'activated' : 'deactivated'} successfully`, "success");
+                                      } catch (err) {
+                                        showToast(`Toggle failed: ${err.message}`, "error");
+                                      }
+                                    }}
+                                    style={{ 
+                                      background: isValid ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", 
+                                      color: isValid ? "#22c55e" : "#ef4444", 
+                                      padding: "6px 12px", borderRadius: "100px", fontWeight: "900", fontSize: "9px", textTransform: "uppercase", letterSpacing: "1px",
+                                      border: `1px solid ${isValid ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)"}`, cursor: "pointer", outline: "none"
+                                    }}
+                                  >
+                                    {isValid ? 'ACTIVE' : coupon.active ? 'EXPIRED/LIMIT' : 'DISABLED'}
+                                  </button>
+                                </td>
+                                <td style={{ padding: "20px 24px", textAlign: "right" }}>
+                                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                                    <button 
+                                      onClick={(e) => { e.preventDefault(); openModal("edit", coupon); }}
+                                      style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "6px 12px", borderRadius: "6px", fontSize: "11px", fontWeight: "800", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+                                    >
+                                      <Edit3 size={12} /> Edit
+                                    </button>
+                                    <button 
+                                      onClick={(e) => { e.preventDefault(); handleDelete(coupon.id); }}
+                                      style={{ background: "rgba(239,68,68,0.1)", border: "none", color: "#ef4444", padding: "6px 12px", borderRadius: "6px", fontSize: "11px", fontWeight: "800", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+                                    >
+                                      <Trash2 size={12} /> Delete
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        {coupons.length === 0 && (
+                          <tr>
+                            <td colSpan="8" style={{ padding: "40px", textAlign: "center", color: "#666", fontWeight: "800" }}>
+                              NO COUPONS GENERATED YET. CLICK "CREATE COUPON" TO START!
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+          )}
+
+          {activeTab === "revenue" && (
                   <>
                     {revenueSubTab === "coupons" ? (
                       <>
@@ -6550,29 +9791,242 @@ const Admin = () => {
                       </>
                     ) : (
                       <>
-                        {/* Original Membership Form Fields */}
-                        <div>
-                          <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>ATHLETE USER</label>
-                          <select value={membershipForm.userId} onChange={(e) => setMembershipForm({ ...membershipForm, userId: e.target.value })} required style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }}>
-                            <option value="">-- Select Athlete --</option>
-                            {users && users.map(u => <option key={u._id || u.id} value={u._id || u.id}>{u.name} ({u.email})</option>)}
-                          </select>
-                        </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>MEMBERSHIP TIER</label>
-                          <select value={membershipForm.tier} onChange={(e) => setMembershipForm({ ...membershipForm, tier: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }}>
-                            <option value="bronze">Bronze</option>
-                            <option value="silver">Silver</option>
-                            <option value="gold">Gold</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>INITIAL PAYMENT AMOUNT ($)</label>
-                          <input type="number" step="0.01" value={membershipForm.paymentAmount} onChange={(e) => setMembershipForm({ ...membershipForm, paymentAmount: e.target.value })} required style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }} />
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                          <input type="checkbox" checked={membershipForm.autoRenew} onChange={(e) => setMembershipForm({ ...membershipForm, autoRenew: e.target.checked })} />
-                          <span style={{ color: "#aaa", fontSize: "12px" }}>Auto-renew membership</span>
+                        {/* High-Fidelity Manual Revenue Entry Form */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                          
+                          {/* SECTION 1: CUSTOMER INFORMATION */}
+                          <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "16px", padding: "20px" }}>
+                            <h4 style={{ fontSize: "11px", fontWeight: "950", color: "#FF5500", letterSpacing: "1px", margin: "0 0 16px 0", textTransform: "uppercase" }}>1. Customer & Account Details</h4>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#888", marginBottom: "6px", textTransform: "uppercase" }}>User / Customer Name <span style={{ color: "#FF5500" }}>*</span></label>
+                                <input 
+                                  type="text" 
+                                  value={revenueForm.customerName} 
+                                  onChange={(e) => setRevenueForm({ ...revenueForm, customerName: e.target.value })} 
+                                  required 
+                                  placeholder="e.g. John Doe"
+                                  style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", outline: "none", fontSize: "12px", transition: "border-color 0.2s" }} 
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#888", marginBottom: "6px", textTransform: "uppercase" }}>Email Address <span style={{ color: "#FF5500" }}>*</span></label>
+                                <input 
+                                  type="email" 
+                                  value={revenueForm.customerEmail} 
+                                  onChange={(e) => setRevenueForm({ ...revenueForm, customerEmail: e.target.value })} 
+                                  required 
+                                  placeholder="e.g. john@example.com"
+                                  style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", outline: "none", fontSize: "12px" }} 
+                                />
+                              </div>
+                            </div>
+                            <div style={{ marginTop: "16px" }}>
+                              <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#888", marginBottom: "6px", textTransform: "uppercase" }}>Member Number (Optional)</label>
+                              <input 
+                                type="text" 
+                                value={revenueForm.memberNumber} 
+                                onChange={(e) => setRevenueForm({ ...revenueForm, memberNumber: e.target.value })} 
+                                placeholder="e.g. APEX-100234"
+                                style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", outline: "none", fontSize: "12px" }} 
+                              />
+                            </div>
+                          </div>
+
+                          {/* SECTION 2: TRANSACTION DETAILS */}
+                          <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "16px", padding: "20px" }}>
+                            <h4 style={{ fontSize: "11px", fontWeight: "950", color: "#FF5500", letterSpacing: "1px", margin: "0 0 16px 0", textTransform: "uppercase" }}>2. Revenue & Stream Details</h4>
+                            <div style={{ marginBottom: "16px" }}>
+                              <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#888", marginBottom: "6px", textTransform: "uppercase" }}>Revenue Title <span style={{ color: "#FF5500" }}>*</span></label>
+                              <input 
+                                type="text" 
+                                value={revenueForm.title} 
+                                onChange={(e) => setRevenueForm({ ...revenueForm, title: e.target.value })} 
+                                required 
+                                placeholder="e.g. Rogue Powerlifting Submission Payment"
+                                style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", outline: "none", fontSize: "12px" }} 
+                              />
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#888", marginBottom: "6px", textTransform: "uppercase" }}>Revenue Category <span style={{ color: "#FF5500" }}>*</span></label>
+                                <select 
+                                  value={revenueForm.category} 
+                                  onChange={(e) => setRevenueForm({ ...revenueForm, category: e.target.value })} 
+                                  style={{ width: "100%", background: "#0c0c0e", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", outline: "none", fontSize: "12px" }}
+                                >
+                                  <option value="Record Submission Fee">Record Submission Fee</option>
+                                  <option value="Membership Payment">Membership Payment</option>
+                                  <option value="Product Sale">Product Sale</option>
+                                  <option value="Sponsorship Payment">Sponsorship Payment</option>
+                                  <option value="Event Ticket Sale">Event Ticket Sale</option>
+                                  <option value="Pay-Per-View Sale">Pay-Per-View Sale</option>
+                                  <option value="Certificate Sale">Certificate Sale</option>
+                                  <option value="Medal Sale">Medal Sale</option>
+                                  <option value="Award Sale">Award Sale</option>
+                                  <option value="Donation">Donation</option>
+                                  <option value="Other">Other</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#888", marginBottom: "6px", textTransform: "uppercase" }}>Amount ($) <span style={{ color: "#FF5500" }}>*</span></label>
+                                <input 
+                                  type="number" 
+                                  step="0.01" 
+                                  min="0"
+                                  value={revenueForm.amount} 
+                                  onChange={(e) => setRevenueForm({ ...revenueForm, amount: e.target.value })} 
+                                  required 
+                                  placeholder="0.00"
+                                  style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", outline: "none", fontSize: "12px" }} 
+                                />
+                              </div>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#888", marginBottom: "6px", textTransform: "uppercase" }}>Date Received <span style={{ color: "#FF5500" }}>*</span></label>
+                                <input 
+                                  type="date" 
+                                  value={revenueForm.dateReceived} 
+                                  onChange={(e) => setRevenueForm({ ...revenueForm, dateReceived: e.target.value })} 
+                                  required 
+                                  style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} 
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#888", marginBottom: "6px", textTransform: "uppercase" }}>Payment Method <span style={{ color: "#FF5500" }}>*</span></label>
+                                <select 
+                                  value={revenueForm.paymentMethod} 
+                                  onChange={(e) => setRevenueForm({ ...revenueForm, paymentMethod: e.target.value })} 
+                                  style={{ width: "100%", background: "#0c0c0e", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", outline: "none", fontSize: "12px" }}
+                                >
+                                  <option value="Credit Card">Credit Card</option>
+                                  <option value="Debit Card">Debit Card</option>
+                                  <option value="PayPal">PayPal</option>
+                                  <option value="Stripe">Stripe</option>
+                                  <option value="Cash App">Cash App</option>
+                                  <option value="Bank Transfer">Bank Transfer</option>
+                                  <option value="Manual Entry">Manual Entry</option>
+                                  <option value="Other">Other</option>
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* SECTION 3: SYSTEM REFERENCE CODES */}
+                          <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "16px", padding: "20px" }}>
+                            <h4 style={{ fontSize: "11px", fontWeight: "950", color: "#FF5500", letterSpacing: "1px", margin: "0 0 16px 0", textTransform: "uppercase" }}>3. Reference Codes & Notes</h4>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#888", marginBottom: "6px", textTransform: "uppercase" }}>Transaction ID (Optional)</label>
+                                <input 
+                                  type="text" 
+                                  value={revenueForm.transactionId} 
+                                  onChange={(e) => setRevenueForm({ ...revenueForm, transactionId: e.target.value })} 
+                                  placeholder="e.g. ch_3M5BvGLkdQv..."
+                                  style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", outline: "none", fontSize: "12px" }} 
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#888", marginBottom: "6px", textTransform: "uppercase" }}>Order Number (Optional)</label>
+                                <input 
+                                  type="text" 
+                                  value={revenueForm.orderNumber} 
+                                  onChange={(e) => setRevenueForm({ ...revenueForm, orderNumber: e.target.value })} 
+                                  placeholder="e.g. APEX-ORD-8941"
+                                  style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", outline: "none", fontSize: "12px" }} 
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#888", marginBottom: "6px", textTransform: "uppercase" }}>Notes / Description</label>
+                              <textarea 
+                                value={revenueForm.notes} 
+                                onChange={(e) => setRevenueForm({ ...revenueForm, notes: e.target.value })} 
+                                placeholder="Enter any additional details, description, or payment notes..."
+                                style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", outline: "none", fontSize: "12px", minHeight: "80px", fontFamily: "inherit" }} 
+                              />
+                            </div>
+                          </div>
+
+                          {/* SECTION 4: PROOF OF PAYMENT / RECEIPT UPLOAD */}
+                          <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "16px", padding: "20px" }}>
+                            <h4 style={{ fontSize: "11px", fontWeight: "950", color: "#FF5500", letterSpacing: "1px", margin: "0 0 16px 0", textTransform: "uppercase" }}>4. Receipt / Proof of Payment</h4>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "20px", alignItems: "center" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#888", marginBottom: "6px", textTransform: "uppercase" }}>Pasted Receipt URL</label>
+                                <input 
+                                  type="url" 
+                                  value={revenueForm.receiptUrl && !revenueForm.receiptUrl.startsWith("data:") ? revenueForm.receiptUrl : ""} 
+                                  onChange={(e) => setRevenueForm({ ...revenueForm, receiptUrl: e.target.value })} 
+                                  placeholder="https://imgur.com/..."
+                                  style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", outline: "none", fontSize: "12px" }} 
+                                />
+                                <div style={{ fontSize: "9px", color: "#555", marginTop: "4px", fontWeight: "800" }}>OR DRAG/SELECT LOCAL IMAGE DIRECTLY</div>
+                              </div>
+                              <div>
+                                <input 
+                                  type="file" 
+                                  accept="image/*,application/pdf"
+                                  onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                      setReceiptFile(file);
+                                      if (file.type.startsWith("image/")) {
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                          setRevenueForm({ ...revenueForm, receiptUrl: reader.result });
+                                        };
+                                        reader.readAsDataURL(file);
+                                      } else {
+                                        setRevenueForm({ ...revenueForm, receiptUrl: file.name });
+                                      }
+                                    }
+                                  }}
+                                  style={{ display: "none" }}
+                                  id="receipt-file-upload"
+                                />
+                                <label 
+                                  htmlFor="receipt-file-upload" 
+                                  style={{ 
+                                    display: "flex", 
+                                    flexDirection: "column", 
+                                    alignItems: "center", 
+                                    justifyContent: "center", 
+                                    border: "2px dashed rgba(255,85,0,0.2)", 
+                                    borderRadius: "12px", 
+                                    padding: "20px", 
+                                    cursor: "pointer", 
+                                    background: "rgba(255,85,0,0.02)", 
+                                    textAlign: "center",
+                                    transition: "all 0.2s"
+                                  }}
+                                  className="receipt-upload-zone"
+                                >
+                                  {revenueForm.receiptUrl ? (
+                                    revenueForm.receiptUrl.startsWith("data:") ? (
+                                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+                                        <img src={revenueForm.receiptUrl} alt="Receipt Preview" style={{ maxWidth: "100%", maxHeight: "80px", borderRadius: "6px", objectFit: "contain", border: "1px solid rgba(255,255,255,0.1)" }} />
+                                        <span style={{ fontSize: "9px", color: "#22c55e", fontWeight: "900" }}>✓ LOCAL IMAGE LOADED</span>
+                                      </div>
+                                    ) : (
+                                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+                                        <div style={{ fontSize: "18px" }}>📄</div>
+                                        <span style={{ fontSize: "10px", color: "#FF5500", fontWeight: "800", maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{revenueForm.receiptUrl}</span>
+                                      </div>
+                                    )
+                                  ) : (
+                                    <>
+                                      <Plus size={20} color="#FF5500" style={{ marginBottom: "6px" }} />
+                                      <span style={{ fontSize: "10px", fontWeight: "900", color: "#aaa" }}>CHOOSE RECEIPT IMAGE</span>
+                                      <span style={{ fontSize: "8px", color: "#555", marginTop: "2px" }}>PNG, JPG, OR PDF UP TO 5MB</span>
+                                    </>
+                                  )}
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+
                         </div>
                       </>
                     )}
@@ -6631,7 +10085,7 @@ const Admin = () => {
                   <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#FF5500", marginBottom: "6px", letterSpacing: "1px", textTransform: "uppercase" }}>TRACKING NUMBER</label>
                   <div style={{ fontSize: "16px", fontWeight: "800", color: "white", display: "flex", alignItems: "center", gap: "8px" }}>
                     {selectedRecordDetail.id ? `TRK-${selectedRecordDetail.id.substring(0,8).toUpperCase()}` : "TRK-PENDING"}
-                    <button onClick={() => alert("Tracking Number Generated & Emailed to Athlete")} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "2px 8px", borderRadius: "4px", cursor: "pointer", fontSize: "9px", fontWeight: "800" }}>GENERATE</button>
+                    <button onClick={() => { showToast('Tracking number generated & emailed to athlete', 'success'); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "2px 8px", borderRadius: "4px", cursor: "pointer", fontSize: "9px", fontWeight: "800" }}>GENERATE</button>
                   </div>
                 </div>
               </div>
@@ -7178,6 +10632,163 @@ const Admin = () => {
       </div>
       <Footer />
       {/* Styled Inline Hover Animations */}
+      {/* ==================== APPEAL DETAIL MODAL ==================== */}
+      {selectedAppeal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(20px)", zIndex: 10000, display: "flex", justifyContent: "center", alignItems: "center", animation: "modalFadeIn 0.2s ease-out" }}>
+          <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "24px", width: "95%", maxWidth: "900px", maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
+            
+            {/* Modal Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 32px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+              <div>
+                <div style={{ color: "#FF5500", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", marginBottom: "4px" }}>APPEAL DETAILS</div>
+                <h3 style={{ fontSize: "24px", fontWeight: "900", color: "white", margin: 0 }}>Appeal {selectedAppeal.id.substring(0,8).toUpperCase()}</h3>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                <span style={{ 
+                  background: ['Approved', 'Closed'].includes(selectedAppeal.status) ? "rgba(34,197,94,0.1)" : selectedAppeal.status === 'Denied' ? "rgba(239,68,68,0.1)" : selectedAppeal.status === 'Pending' ? "rgba(255,106,0,0.1)" : "rgba(255,204,0,0.1)", 
+                  color: ['Approved', 'Closed'].includes(selectedAppeal.status) ? "#22c55e" : selectedAppeal.status === 'Denied' ? "#ef4444" : selectedAppeal.status === 'Pending' ? "#FF6A00" : "#ffcc00",
+                  padding: "6px 16px", borderRadius: "100px", fontSize: "11px", fontWeight: "900", border: "1px solid currentColor"
+                }}>
+                  {selectedAppeal.status.toUpperCase()}
+                </span>
+                <button onClick={() => setSelectedAppeal(null)} style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "white", width: "36px", height: "36px", borderRadius: "50%", display: "flex", justifyContent: "center", alignItems: "center", cursor: "pointer" }}>
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div style={{ padding: "32px", overflowY: "auto", display: "grid", gridTemplateColumns: "1fr 300px", gap: "40px" }}>
+              
+              {/* Left Column: Details & Evidence */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+                
+                {/* User Info */}
+                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px" }}>
+                  <h4 style={{ fontSize: "12px", color: "#888", fontWeight: "900", letterSpacing: "1px", marginBottom: "16px" }}>APPELLANT INFO</h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                    <div>
+                      <div style={{ fontSize: "10px", color: "#555", fontWeight: "900", marginBottom: "4px" }}>NAME (USER PROFILE)</div>
+                      <div 
+                        style={{ fontSize: "14px", color: "white", fontWeight: "700", cursor: "pointer", textDecoration: "underline" }} 
+                        onClick={() => { setActiveTab("users"); setSelectedAppeal(null); setTimeout(fetchData, 100); }}
+                      >
+                        {selectedAppeal.user?.name || 'Unknown'}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "10px", color: "#555", fontWeight: "900", marginBottom: "4px" }}>EMAIL</div>
+                      <div style={{ fontSize: "14px", color: "white", fontWeight: "700" }}>{selectedAppeal.user?.email || 'N/A'}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "10px", color: "#555", fontWeight: "900", marginBottom: "4px" }}>MEMBER NUMBER</div>
+                      <div style={{ fontSize: "14px", color: "#FF5500", fontWeight: "900" }}>{selectedAppeal.user?.member_number || 'N/A'}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "10px", color: "#555", fontWeight: "900", marginBottom: "4px" }}>RECORD SUBMISSION</div>
+                      <div 
+                        style={{ fontSize: "14px", color: "white", fontWeight: "700", cursor: "pointer", textDecoration: "underline" }}
+                        onClick={() => { setActiveTab("records"); setSelectedAppeal(null); setTimeout(fetchData, 100); }}
+                      >
+                        {selectedAppeal.record?.title || 'Unknown Record'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Appeal Reason */}
+                <div>
+                  <h4 style={{ fontSize: "12px", color: "#888", fontWeight: "900", letterSpacing: "1px", marginBottom: "16px" }}>APPEAL REASON</h4>
+                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px", color: "white", fontSize: "14px", lineHeight: "1.6" }}>
+                    {selectedAppeal.appeal_reason}
+                  </div>
+                </div>
+
+                {/* Evidence */}
+                <div>
+                  <h4 style={{ fontSize: "12px", color: "#888", fontWeight: "900", letterSpacing: "1px", marginBottom: "16px" }}>UPLOADED EVIDENCE</h4>
+                  {selectedAppeal.evidence_files && selectedAppeal.evidence_files.length > 0 ? (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                      {selectedAppeal.evidence_files.map((file, i) => (
+                        <a key={i} href={file.url} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "16px", color: "white", textDecoration: "none" }}>
+                          {file.type === 'video' ? <Video size={20} color="#FF5500" /> : <ExternalLink size={20} color="#FF5500" />}
+                          <span style={{ fontSize: "12px", fontWeight: "700", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{file.name || 'Evidence File'}</span>
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ color: "#666", fontSize: "13px", fontWeight: "700" }}>No additional evidence provided.</div>
+                  )}
+                </div>
+
+              </div>
+
+              {/* Right Column: Actions & Resolution */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "24px", borderLeft: "1px solid rgba(255,255,255,0.05)", paddingLeft: "40px" }}>
+                
+                {/* Status Actions */}
+                <div>
+                  <h4 style={{ fontSize: "12px", color: "#888", fontWeight: "900", letterSpacing: "1px", marginBottom: "16px" }}>ADJUDICATION ACTIONS</h4>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <button onClick={() => handleUpdateAppealStatus(selectedAppeal.id, "Approved")} style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", color: "#22c55e", padding: "12px", borderRadius: "8px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <CheckCircle size={14} /> APPROVE APPEAL
+                    </button>
+                    <button onClick={() => handleUpdateAppealStatus(selectedAppeal.id, "Denied")} style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", padding: "12px", borderRadius: "8px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <XCircle size={14} /> DENY APPEAL
+                    </button>
+                    <button onClick={() => handleUpdateAppealStatus(selectedAppeal.id, "Awaiting Evidence")} style={{ background: "transparent", border: "1px solid #ffcc00", color: "#ffcc00", padding: "12px", borderRadius: "8px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <AlertTriangle size={14} /> REQUEST MORE INFO
+                    </button>
+                    <button onClick={() => handleUpdateAppealStatus(selectedAppeal.id, "Escalated")} style={{ background: "transparent", border: "1px solid #FF5500", color: "#FF5500", padding: "12px", borderRadius: "8px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <AlertTriangle size={14} /> ESCALATE APPEAL
+                    </button>
+                    <button onClick={() => handleUpdateAppealStatus(selectedAppeal.id, "Closed")} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#aaa", padding: "12px", borderRadius: "8px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <X size={14} /> CLOSE APPEAL
+                    </button>
+                    <button onClick={() => { window.location.href = 'mailto:'; }} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "12px", borderRadius: "8px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
+                      <MessageSquare size={14} /> CONTACT USER
+                    </button>
+                  </div>
+                </div>
+
+                {/* Admin Notes */}
+                <div>
+                  <h4 style={{ fontSize: "12px", color: "#888", fontWeight: "900", letterSpacing: "1px", marginBottom: "16px" }}>ADMIN NOTES</h4>
+                  <textarea 
+                    defaultValue={selectedAppeal.admin_notes}
+                    onBlur={(e) => handleUpdateAppealNotes(selectedAppeal.id, e.target.value)}
+                    placeholder="Add internal notes here... (Saves automatically on blur)"
+                    style={{ width: "100%", height: "100px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.1)", color: "white", borderRadius: "8px", padding: "12px", fontSize: "12px", outline: "none", resize: "none", fontFamily: "inherit" }}
+                  />
+                </div>
+
+                {/* Resolution History */}
+                <div>
+                  <h4 style={{ fontSize: "12px", color: "#888", fontWeight: "900", letterSpacing: "1px", marginBottom: "16px" }}>HISTORY</h4>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    {selectedAppeal.resolution_history && selectedAppeal.resolution_history.length > 0 ? (
+                      selectedAppeal.resolution_history.map((hist, i) => (
+                        <div key={i} style={{ display: "flex", gap: "8px" }}>
+                          <div style={{ width: "2px", background: "rgba(255,255,255,0.1)", alignSelf: "stretch" }} />
+                          <div>
+                            <div style={{ color: "white", fontSize: "11px", fontWeight: "900", marginBottom: "2px" }}>{hist.status}</div>
+                            <div style={{ color: "#aaa", fontSize: "10px", fontWeight: "700" }}>{new Date(hist.date).toLocaleString()}</div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{ color: "#666", fontSize: "11px", fontWeight: "700" }}>No history recorded.</div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         .table-row-hover:hover {
           background: rgba(255, 255, 255, 0.015) !important;

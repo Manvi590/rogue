@@ -1,17 +1,28 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ArrowRight, Menu, X, User, LogOut, ChevronDown, BarChart3, Users, FileText, Settings, DollarSign, CreditCard, Layers, Target, Shield, ClipboardList, Sparkles, MessageSquare, ShieldAlert, Image, Layout, Lock, Server, TrendingUp, Megaphone, Crown } from "lucide-react";
+import { ArrowRight, Menu, X, User, LogOut, ChevronDown, BarChart3, Users, FileText, Settings, DollarSign, CreditCard, Layers, Target, Shield, ClipboardList, Sparkles, MessageSquare, ShieldAlert, Image, Layout, Lock, Server, TrendingUp, Megaphone, Crown, Home, Video, Tag } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [adminDropdownOpen, setAdminDropdownOpen] = useState(false);
+  const [logoutToast, setLogoutToast] = useState("");
   const location = useLocation();
   const { user, logout } = useAuth();
 
+  React.useEffect(() => {
+    const toastMsg = sessionStorage.getItem('awr_logout_message');
+    if (toastMsg) {
+      setLogoutToast(toastMsg);
+      sessionStorage.removeItem('awr_logout_message');
+      const timer = setTimeout(() => setLogoutToast(""), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   const navLinks = [
     { label: "Home", to: "/" },
-    { label: "Records", to: "/explore" },
+    { label: "Records", to: "/explore-records" },
     { label: "Rankings", to: "/leaderboard" },
     { label: "Challenge", to: "/challenge" },
     { label: "Submit", to: "/verify" },
@@ -21,6 +32,7 @@ const Navbar = () => {
 
   const adminMenuItems = [
     { label: "Dashboard", icon: <BarChart3 size={16} />, to: "/admin?tab=dashboard" },
+    { label: "Homepage Control", icon: <Home size={16} />, to: "/admin?tab=homepageControl" },
     { label: "User", icon: <Users size={16} />, to: "/admin?tab=user" },
     { label: "Submissions", icon: <FileText size={16} />, to: "/admin?tab=submissions" },
     { label: "Adjudicators", icon: <Shield size={16} />, to: "/admin?tab=adjudicators" },
@@ -29,6 +41,7 @@ const Navbar = () => {
     { label: "Communications", icon: <MessageSquare size={16} />, to: "/admin?tab=communications" },
     { label: "Moderation", icon: <ShieldAlert size={16} />, to: "/admin?tab=moderation" },
     { label: "Media Library", icon: <Image size={16} />, to: "/admin?tab=mediaLibrary" },
+    { label: "Video Management", icon: <Video size={16} />, to: "/admin?tab=videoManagement" },
     { label: "Content Pages", icon: <Layout size={16} />, to: "/admin?tab=contentManagement" },
     { label: "Security & Logs", icon: <Lock size={16} />, to: "/admin?tab=security" },
     { label: "System Settings", icon: <Server size={16} />, to: "/admin?tab=systemSettings" },
@@ -37,6 +50,7 @@ const Navbar = () => {
     { label: "VIP Competitors", icon: <Crown size={16} />, to: "/admin?tab=vip" },
     { label: "Challenges", icon: <Settings size={16} />, to: "/admin?tab=challenges" },
     { label: "Payments", icon: <DollarSign size={16} />, to: "/admin?tab=payments" },
+    { label: "Coupons", icon: <Tag size={16} />, to: "/admin?tab=coupons" },
     { label: "Memberships", icon: <CreditCard size={16} />, to: "/admin?tab=memberships" },
     { label: "Shop Catalog", icon: <Layers size={16} />, to: "/admin?tab=products" },
     { label: "Shop Orders", icon: <CreditCard size={16} />, to: "/admin?tab=orders" },
@@ -275,6 +289,41 @@ const Navbar = () => {
               </>
             )}
           </div>
+        </div>
+      )}
+      {logoutToast && (
+        <div style={{
+          position: "fixed",
+          top: "120px",
+          right: "5%",
+          zIndex: 99999,
+          background: "rgba(255, 106, 0, 0.15)",
+          backdropFilter: "blur(20px)",
+          border: "1px solid rgba(255, 106, 0, 0.4)",
+          padding: "16px 28px",
+          borderRadius: "16px",
+          color: "white",
+          fontSize: "14px",
+          fontWeight: "800",
+          boxShadow: "0 20px 40px rgba(0,0,0,0.5)",
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          animation: "slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)"
+        }}>
+          <div style={{ width: "8px", height: "8px", background: "#FF6A00", borderRadius: "50%", animation: "pulse 1s infinite" }}></div>
+          {logoutToast}
+          <style>{`
+            @keyframes pulse {
+              0% { transform: scale(1); opacity: 1; }
+              50% { transform: scale(1.5); opacity: 0.5; }
+              100% { transform: scale(1); opacity: 1; }
+            }
+            @keyframes slideIn {
+              from { transform: translateY(-20px) scale(0.95); opacity: 0; }
+              to { transform: translateY(0) scale(1); opacity: 1; }
+            }
+          `}</style>
         </div>
       )}
     </nav>

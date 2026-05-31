@@ -17,7 +17,8 @@ import {
   CheckCircle2, 
   XCircle,
   Gem,
-  Rocket
+  Rocket,
+  AlertCircle
 } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
@@ -46,39 +47,142 @@ const EliteMembership = () => {
   const [cardNumber, setCardNumber] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [cvv, setCvv] = useState("");
+  const [billingZip, setBillingZip] = useState("");
+  const [formError, setFormError] = useState("");
+
+  const formatAmex = (digits) => {
+    let formatted = "";
+    if (digits.length > 0) formatted += digits.substring(0, 4);
+    if (digits.length > 4) formatted += " " + digits.substring(4, 10);
+    if (digits.length > 10) formatted += " " + digits.substring(10, 15);
+    return formatted;
+  };
+
+  const formatStandard = (digits) => {
+    let parts = [];
+    for (let i = 0; i < digits.length; i += 4) {
+      parts.push(digits.substring(i, i + 4));
+    }
+    return parts.join(" ");
+  };
 
   const handleCardNumberChange = (e) => {
-    const rawVal = e.target.value.replace(/\D/g, "");
-    const limitedVal = rawVal.substring(0, 16);
-    let formattedVal = "";
-    for (let i = 0; i < limitedVal.length; i++) {
-      if (i > 0 && i % 4 === 0) {
-        formattedVal += " ";
-      }
-      formattedVal += limitedVal[i];
+    const raw = e.target.value.replace(/\D/g, "");
+    const isAmex = raw.startsWith("34") || raw.startsWith("37");
+    const isStandard = raw.startsWith("4") || 
+                       /^(5[1-5]|222[1-9]|22[3-9]|2[3-6]|27[0-1]|2720)/.test(raw) || 
+                       /^(6011|622|64[4-9]|65)/.test(raw);
+    const maxLength = isAmex ? 15 : (isStandard ? 16 : 19);
+    const limited = raw.substring(0, maxLength);
+    
+    if (isAmex) {
+      setCardNumber(formatAmex(limited));
+    } else {
+      setCardNumber(formatStandard(limited));
     }
-    setCardNumber(formattedVal);
   };
 
   const handleExpiryDateChange = (e) => {
-    const rawVal = e.target.value.replace(/\D/g, "");
-    const limitedVal = rawVal.substring(0, 4);
-    let formattedVal = "";
-    if (limitedVal.length > 2) {
-      formattedVal = `${limitedVal.substring(0, 2)}/${limitedVal.substring(2)}`;
+    const raw = e.target.value.replace(/\D/g, "");
+    const limited = raw.substring(0, 4);
+    let formatted = "";
+    if (limited.length > 2) {
+      formatted = `${limited.substring(0, 2)}/${limited.substring(2)}`;
     } else {
-      formattedVal = limitedVal;
+      formatted = limited;
     }
-    setExpiryDate(formattedVal);
+    setExpiryDate(formatted);
   };
 
   const handleCvvChange = (e) => {
     const cleanCard = cardNumber.replace(/\s/g, "");
     const isAmex = cleanCard.startsWith("34") || cleanCard.startsWith("37");
-    const maxCvvLength = isAmex ? 4 : 3;
-    const rawVal = e.target.value.replace(/\D/g, "");
-    const limitedVal = rawVal.substring(0, maxCvvLength);
-    setCvv(limitedVal);
+    const raw = e.target.value.replace(/\D/g, "");
+    const limited = raw.substring(0, isAmex ? 4 : 3);
+    setCvv(limited);
+  };
+
+  const handleBillingZipChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    const limited = raw.substring(0, 6);
+    setBillingZip(limited);
+  };
+
+  const validateCardDetails = () => {
+    if (!cardholderName.trim()) {
+      return "Name on card is required.";
+    }
+    if (/[^a-zA-Z\s.-]/.test(cardholderName)) {
+      return "Name on card can only contain letters, spaces, hyphens, and periods.";
+    }
+
+    const cleanCard = cardNumber.replace(/\s/g, "");
+    if (!cleanCard) {
+      return "Please enter a valid card number.";
+    }
+    if (/[^\d]/.test(cleanCard)) {
+      return "Card number must contain numbers only.";
+    }
+
+    const isAmex = cleanCard.startsWith("34") || cleanCard.startsWith("37");
+    const isStandard = cleanCard.startsWith("4") || 
+                       /^(5[1-5]|222[1-9]|22[3-9]|2[3-6]|27[0-1]|2720)/.test(cleanCard) || 
+                       /^(6011|622|64[4-9]|65)/.test(cleanCard);
+
+    if (isAmex) {
+      if (cleanCard.length < 15) return "Card number is incomplete.";
+      if (cleanCard.length > 15) return "Card number is too long.";
+    } else if (isStandard) {
+      if (cleanCard.length < 16) return "Card number is incomplete.";
+      if (cleanCard.length > 16) return "Card number is too long.";
+    } else {
+      if (cleanCard.length < 12) return "Card number is incomplete.";
+      if (cleanCard.length > 19) return "Card number is too long.";
+    }
+
+    if (!expiryDate) {
+      return "Expiration date is required.";
+    }
+    if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
+      return "Expiration date must be in MM/YY format.";
+    }
+    const [mmStr, yyStr] = expiryDate.split("/");
+    const mm = parseInt(mmStr, 10);
+    const yy = parseInt(yyStr, 10);
+    if (mm < 1 || mm > 12) {
+      return "Please enter a valid expiration month (01-12).";
+    }
+    const now = new Date();
+    const currentYear = now.getFullYear() % 100;
+    const currentMonth = now.getMonth() + 1;
+    if (yy < currentYear || (yy === currentYear && mm < currentMonth)) {
+      return "Expiration date must be a valid future date.";
+    }
+
+    const rawCvv = cvv.replace(/\s/g, "");
+    if (!rawCvv) {
+      return "CVV/CVC is required.";
+    }
+    if (/[^\d]/.test(rawCvv)) {
+      return "CVV/CVC must contain numbers only.";
+    }
+    const requiredCvvLength = isAmex ? 4 : 3;
+    if (rawCvv.length !== requiredCvvLength) {
+      return `CVV/CVC must be exactly ${requiredCvvLength} digits.`;
+    }
+
+    const rawZip = billingZip.replace(/\s/g, "");
+    if (!rawZip) {
+      return "Billing zip code is required.";
+    }
+    if (/[^\d]/.test(rawZip)) {
+      return "Billing zip code must contain numbers only.";
+    }
+    if (rawZip.length < 5 || rawZip.length > 6) {
+      return "Billing zip code must be 5 or 6 digits.";
+    }
+
+    return null;
   };
 
   const applyCoupon = async () => {
@@ -677,6 +781,14 @@ const EliteMembership = () => {
                 <form 
                   onSubmit={(e) => {
                     e.preventDefault();
+                    setFormError("");
+
+                    const validationErr = validateCardDetails();
+                    if (validationErr) {
+                      setFormError(validationErr);
+                      return;
+                    }
+
                     setIsProcessing(true);
                     setTimeout(() => {
                       setIsProcessing(false);
@@ -689,6 +801,12 @@ const EliteMembership = () => {
                     <span style={{ fontSize: "11px", fontWeight: "900", color: "#FF6A00", letterSpacing: "0.1em", textTransform: "uppercase" }}>SECURE CHECKOUT</span>
                     <h3 style={{ fontSize: "24px", fontWeight: "950", textTransform: "uppercase", marginTop: "4px" }}>ORDER SUMMARY</h3>
                   </div>
+
+                  {formError && (
+                    <div style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid #EF4444", color: "#EF4444", padding: "12px", borderRadius: "12px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "8px", textAlign: "left" }}>
+                      <AlertCircle size={16} /> {formError}
+                    </div>
+                  )}
 
                   {/* ITEM SUMMARY BOX */}
                   {(() => {
@@ -767,20 +885,24 @@ const EliteMembership = () => {
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                     <div style={{ textAlign: "left" }}>
                       <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>CARDHOLDER NAME</label>
-                      <input type="text" placeholder="John Doe" value={cardholderName} onChange={(e) => setCardholderName(e.target.value)} required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                      <input type="text" placeholder="John Doe" value={cardholderName} onChange={(e) => setCardholderName(e.target.value.replace(/[^a-zA-Z\s.-]/g, ""))} style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
                     </div>
                     <div style={{ textAlign: "left" }}>
                       <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>CARD NUMBER</label>
-                      <input type="text" placeholder="•••• •••• •••• ••••" value={cardNumber} onChange={handleCardNumberChange} required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                      <input type="text" placeholder="•••• •••• •••• ••••" value={cardNumber} onChange={handleCardNumberChange} style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", textAlign: "left" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", textAlign: "left" }}>
                       <div>
                         <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>EXPIRY DATE</label>
-                        <input type="text" placeholder="MM/YY" value={expiryDate} onChange={handleExpiryDateChange} required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                        <input type="text" placeholder="MM/YY" value={expiryDate} onChange={handleExpiryDateChange} style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
                       </div>
                       <div>
                         <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>CVV</label>
-                        <input type="text" placeholder="•••" value={cvv} onChange={handleCvvChange} required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                        <input type="text" placeholder="•••" value={cvv} onChange={handleCvvChange} style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>ZIP CODE</label>
+                        <input type="text" placeholder="10001" value={billingZip} onChange={handleBillingZipChange} style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
                       </div>
                     </div>
                   </div>

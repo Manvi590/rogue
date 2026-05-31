@@ -15,6 +15,7 @@ const {
   createProductByAdmin,
   updateProductByAdmin,
   deleteProductByAdmin,
+  uploadProductImage,
   getAllInquiries,
   deleteInquiry,
   getAllOrdersByAdmin,
@@ -23,14 +24,25 @@ const {
   getCustomerPurchaseHistoryByAdmin,
   getPaymentsLedger,
   updatePaymentStatus,
+  createManualRevenue,
   updateSuccessMessages,
   getJudgesRoster,
   assignRecordToJudge,
   submitJudgeDecision,
   approveFinalDecision,
   revertJudgeDecision,
-  updateJudgeNotes
+  updateJudgeNotes,
+  getHomepageRecords,
+  updateRecordHomepageSection,
+  removeRecordFromHomepage
 } = require('../controllers/adminController');
+
+const {
+  getAppeals,
+  getAppealById,
+  updateAppealStatus,
+  updateAppealNotes
+} = require('../controllers/adminAppealsController');
 
 const {
   getAIScans,
@@ -51,9 +63,18 @@ const {
 const {
   getMediaAssets,
   getCertificates,
-  updateCertificateOrder
+  updateCertificateOrder,
+  getPageContent,
+  updatePageContent,
+  getFaqs,
+  createFaq,
+  updateFaq,
+  deleteFaq,
+  getHomepageSettings,
+  updateHomepageSettings
 } = require('../controllers/adminContentController');
 
+const { productImageUpload, bannerUpload } = require('../config/upload');
 const { protect, admin } = require('../middleware/authMiddleware');
 
 // Lock down all endpoints underneath protection check
@@ -81,6 +102,7 @@ router.get('/products', getAllProductsByAdmin);
 router.post('/products', createProductByAdmin);
 router.put('/products/:id', updateProductByAdmin);
 router.delete('/products/:id', deleteProductByAdmin);
+router.post('/products/:id/image', productImageUpload.single('productImage'), uploadProductImage);
 
 // 📦 Shop Orders Operations
 router.get('/orders', getAllOrdersByAdmin);
@@ -95,6 +117,7 @@ router.delete('/contacts/:id', deleteInquiry);
 // 💳 Dynamic Payments & Oversight Operations
 router.get('/payments', getPaymentsLedger);
 router.put('/payments/update', updatePaymentStatus);
+router.post('/payments/create', createManualRevenue);
 
 // ✉️ Success Message Settings Operations
 router.put('/success-messages', updateSuccessMessages);
@@ -106,6 +129,11 @@ router.put('/records/:id/assign', assignRecordToJudge);
 router.put('/records/:id/judge-review', submitJudgeDecision);
 router.put('/records/:id/approve', approveFinalDecision);
 router.put('/records/:id/revert', revertJudgeDecision);
+
+// 🏠 Homepage Records Control
+router.get('/homepage/records', getHomepageRecords);
+router.put('/records/:id/homepage', updateRecordHomepageSection);
+router.delete('/records/:id/homepage', removeRecordFromHomepage);
 
 // 🤖 AI Verification Operations
 router.get('/ai-verification/scans', getAIScans);
@@ -121,10 +149,28 @@ router.get('/messages', getMessages);
 router.post('/messages', sendMessage);
 router.get('/bans', getBans);
 
+// ⚖️ Dispute Resolution / Appeals (Phase 12)
+router.get('/appeals', getAppeals);
+router.get('/appeals/:id', getAppealById);
+router.put('/appeals/:id/status', updateAppealStatus);
+router.put('/appeals/:id/notes', updateAppealNotes);
+
 // 🎬 Content, Media & Certificates (Phase 2)
 router.get('/media', getMediaAssets);
 router.get('/certificates', getCertificates);
 router.put('/certificates/:id/order', updateCertificateOrder);
+
+// 📄 CMS / Content Pages
+router.get('/content/pages/:slug', getPageContent);
+router.put('/content/pages/:slug', updatePageContent);
+
+router.get('/content/faqs', getFaqs);
+router.post('/content/faqs', createFaq);
+router.put('/content/faqs/:id', updateFaq);
+router.delete('/content/faqs/:id', deleteFaq);
+
+router.get('/content/homepage/:section', getHomepageSettings);
+router.put('/content/homepage/:section', updateHomepageSettings);
 
 // 🔒 Security & Infrastructure (Phase 3)
 const { getAuditLogs, triggerBackup, getApiKeys, updateSeoSettings } = require('../controllers/adminSecurityController');
@@ -133,11 +179,25 @@ router.post('/security/backup', triggerBackup);
 router.get('/security/api-keys', getApiKeys);
 router.put('/security/seo', updateSeoSettings);
 
-// 💰 Monetization, Rankings & VIP (Phase 4)
-const { getSponsors, updateVipStatus, getRevenueMetrics, recalculateRankings } = require('../controllers/adminMonetizationController');
+// 💰 Monetization, Sponsorships, Rankings & VIP (Phase 4)
+const { getSponsors, createSponsor, updateSponsor, deleteSponsor, trackSponsorClick, trackSponsorView, updateVipStatus, getRevenueMetrics, recalculateRankings } = require('../controllers/adminMonetizationController');
 router.get('/monetization/sponsors', getSponsors);
+router.post('/monetization/sponsors', bannerUpload.fields([{ name: 'bannerImage', maxCount: 1 }, { name: 'logoImage', maxCount: 1 }]), createSponsor);
+router.put('/monetization/sponsors/:id', bannerUpload.fields([{ name: 'bannerImage', maxCount: 1 }, { name: 'logoImage', maxCount: 1 }]), updateSponsor);
+router.delete('/monetization/sponsors/:id', deleteSponsor);
+router.post('/monetization/sponsors/:id/click', trackSponsorClick);
+router.post('/monetization/sponsors/:id/view', trackSponsorView);
 router.put('/monetization/vip/:userId', updateVipStatus);
 router.get('/monetization/revenue', getRevenueMetrics);
 router.post('/monetization/rankings/recalculate', recalculateRankings);
+
+// 🏆 Challenges Management
+const { getChallenges, createChallenge, updateChallenge, deleteChallenge, toggleFeatureChallenge } = require('../controllers/adminChallengesController');
+const { challengeUpload } = require('../config/upload');
+router.get('/challenges', getChallenges);
+router.post('/challenges', challengeUpload.fields([{ name: 'videoFile', maxCount: 1 }, { name: 'thumbnailImage', maxCount: 1 }]), createChallenge);
+router.put('/challenges/:id', challengeUpload.fields([{ name: 'videoFile', maxCount: 1 }, { name: 'thumbnailImage', maxCount: 1 }]), updateChallenge);
+router.delete('/challenges/:id', deleteChallenge);
+router.put('/challenges/:id/feature', toggleFeatureChallenge);
 
 module.exports = router;

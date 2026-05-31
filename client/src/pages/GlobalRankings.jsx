@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { 
   Trophy, 
   Globe, 
@@ -19,6 +19,7 @@ import ScrollReveal from "../components/ScrollReveal";
 import { motion } from "framer-motion";
 
 const GlobalRankings = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTier, setSelectedTier] = useState("All Tiers");
 
@@ -31,15 +32,15 @@ const GlobalRankings = () => {
   ];
 
   const competitors = [
-    { rank: 1, name: "Leo Vance", points: 24850, country: "USA", records: 12, tier: "Grand Champion", avatar: "https://randomuser.me/api/portraits/men/32.jpg", change: "+1" },
-    { rank: 2, name: "Elena Petrov", points: 22410, country: "RUS", records: 10, tier: "Grand Champion", avatar: "https://randomuser.me/api/portraits/women/44.jpg", change: "-1" },
-    { rank: 3, name: "Jamal Carter", points: 21900, country: "GBR", records: 15, tier: "Grand Champion", avatar: "https://randomuser.me/api/portraits/men/85.jpg", change: "Stable" },
-    { rank: 4, name: "Sarah Kim", points: 19540, country: "KOR", records: 8, tier: "Elite Master", avatar: "https://randomuser.me/api/portraits/women/15.jpg", change: "+4" },
-    { rank: 5, name: "Marcus Rossi", points: 18210, country: "ITA", records: 9, tier: "Elite Master", avatar: "https://randomuser.me/api/portraits/men/12.jpg", change: "Stable" },
-    { rank: 6, name: "Chen Wei", points: 17800, country: "CHN", records: 11, tier: "Elite Master", avatar: "https://randomuser.me/api/portraits/men/45.jpg", change: "-2" },
-    { rank: 7, name: "Mina Chen", points: 16950, country: "JPN", records: 7, tier: "Elite Master", avatar: "https://randomuser.me/api/portraits/women/22.jpg", change: "+1" },
-    { rank: 8, name: "David Lu", points: 14200, country: "CAN", records: 6, tier: "Pro Competitor", avatar: "https://randomuser.me/api/portraits/men/76.jpg", change: "+2" },
-    { rank: 9, name: "Lucas Silva", points: 11950, country: "BRA", records: 5, tier: "Pro Competitor", avatar: "https://randomuser.me/api/portraits/men/3.jpg", change: "-1" }
+    { rank: 1, name: "Leo Vance", points: 24850, country: "USA", records: 12, tier: "Grand Champion", avatar: "https://randomuser.me/api/portraits/men/32.jpg", change: "+1", profileId: "leo-vance" },
+    { rank: 2, name: "Elena Petrov", points: 22410, country: "RUS", records: 10, tier: "Grand Champion", avatar: "https://randomuser.me/api/portraits/women/44.jpg", change: "-1", profileId: "leo-vance" },
+    { rank: 3, name: "Jamal Carter", points: 21900, country: "GBR", records: 15, tier: "Grand Champion", avatar: "https://randomuser.me/api/portraits/men/85.jpg", change: "Stable", profileId: "jamal-carter" },
+    { rank: 4, name: "Sarah Kim", points: 19540, country: "KOR", records: 8, tier: "Elite Master", avatar: "https://randomuser.me/api/portraits/women/15.jpg", change: "+4", profileId: "jamal-carter" },
+    { rank: 5, name: "Marcus Rossi", points: 18210, country: "ITA", records: 9, tier: "Elite Master", avatar: "https://randomuser.me/api/portraits/men/12.jpg", change: "Stable", profileId: "leo-vance" },
+    { rank: 6, name: "Chen Wei", points: 17800, country: "CHN", records: 11, tier: "Elite Master", avatar: "https://randomuser.me/api/portraits/men/45.jpg", change: "-2", profileId: "jamal-carter" },
+    { rank: 7, name: "Mina Chen", points: 16950, country: "JPN", records: 7, tier: "Elite Master", avatar: "https://randomuser.me/api/portraits/women/22.jpg", change: "+1", profileId: "jamal-carter" },
+    { rank: 8, name: "David Lu", points: 14200, country: "CAN", records: 6, tier: "Pro Competitor", avatar: "https://randomuser.me/api/portraits/men/76.jpg", change: "+2", profileId: "jamal-carter" },
+    { rank: 9, name: "Lucas Silva", points: 11950, country: "BRA", records: 5, tier: "Pro Competitor", avatar: "https://randomuser.me/api/portraits/men/3.jpg", change: "-1", profileId: "leo-vance" }
   ];
 
   const getFilteredCompetitors = () => {
@@ -193,13 +194,26 @@ const GlobalRankings = () => {
                 filteredCompetitors.map((c, i) => (
                   <div
                     key={i}
+                    onClick={() => navigate(`/profile/${c.profileId}`)}
                     style={{
                       display: "grid",
                       gridTemplateColumns: "100px 1fr 180px 180px 150px",
                       padding: "32px 48px",
                       alignItems: "center",
                       borderBottom: i === filteredCompetitors.length - 1 ? "none" : "1px solid rgba(255,255,255,0.03)",
-                      background: c.rank <= 3 ? "rgba(255,106,0,0.02)" : "transparent"
+                      background: c.rank <= 3 ? "rgba(255,106,0,0.02)" : "transparent",
+                      cursor: "pointer",
+                      transition: "background 0.3s ease"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(255,106,0,0.05)";
+                      const nameEl = e.currentTarget.querySelector(".athlete-hover-name");
+                      if (nameEl) nameEl.style.color = "#FF6A00";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = c.rank <= 3 ? "rgba(255,106,0,0.02)" : "transparent";
+                      const nameEl = e.currentTarget.querySelector(".athlete-hover-name");
+                      if (nameEl) nameEl.style.color = "white";
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -210,9 +224,9 @@ const GlobalRankings = () => {
                     </div>
 
                     <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                      <img src={c.avatar} alt={c.name} style={{ width: "48px", height: "48px", borderRadius: "14px", border: c.rank <= 3 ? "1.5px solid #FF6A00" : "1px solid rgba(255,255,255,0.1)" }} />
+                      <img src={c.avatar} alt={c.name} style={{ width: "48px", height: "48px", borderRadius: "14px", border: c.rank <= 3 ? "1.5px solid #FF6A00" : "1px solid rgba(255,255,255,0.1)", objectFit: "cover" }} />
                       <div>
-                        <div style={{ fontSize: "16px", fontWeight: "800" }}>{c.name}</div>
+                        <div className="athlete-hover-name" style={{ fontSize: "16px", fontWeight: "800", color: "white", transition: "color 0.2s" }}>{c.name}</div>
                         <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "4px", marginTop: "2px" }}>
                           <Flag size={10} /> {c.country}
                         </div>

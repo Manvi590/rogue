@@ -8,6 +8,30 @@ const generateToken = (id) => {
   });
 };
 
+// Helper to generate a unique Member Number in the format AWR-XXXXXX
+const generateUniqueMemberNumber = async () => {
+  let isUnique = false;
+  let memberNumber = '';
+  let attempts = 0;
+  while (!isUnique && attempts < 15) {
+    attempts++;
+    const num = Math.floor(100000 + Math.random() * 900000);
+    memberNumber = `AWR-${num}`;
+    const { data, error } = await supabase
+      .from('users')
+      .select('id')
+      .eq('member_number', memberNumber)
+      .maybeSingle();
+    if (!data && !error) {
+      isUnique = true;
+    }
+  }
+  if (!isUnique) {
+    memberNumber = `AWR-${Math.floor(100000 + Math.random() * 900000)}`;
+  }
+  return memberNumber;
+};
+
 // @desc    Auth user & get token
 // @route   POST /api/auth/login
 // @access  Public
@@ -21,26 +45,40 @@ const authUser = async (req, res) => {
     .single();
 
   if (user && (await bcrypt.compare(password, user.password))) {
+    // Ensure they have a member number (for legacy/existing users)
+    let finalUser = user;
+    if (!user.member_number) {
+      const memberNumber = await generateUniqueMemberNumber();
+      const { data: updated } = await supabase
+        .from('users')
+        .update({ member_number: memberNumber })
+        .eq('id', user.id)
+        .select()
+        .single();
+      if (updated) finalUser = updated;
+    }
+
     res.json({
-      _id: user.id,
-      name: user.name,
-      email: user.email,
-      isAdmin: user.is_admin,
-      profileImage: user.profile_image,
-      username: user.username || '',
-      phone: user.phone || '',
-      gender: user.gender || '',
-      dob: user.dob || '',
-      weight: user.weight || '',
-      weightUnit: user.weight_unit || 'kg',
-      height: user.height || '',
-      heightUnit: user.height_unit || 'cm',
-      country: user.country || '',
-      city: user.city || '',
-      role: user.role || 'athlete',
-      membershipType: user.membership_type || 'free_athlete',
-      accountStatus: user.account_status || 'active',
-      token: generateToken(user.id),
+      _id: finalUser.id,
+      name: finalUser.name,
+      email: finalUser.email,
+      isAdmin: finalUser.is_admin,
+      profileImage: finalUser.profile_image,
+      username: finalUser.username || '',
+      phone: finalUser.phone || '',
+      gender: finalUser.gender || '',
+      dob: finalUser.dob || '',
+      weight: finalUser.weight || '',
+      weightUnit: finalUser.weight_unit || 'kg',
+      height: finalUser.height || '',
+      heightUnit: finalUser.height_unit || 'cm',
+      country: finalUser.country || '',
+      city: finalUser.city || '',
+      role: finalUser.role || 'athlete',
+      membershipType: finalUser.membership_type || 'free_athlete',
+      accountStatus: finalUser.account_status || 'active',
+      memberNumber: finalUser.member_number || '',
+      token: generateToken(finalUser.id),
     });
   } else {
     return res.status(401).json({ message: 'Invalid email or password' });
@@ -70,6 +108,7 @@ const registerUser = async (req, res) => {
 
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
+  const memberNumber = await generateUniqueMemberNumber();
 
   const newUser = { 
     name, 
@@ -89,7 +128,8 @@ const registerUser = async (req, res) => {
     city: city || '',
     role: 'athlete',
     membership_type: 'free_athlete',
-    account_status: 'active'
+    account_status: 'active',
+    member_number: memberNumber
   };
 
   const { data: user, error } = await supabase
@@ -123,6 +163,7 @@ const registerUser = async (req, res) => {
       role: user.role,
       membershipType: user.membership_type,
       accountStatus: user.account_status,
+      memberNumber: user.member_number || '',
       token: generateToken(user.id),
     });
   } else {
@@ -136,7 +177,7 @@ const registerUser = async (req, res) => {
 const getUserProfile = async (req, res) => {
   const { data: user, error } = await supabase
     .from('users')
-    .select('id, name, email, is_admin, role, membership_type, account_status, profile_image, username, phone, gender, dob, weight, weight_unit, height, height_unit, country, city')
+    .select('id, name, email, is_admin, role, membership_type, account_status, profile_image, username, phone, gender, dob, weight, weight_unit, height, height_unit, country, city, street_address, apartment, state, zip_code, member_number')
     .eq('id', req.user.id)
     .single();
 
@@ -145,25 +186,42 @@ const getUserProfile = async (req, res) => {
   }
 
   if (user) {
+    let finalUser = user;
+    if (!user.member_number) {
+      const memberNumber = await generateUniqueMemberNumber();
+      const { data: updated } = await supabase
+        .from('users')
+        .update({ member_number: memberNumber })
+        .eq('id', user.id)
+        .select()
+        .single();
+      if (updated) finalUser = updated;
+    }
+
     res.json({
-      _id: user.id,
-      name: user.name,
-      email: user.email,
-      isAdmin: user.is_admin,
-      profileImage: user.profile_image,
-      username: user.username || '',
-      phone: user.phone || '',
-      gender: user.gender || '',
-      dob: user.dob || '',
-      weight: user.weight || '',
-      weightUnit: user.weight_unit || 'kg',
-      height: user.height || '',
-      heightUnit: user.height_unit || 'cm',
-      country: user.country || '',
-      city: user.city || '',
-      role: user.role || 'athlete',
-      membershipType: user.membership_type || 'free_athlete',
-      accountStatus: user.account_status || 'active',
+      _id: finalUser.id,
+      name: finalUser.name,
+      email: finalUser.email,
+      isAdmin: finalUser.is_admin,
+      profileImage: finalUser.profile_image,
+      username: finalUser.username || '',
+      phone: finalUser.phone || '',
+      gender: finalUser.gender || '',
+      dob: finalUser.dob || '',
+      weight: finalUser.weight || '',
+      weightUnit: finalUser.weight_unit || 'kg',
+      height: finalUser.height || '',
+      heightUnit: finalUser.height_unit || 'cm',
+      country: finalUser.country || '',
+      city: finalUser.city || '',
+      streetAddress: finalUser.street_address || '',
+      apartment: finalUser.apartment || '',
+      state: finalUser.state || '',
+      zipCode: finalUser.zip_code || '',
+      role: finalUser.role || 'athlete',
+      membershipType: finalUser.membership_type || 'free_athlete',
+      accountStatus: finalUser.account_status || 'active',
+      memberNumber: finalUser.member_number || '',
     });
   } else {
     return res.status(404).json({ message: 'User not found' });
@@ -185,7 +243,7 @@ const updateUserProfile = async (req, res) => {
       name, email, password, profileImage,
       username, phone, gender, dob, 
       weight, weightUnit, height, heightUnit, 
-      country, city 
+      country, city, streetAddress, apartment, state, zipCode
     } = req.body;
 
     const updates = {
@@ -202,6 +260,10 @@ const updateUserProfile = async (req, res) => {
       height_unit: heightUnit !== undefined ? heightUnit : user.height_unit,
       country: country !== undefined ? country : user.country,
       city: city !== undefined ? city : user.city,
+      street_address: streetAddress !== undefined ? streetAddress : user.street_address,
+      apartment: apartment !== undefined ? apartment : user.apartment,
+      state: state !== undefined ? state : user.state,
+      zip_code: zipCode !== undefined ? zipCode : user.zip_code,
       updated_at: new Date()
     };
 
@@ -237,9 +299,14 @@ const updateUserProfile = async (req, res) => {
       heightUnit: updatedUser.height_unit || 'cm',
       country: updatedUser.country || '',
       city: updatedUser.city || '',
+      streetAddress: updatedUser.street_address || '',
+      apartment: updatedUser.apartment || '',
+      state: updatedUser.state || '',
+      zipCode: updatedUser.zip_code || '',
       role: updatedUser.role || 'athlete',
       membershipType: updatedUser.membership_type || 'free_athlete',
       accountStatus: updatedUser.account_status || 'active',
+      memberNumber: updatedUser.member_number || '',
       token: generateToken(updatedUser.id)
     });
   } else {

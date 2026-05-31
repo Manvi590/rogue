@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { 
   Trophy, 
   MapPin, 
@@ -50,6 +50,7 @@ const CustomSelect = ({ value, onChange, options, label }) => (
 );
 
 const LocalLeaderboards = () => {
+  const navigate = useNavigate();
   const [selectedCountry, setSelectedCountry] = useState("United States");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("Athletics");
@@ -83,23 +84,23 @@ const LocalLeaderboards = () => {
 
   // Using a flat array here so we can filter by country, category, and age division dynamically
   const mockLocalData = [
-    { name: "Marcus Vance", country: "United States", category: "Strength", value: "355 KG", scoreNumeric: 355, date: "2026-05-18", event: "Bench Press", state: "Illinois", avatar: "https://randomuser.me/api/portraits/men/85.jpg", ageGroup: "Adult Division (18–49)" },
-    { name: "Ryan Reynolds", country: "United States", category: "Strength", value: "310 KG", scoreNumeric: 310, date: "2026-05-10", event: "Bench Press", state: "California", avatar: "https://randomuser.me/api/portraits/men/14.jpg", ageGroup: "Adult Division (18–49)" },
-    { name: "Jessica Alba", country: "United States", category: "Strength", value: "195 KG", scoreNumeric: 195, date: "2026-04-22", event: "Squat Hold", state: "Texas", avatar: "https://randomuser.me/api/portraits/women/45.jpg", ageGroup: "Teen Legends Division (13–17)" },
-    { name: "Tyler Durden", country: "United States", category: "Strength", value: "290 KG", scoreNumeric: 290, date: "2026-03-10", event: "Deadlift", state: "New York", avatar: "https://randomuser.me/api/portraits/men/22.jpg", ageGroup: "Adult Division (18–49)" },
-    { name: "David Goggins", country: "United States", category: "Endurance", value: "17h 45m", scoreNumeric: 1745, date: "2026-05-01", event: "100 Mile Trail Run", state: "Indiana", avatar: "https://randomuser.me/api/portraits/men/33.jpg", ageGroup: "Masters Division (50+)" },
-    { name: "Rich Roll", country: "United States", category: "Endurance", value: "19h 12m", scoreNumeric: 1912, date: "2026-02-14", event: "Ultra Tri-distance", state: "Hawaii", avatar: "https://randomuser.me/api/portraits/men/64.jpg", ageGroup: "Masters Division (50+)" },
-    { name: "Max Park", country: "United States", category: "Gaming", value: "3.13 Sec", scoreNumeric: 313, date: "2026-05-19", event: "3x3 Rubik Solve", state: "California", avatar: "https://randomuser.me/api/portraits/men/90.jpg", ageGroup: "Adult Division (18–49)" },
-    { name: "Christian Coleman", country: "United States", category: "Athletics", value: "9.76 Sec", scoreNumeric: 976, date: "2026-01-22", event: "100m Sprint", state: "Georgia", avatar: "https://randomuser.me/api/portraits/men/4.jpg", ageGroup: "Adult Division (18–49)" },
+    { name: "Marcus Vance", country: "United States", category: "Strength", value: "355 KG", scoreNumeric: 355, date: "2026-05-18", event: "Bench Press", state: "Illinois", avatar: "https://randomuser.me/api/portraits/men/85.jpg", ageGroup: "Adult Division (18–49)", recordId: "bench-press", profileId: "leo-vance" },
+    { name: "Ryan Reynolds", country: "United States", category: "Strength", value: "310 KG", scoreNumeric: 310, date: "2026-05-10", event: "Bench Press", state: "California", avatar: "https://randomuser.me/api/portraits/men/14.jpg", ageGroup: "Adult Division (18–49)", recordId: "bench-press", profileId: "leo-vance" },
+    { name: "Jessica Alba", country: "United States", category: "Strength", value: "195 KG", scoreNumeric: 195, date: "2026-04-22", event: "Squat Hold", state: "Texas", avatar: "https://randomuser.me/api/portraits/women/45.jpg", ageGroup: "Teen Legends Division (13–17)", recordId: "bench-press", profileId: "jamal-carter" },
+    { name: "Tyler Durden", country: "United States", category: "Strength", value: "290 KG", scoreNumeric: 290, date: "2026-03-10", event: "Deadlift", state: "New York", avatar: "https://randomuser.me/api/portraits/men/22.jpg", ageGroup: "Adult Division (18–49)", recordId: "deadlifts", profileId: "leo-vance" },
+    { name: "David Goggins", country: "United States", category: "Endurance", value: "17h 45m", scoreNumeric: 1745, date: "2026-05-01", event: "100 Mile Trail Run", state: "Indiana", avatar: "https://randomuser.me/api/portraits/men/33.jpg", ageGroup: "Masters Division (50+)", recordId: "plank-holds", profileId: "jamal-carter" },
+    { name: "Rich Roll", country: "United States", category: "Endurance", value: "19h 12m", scoreNumeric: 1912, date: "2026-02-14", event: "Ultra Tri-distance", state: "Hawaii", avatar: "https://randomuser.me/api/portraits/men/64.jpg", ageGroup: "Masters Division (50+)", recordId: "plank-holds", profileId: "leo-vance" },
+    { name: "Max Park", country: "United States", category: "Gaming", value: "3.13 Sec", scoreNumeric: 313, date: "2026-05-19", event: "3x3 Rubik Solve", state: "California", avatar: "https://randomuser.me/api/portraits/men/90.jpg", ageGroup: "Adult Division (18–49)", recordId: "rubik-s-cube", profileId: "jamal-carter" },
+    { name: "Christian Coleman", country: "United States", category: "Athletics", value: "9.76 Sec", scoreNumeric: 976, date: "2026-01-22", event: "100m Sprint", state: "Georgia", avatar: "https://randomuser.me/api/portraits/men/4.jpg", ageGroup: "Adult Division (18–49)", recordId: "sprinting", profileId: "jamal-carter" },
     
-    { name: "Mitchell Hooper", country: "Canada", category: "Strength", value: "440 KG", scoreNumeric: 440, date: "2026-04-18", event: "Max Deadlift", state: "Ontario", avatar: "https://randomuser.me/api/portraits/men/55.jpg", ageGroup: "Adult Division (18–49)" },
-    { name: "Jean-Francois", country: "Canada", category: "Strength", value: "410 KG", scoreNumeric: 410, date: "2026-03-05", event: "Atlas Stones", state: "Quebec", avatar: "https://randomuser.me/api/portraits/men/71.jpg", ageGroup: "Adult Division (18–49)" },
-    { name: "Lionel Sanders", country: "Canada", category: "Endurance", value: "7h 44m", scoreNumeric: 744, date: "2026-05-11", event: "Ironman distance", state: "Ontario", avatar: "https://randomuser.me/api/portraits/men/11.jpg", ageGroup: "Adult Division (18–49)" },
+    { name: "Mitchell Hooper", country: "Canada", category: "Strength", value: "440 KG", scoreNumeric: 440, date: "2026-04-18", event: "Max Deadlift", state: "Ontario", avatar: "https://randomuser.me/api/portraits/men/55.jpg", ageGroup: "Adult Division (18–49)", recordId: "deadlifts", profileId: "leo-vance" },
+    { name: "Jean-Francois", country: "Canada", category: "Strength", value: "410 KG", scoreNumeric: 410, date: "2026-03-05", event: "Atlas Stones", state: "Quebec", avatar: "https://randomuser.me/api/portraits/men/71.jpg", ageGroup: "Adult Division (18–49)", recordId: "bench-press", profileId: "leo-vance" },
+    { name: "Lionel Sanders", country: "Canada", category: "Endurance", value: "7h 44m", scoreNumeric: 744, date: "2026-05-11", event: "Ironman distance", state: "Ontario", avatar: "https://randomuser.me/api/portraits/men/11.jpg", ageGroup: "Adult Division (18–49)", recordId: "plank-holds", profileId: "jamal-carter" },
     
-    { name: "Eddie Hall", country: "United Kingdom", category: "Strength", value: "500 KG", scoreNumeric: 500, date: "2026-02-18", event: "Deadlift Max", state: "Staffordshire", avatar: "https://randomuser.me/api/portraits/men/12.jpg", ageGroup: "Adult Division (18–49)" },
-    { name: "Tom Stoltman", country: "United Kingdom", category: "Strength", value: "286 KG", scoreNumeric: 286, date: "2026-05-01", event: "Atlas Stones", state: "Scotland", avatar: "https://randomuser.me/api/portraits/men/47.jpg", ageGroup: "Adult Division (18–49)" },
-    { name: "Alistair Brownlee", country: "United Kingdom", category: "Endurance", value: "1h 45m", scoreNumeric: 145, date: "2026-03-12", event: "Olympic Triathlon", state: "Yorkshire", avatar: "https://randomuser.me/api/portraits/men/29.jpg", ageGroup: "Adult Division (18–49)" },
-    { name: "Timmy Jenkins", country: "United Kingdom", category: "Gaming", value: "12,500 Pts", scoreNumeric: 12500, date: "2026-05-18", event: "Arcade High Score", state: "London", avatar: "https://randomuser.me/api/portraits/men/19.jpg", ageGroup: "Junior Champions Division (5–12)" }
+    { name: "Eddie Hall", country: "United Kingdom", category: "Strength", value: "500 KG", scoreNumeric: 500, date: "2026-02-18", event: "Deadlift Max", state: "Staffordshire", avatar: "https://randomuser.me/api/portraits/men/12.jpg", ageGroup: "Adult Division (18–49)", recordId: "deadlifts", profileId: "leo-vance" },
+    { name: "Tom Stoltman", country: "United Kingdom", category: "Strength", value: "286 KG", scoreNumeric: 286, date: "2026-05-01", event: "Atlas Stones", state: "Scotland", avatar: "https://randomuser.me/api/portraits/men/47.jpg", ageGroup: "Adult Division (18–49)", recordId: "bench-press", profileId: "leo-vance" },
+    { name: "Alistair Brownlee", country: "United Kingdom", category: "Endurance", value: "1h 45m", scoreNumeric: 145, date: "2026-03-12", event: "Olympic Triathlon", state: "Yorkshire", avatar: "https://randomuser.me/api/portraits/men/29.jpg", ageGroup: "Adult Division (18–49)", recordId: "plank-holds", profileId: "leo-vance" },
+    { name: "Timmy Jenkins", country: "United Kingdom", category: "Gaming", value: "12,500 Pts", scoreNumeric: 12500, date: "2026-05-18", event: "Arcade High Score", state: "London", avatar: "https://randomuser.me/api/portraits/men/19.jpg", ageGroup: "Junior Champions Division (5–12)", recordId: "rubik-s-cube", profileId: "jamal-carter" }
   ];
 
   const getRankings = () => {
@@ -291,6 +292,7 @@ const LocalLeaderboards = () => {
                     currentRankings.map((r, i) => (
                       <div
                         key={i}
+                        onClick={() => navigate(`/record/${r.recordId}`)}
                         style={{
                           display: "grid",
                           gridTemplateColumns: "80px 1.5fr 200px 150px",
@@ -301,32 +303,54 @@ const LocalLeaderboards = () => {
                           transition: "background 0.3s ease",
                           cursor: "pointer"
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,106,0,0.05)"}
-                        onMouseLeave={(e) => e.currentTarget.style.background = i === 0 && activeSort === "Highest Score" ? "rgba(255,106,0,0.02)" : "transparent"}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "rgba(255,106,0,0.05)";
+                          const recordValEl = e.currentTarget.querySelector(".record-hover-value");
+                          if (recordValEl) recordValEl.style.color = "#FF6A00";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = i === 0 && activeSort === "Highest Score" ? "rgba(255,106,0,0.02)" : "transparent";
+                          const recordValEl = e.currentTarget.querySelector(".record-hover-value");
+                          if (recordValEl) recordValEl.style.color = "white";
+                        }}
                       >
                         <div style={{ fontSize: "24px", fontWeight: "950", color: i === 0 && activeSort === "Highest Score" ? "#FF6A00" : "rgba(255,255,255,0.2)" }}>
                           #{r.rank}
                         </div>
                         
-                        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                          <img src={r.avatar} alt={r.name} style={{ width: "48px", height: "48px", borderRadius: "14px", objectFit: "cover" }} />
+                        <div 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/profile/${r.profileId}`);
+                          }}
+                          style={{ display: "flex", alignItems: "center", gap: "16px", cursor: "pointer" }}
+                          onMouseEnter={(e) => {
+                            const nameEl = e.currentTarget.querySelector(".athlete-hover-name");
+                            if (nameEl) nameEl.style.color = "#FF6A00";
+                          }}
+                          onMouseLeave={(e) => {
+                            const nameEl = e.currentTarget.querySelector(".athlete-hover-name");
+                            if (nameEl) nameEl.style.color = "white";
+                          }}
+                        >
+                          <img src={r.avatar} alt={r.name} style={{ width: "48px", height: "48px", borderRadius: "14px", objectFit: "cover", border: "1px solid rgba(255,255,255,0.1)" }} />
                           <div>
-                            <div style={{ fontSize: "16px", fontWeight: "800" }}>{r.name}</div>
+                            <div className="athlete-hover-name" style={{ fontSize: "16px", fontWeight: "800", transition: "color 0.2s" }}>{r.name}</div>
                             <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "4px", marginTop: "2px" }}>
                               <MapPin size={10} color="#FF6A00" /> {r.state}
                             </div>
                           </div>
                         </div>
-
+ 
                         <div>
                           <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.3)", fontWeight: "800", textTransform: "uppercase", marginBottom: "4px" }}>{r.event}</div>
                           <div style={{ fontSize: "11px", fontWeight: "800", color: "#FF6A00", background: "rgba(255,106,0,0.1)", padding: "4px 8px", borderRadius: "6px", display: "inline-block", textTransform: "uppercase" }}>
                             {r.ageGroup.split(" (")[0]}
                           </div>
                         </div>
-
+ 
                         <div style={{ textAlign: "right" }}>
-                          <div style={{ fontSize: "20px", fontWeight: "950", color: "white" }}>{r.value}</div>
+                          <div className="record-hover-value" style={{ fontSize: "20px", fontWeight: "950", color: "white", transition: "color 0.2s" }}>{r.value}</div>
                           <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", fontWeight: "700" }}>{r.date}</div>
                         </div>
                       </div>

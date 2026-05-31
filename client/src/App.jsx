@@ -36,10 +36,15 @@ import Cookies from './pages/Cookies'
 import GlobalLeaderboard from './pages/GlobalLeaderboard'
 import LocalLeaderboards from './pages/LocalLeaderboards'
 import GlobalRankings from './pages/GlobalRankings'
+import GlobalRankingsPage from './pages/GlobalRankingsPage'
+import MemberProfilePage from './pages/MemberProfilePage'
+import ExploreRecords from './pages/ExploreRecords'
+import RecordDetailPage from './pages/RecordDetailPage'
 import LoadingScreen from './components/LoadingScreen'
 import ScrollToTop from './components/ScrollToTop'
 import Admin from './pages/Admin'
 import SubmissionCheckout from './pages/SubmissionCheckout'
+import ProtectedRoute from './components/ProtectedRoute'
 import './App.css'
 
 function App() {
@@ -61,16 +66,19 @@ function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/local-leaderboards" element={<LocalLeaderboards />} />
-            <Route path="/global-rankings" element={<GlobalRankings />} />
+            <Route path="/global-rankings" element={<GlobalRankingsPage />} />
+            <Route path="/profile/:username" element={<MemberProfilePage />} />
+        <Route path="/explore-records" element={<ExploreRecords />} />
+        <Route path="/record/:recordId" element={<RecordDetailPage />} />
             <Route path="/global-leaderboard" element={<GlobalLeaderboard />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/explore" element={<Explore />} />
             <Route path="/challenge" element={<Challenges />} />
-            <Route path="/verify" element={<Verify />} />
-            <Route path="/challenge-verify" element={<ChallengeVerify />} />
-            <Route path="/submission-checkout" element={<SubmissionCheckout />} />
+            <Route path="/verify" element={<ProtectedRoute><Verify /></ProtectedRoute>} />
+            <Route path="/challenge-verify" element={<ProtectedRoute><ChallengeVerify /></ProtectedRoute>} />
+            <Route path="/submission-checkout" element={<ProtectedRoute><SubmissionCheckout /></ProtectedRoute>} />
             <Route path="/process" element={<VerificationProcess />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/events" element={<Events />} />
@@ -80,12 +88,12 @@ function App() {
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/cart" element={<Cart />} />
-            <Route path="/elite" element={<EliteMembership />} />
+            <Route path="/elite" element={<ProtectedRoute><EliteMembership /></ProtectedRoute>} />
             <Route path="/streams" element={<Streams />} />
             <Route path="/categories" element={<Categories />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/profile/:id" element={<Profile />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><Admin /></ProtectedRoute>} />
             <Route path="/submit-evidence-info" element={<SubmitEvidenceLearnMore />} />
             <Route path="/global-recognition-info" element={<GlobalRecognitionLearnMore />} />
             <Route path="/adjudication-info" element={<ExpertAdjudicationLearnMore />} />

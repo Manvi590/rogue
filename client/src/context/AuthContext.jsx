@@ -39,8 +39,9 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     sessionStorage.removeItem('userInfo');
-    // We also remove it from localStorage just in case it was stored there previously
     localStorage.removeItem('userInfo');
+    sessionStorage.setItem('awr_logout_message', 'You have successfully logged out.');
+    window.location.href = '/';
   };
 
   return (

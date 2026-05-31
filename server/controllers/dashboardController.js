@@ -168,6 +168,30 @@ const getUserActivity = async (req, res) => {
   }
 };
 
+// Helper to generate a unique Member Number in the format AWR-XXXXXX
+const generateUniqueMemberNumber = async () => {
+  let isUnique = false;
+  let memberNumber = '';
+  let attempts = 0;
+  while (!isUnique && attempts < 15) {
+    attempts++;
+    const num = Math.floor(100000 + Math.random() * 900000);
+    memberNumber = `AWR-${num}`;
+    const { data, error } = await supabase
+      .from('users')
+      .select('id')
+      .eq('member_number', memberNumber)
+      .maybeSingle();
+    if (!data && !error) {
+      isUnique = true;
+    }
+  }
+  if (!isUnique) {
+    memberNumber = `AWR-${Math.floor(100000 + Math.random() * 900000)}`;
+  }
+  return memberNumber;
+};
+
 // @desc    Get all users with filters
 // @route   GET /api/admin/users/list/all
 // @access  Private/Admin
@@ -181,7 +205,7 @@ const getAllUsers = async (req, res) => {
       .select('*', { count: 'exact' });
 
     if (search) {
-      query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
+      query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%,username.ilike.%${search}%,member_number.ilike.%${search}%`);
     }
 
     const { data: users, count, error } = await query
@@ -215,6 +239,7 @@ const createUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const assignedRole = role || 'athlete';
     const computedIsAdmin = assignedRole === 'system_admin';
+    const memberNumber = await generateUniqueMemberNumber();
 
     const { data: user, error } = await supabase
       .from('users')
@@ -231,7 +256,8 @@ const createUser = async (req, res) => {
         role: assignedRole,
         membership_type: membershipType || 'free_athlete',
         account_status: accountStatus || 'active',
-        is_admin: computedIsAdmin
+        is_admin: computedIsAdmin,
+        member_number: memberNumber
       })
       .select();
 

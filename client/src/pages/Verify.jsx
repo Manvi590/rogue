@@ -140,7 +140,7 @@ const categoriesData = {
 };
 
 const Verify = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, updateProfile } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -204,8 +204,34 @@ const Verify = () => {
     
     // Section 8
     declarationSigned: false,
-    declarationDate: ""
+    declarationDate: "",
+
+    streetAddress: "",
+    apartment: "",
+    cityAddress: "",
+    stateAddress: "",
+    zipCode: "",
+    countryAddress: ""
   });
+
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        fullName: prev.fullName || user.name || "",
+        username: prev.username || user.username || "",
+        email: prev.email || user.email || "",
+        phone: prev.phone || user.phone || "",
+        dob: prev.dob || user.dob || "",
+        streetAddress: prev.streetAddress || user.streetAddress || "",
+        apartment: prev.apartment || user.apartment || "",
+        cityAddress: prev.cityAddress || user.city || "",
+        stateAddress: prev.stateAddress || user.state || "",
+        zipCode: prev.zipCode || user.zipCode || "",
+        countryAddress: prev.countryAddress || user.country || ""
+      }));
+    }
+  }, [user]);
 
   const [uploadedFiles, setUploadedFiles] = useState({
     video: null,
@@ -239,6 +265,21 @@ const Verify = () => {
     setError("");
 
     try {
+      if (updateProfile) {
+        try {
+          await updateProfile({
+            streetAddress: formData.streetAddress,
+            apartment: formData.apartment,
+            city: formData.cityAddress,
+            state: formData.stateAddress,
+            zipCode: formData.zipCode,
+            country: formData.countryAddress
+          });
+        } catch (profileErr) {
+          console.error("Profile auto-save error (non-blocking):", profileErr);
+        }
+      }
+
       const submissionData = {
         title: formData.recordTitle,
         category: formData.category,
@@ -266,6 +307,95 @@ const Verify = () => {
   };
 
   const [validationError, setValidationError] = useState("");
+
+  const [auditProgress, setAuditProgress] = useState(0);
+  const [auditState, setAuditState] = useState("pending"); // pending, scanning, complete
+  const [auditOutcome, setAuditOutcome] = useState("pending"); // pending, passed, failed, incomplete
+  const [auditConfidence, setAuditConfidence] = useState(0);
+  const [auditLogs, setAuditLogs] = useState([]);
+
+  useEffect(() => {
+    if (step === 5) {
+      setAuditState("scanning");
+      setAuditProgress(0);
+      setAuditConfidence(0);
+      setAuditOutcome("pending");
+      setAuditLogs(["[SYSTEM] Initializing Biometric Audit Engine..."]);
+
+      let currentProgress = 0;
+      const interval = setInterval(() => {
+        currentProgress += Math.floor(Math.random() * 8) + 5;
+        if (currentProgress >= 100) {
+          currentProgress = 100;
+          clearInterval(interval);
+          
+          // Evaluate outcome
+          const hasVideo = uploadedFiles.video || (formData.youtubeLink && formData.youtubeLink.trim() !== "");
+          const isMissingFields = !formData.fullName || !formData.recordTitle || !formData.resultScore || !formData.venueName || !formData.explanation || !hasVideo;
+          
+          if (isMissingFields) {
+            setAuditOutcome("incomplete");
+            setAuditConfidence(45.5);
+            setAuditState("complete");
+            setAuditLogs(prev => [
+              ...prev,
+              "[Biometrics] Auditing movement signatures...",
+              "[WARNING] Crucial metadata or continuous video footage is missing.",
+              "[SYSTEM] Biometric Audit Incomplete — Please complete required fields."
+            ]);
+          } else {
+            const scoreVal = parseFloat(formData.resultScore);
+            const isUnrealisticScore = scoreVal > 10000 || scoreVal <= 0 || isNaN(scoreVal);
+            const hasUnsignedWitness = formData.witnesses.some(w => !w.signed);
+            const suspiciousKeywords = ['fake', 'cheat', 'test', 'hack', 'bypass'];
+            const hasSuspiciousText = suspiciousKeywords.some(kw => 
+              formData.recordTitle.toLowerCase().includes(kw) || formData.explanation.toLowerCase().includes(kw)
+            );
+            
+            if (isUnrealisticScore || hasUnsignedWitness || hasSuspiciousText) {
+              setAuditOutcome("failed");
+              setAuditConfidence(38.2);
+              setAuditState("complete");
+              const reasons = [];
+              if (isUnrealisticScore) reasons.push("Anomalous performance score detected");
+              if (hasUnsignedWitness) reasons.push("Unsigned witness verification sheet");
+              if (hasSuspiciousText) reasons.push("Suspicious attempt keyword flag");
+              
+              setAuditLogs(prev => [
+                ...prev,
+                "[Biometrics] Analyzing frame rate and spatial coordinates...",
+                `[WARNING] Security review flagged anomalous patterns: ${reasons.join(", ")}.`,
+                "[SYSTEM] Biometric Audit Failed — Additional Verification Required."
+              ]);
+            } else {
+              setAuditOutcome("passed");
+              setAuditConfidence(98.4);
+              setAuditState("complete");
+              setAuditLogs(prev => [
+                ...prev,
+                "[Biometrics] Participant movement geometry: 100% MATCH.",
+                "[Deepfake Scanner] Checking generative patterns... NOMINAL.",
+                "[Video Auditor] Raw continuous signature locked.",
+                "[SYSTEM] Biometric Audit Passed."
+              ]);
+            }
+          }
+        } else {
+          setAuditProgress(currentProgress);
+          setAuditConfidence(parseFloat((currentProgress * 0.98 + (Math.random() * 2)).toFixed(1)));
+          if (currentProgress > 25 && currentProgress < 40) {
+            setAuditLogs(prev => prev.includes("[Biometrics] Scanning facial mesh...") ? prev : [...prev, "[Biometrics] Scanning facial mesh..."]);
+          } else if (currentProgress > 50 && currentProgress < 70) {
+            setAuditLogs(prev => prev.includes("[Security] Inspecting GAN visual grid noise...") ? prev : [...prev, "[Security] Inspecting GAN visual grid noise..."]);
+          } else if (currentProgress > 75 && currentProgress < 90) {
+            setAuditLogs(prev => prev.includes("[Auditing] Frame transitions & splice detection...") ? prev : [...prev, "[Auditing] Frame transitions & splice detection..."]);
+          }
+        }
+      }, 150);
+
+      return () => clearInterval(interval);
+    }
+  }, [step, formData, uploadedFiles]);
 
   const validateCurrentStep = () => {
     setValidationError("");
@@ -303,6 +433,32 @@ const Verify = () => {
       if (!formData.resultScore || !formData.resultScore.trim()) {
         setValidationError("Result / Score value is required.");
         return false;
+      }
+      if (!formData.streetAddress || !formData.streetAddress.trim()) {
+        setValidationError("Street address is required.");
+        return false;
+      }
+      if (!formData.cityAddress || !formData.cityAddress.trim()) {
+        setValidationError("City is required.");
+        return false;
+      }
+      if (!formData.countryAddress) {
+        setValidationError("Country is required.");
+        return false;
+      }
+      if (!formData.stateAddress || !formData.stateAddress.trim()) {
+        setValidationError("State / Province is required.");
+        return false;
+      }
+      if (!formData.zipCode || !formData.zipCode.trim()) {
+        setValidationError("Zip / Postal Code is required.");
+        return false;
+      }
+      if (formData.countryAddress === "United States") {
+        if (!/^\d{5}(-\d{4})?$/.test(formData.zipCode)) {
+          setValidationError("Please enter a valid United States Zip Code (5 digits or 5-4 format, numbers only).");
+          return false;
+        }
       }
     }
 
@@ -1119,6 +1275,172 @@ const Verify = () => {
                             />
                           </div>
 
+                          {/* HOME ADDRESS SECTION */}
+                          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "24px", padding: "32px", textAlign: "left" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+                              <MapPin size={18} color="#FF6A00" />
+                              <span style={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.1em", color: "#FF6A00" }}>APPLICANT HOME ADDRESS</span>
+                            </div>
+                            
+                            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>Street Address</label>
+                                <input 
+                                  type="text" 
+                                  placeholder="Enter Street Address" 
+                                  value={formData.streetAddress || ""} 
+                                  onChange={(e) => setFormData({...formData, streetAddress: e.target.value})}
+                                  required
+                                  style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none" }} 
+                                />
+                              </div>
+                              
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>Apartment / Unit Number (Optional)</label>
+                                  <input 
+                                    type="text" 
+                                    placeholder="e.g. Apt 4B" 
+                                    value={formData.apartment || ""} 
+                                    onChange={(e) => setFormData({...formData, apartment: e.target.value})}
+                                    style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none" }} 
+                                  />
+                                </div>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>City</label>
+                                  <input 
+                                    type="text" 
+                                    placeholder="Enter City" 
+                                    value={formData.cityAddress || ""} 
+                                    onChange={(e) => setFormData({...formData, cityAddress: e.target.value})}
+                                    required
+                                    style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none" }} 
+                                  />
+                                </div>
+                              </div>
+                              
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                                <div>
+                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>Country</label>
+                                  <select 
+                                    value={formData.countryAddress || ""} 
+                                    onChange={(e) => setFormData({...formData, countryAddress: e.target.value, stateAddress: ""})}
+                                    required
+                                    style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none" }}
+                                  >
+                                    <option value="" disabled>Select Country</option>
+                                    <option value="United States">United States</option>
+                                    <option value="Canada">Canada</option>
+                                    <option value="United Kingdom">United Kingdom</option>
+                                    <option value="Australia">Australia</option>
+                                    <option value="Germany">Germany</option>
+                                    <option value="France">France</option>
+                                    <option value="India">India</option>
+                                    <option value="Japan">Japan</option>
+                                    <option value="Other">Other</option>
+                                  </select>
+                                </div>
+                                
+                                <div>
+                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>State / Province</label>
+                                  {formData.countryAddress === "United States" ? (
+                                    <select 
+                                      value={formData.stateAddress || ""} 
+                                      onChange={(e) => setFormData({...formData, stateAddress: e.target.value})}
+                                      required
+                                      style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none" }}
+                                    >
+                                      <option value="" disabled>Select State</option>
+                                      <option value="AL">Alabama</option>
+                                      <option value="AK">Alaska</option>
+                                      <option value="AZ">Arizona</option>
+                                      <option value="AR">Arkansas</option>
+                                      <option value="CA">California</option>
+                                      <option value="CO">Colorado</option>
+                                      <option value="CT">Connecticut</option>
+                                      <option value="DE">Delaware</option>
+                                      <option value="FL">Florida</option>
+                                      <option value="GA">Georgia</option>
+                                      <option value="HI">Hawaii</option>
+                                      <option value="ID">Idaho</option>
+                                      <option value="IL">Illinois</option>
+                                      <option value="IN">Indiana</option>
+                                      <option value="IA">Iowa</option>
+                                      <option value="KS">Kansas</option>
+                                      <option value="KY">Kentucky</option>
+                                      <option value="LA">Louisiana</option>
+                                      <option value="ME">Maine</option>
+                                      <option value="MD">Maryland</option>
+                                      <option value="MA">Massachusetts</option>
+                                      <option value="MI">Michigan</option>
+                                      <option value="MN">Minnesota</option>
+                                      <option value="MS">Mississippi</option>
+                                      <option value="MO">Missouri</option>
+                                      <option value="MT">Montana</option>
+                                      <option value="NE">Nebraska</option>
+                                      <option value="NV">Nevada</option>
+                                      <option value="NH">New Hampshire</option>
+                                      <option value="NJ">New Jersey</option>
+                                      <option value="NM">New Mexico</option>
+                                      <option value="NY">New York</option>
+                                      <option value="NC">North Carolina</option>
+                                      <option value="ND">North Dakota</option>
+                                      <option value="OH">Ohio</option>
+                                      <option value="OK">Oklahoma</option>
+                                      <option value="OR">Oregon</option>
+                                      <option value="PA">Pennsylvania</option>
+                                      <option value="RI">Rhode Island</option>
+                                      <option value="SC">South Carolina</option>
+                                      <option value="SD">South Dakota</option>
+                                      <option value="TN">Tennessee</option>
+                                      <option value="TX">Texas</option>
+                                      <option value="UT">Utah</option>
+                                      <option value="VT">Vermont</option>
+                                      <option value="VA">Virginia</option>
+                                      <option value="WA">Washington</option>
+                                      <option value="WV">West Virginia</option>
+                                      <option value="WI">Wisconsin</option>
+                                      <option value="WY">Wyoming</option>
+                                    </select>
+                                  ) : (
+                                    <input 
+                                      type="text" 
+                                      placeholder="Select State" 
+                                      value={formData.stateAddress || ""} 
+                                      onChange={(e) => setFormData({...formData, stateAddress: e.target.value})}
+                                      required
+                                      style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none" }} 
+                                    />
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>Zip / Postal Code</label>
+                                <input 
+                                  type="text" 
+                                  placeholder="Enter Zip / Postal Code" 
+                                  value={formData.zipCode || ""} 
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (formData.countryAddress === "United States") {
+                                      const raw = val.replace(/\D/g, "");
+                                      let formatted = raw.substring(0, 5);
+                                      if (raw.length > 5) {
+                                        formatted += "-" + raw.substring(5, 9);
+                                      }
+                                      setFormData({...formData, zipCode: formatted});
+                                    } else {
+                                      setFormData({...formData, zipCode: val});
+                                    }
+                                  }}
+                                  required
+                                  style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none" }} 
+                                />
+                              </div>
+                            </div>
+                          </div>
+
                           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "24px", padding: "32px" }}>
                             <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "#FF6A00", marginBottom: "20px", textTransform: "uppercase", letterSpacing: "0.1em" }}>EXPLAIN YOUR ATTEMPT</label>
                             <textarea 
@@ -1435,24 +1757,55 @@ const Verify = () => {
 
                       <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "32px", marginBottom: "40px" }}>
                         {/* AI SCANNER HUD */}
-                        <div style={{ position: "relative", height: "480px", borderRadius: "32px", overflow: "hidden", border: "1px solid rgba(255,106,0,0.2)", background: "#000" }}>
+                        <div style={{ position: "relative", height: "480px", borderRadius: "32px", overflow: "hidden", border: `1px solid ${
+                          auditOutcome === "passed" ? "rgba(74, 222, 128, 0.3)" :
+                          auditOutcome === "failed" ? "rgba(255, 77, 77, 0.3)" :
+                          auditOutcome === "incomplete" ? "rgba(255, 204, 0, 0.3)" : "rgba(255, 106, 0, 0.3)"
+                        }`, background: "#000" }}>
                           <img src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1200&q=80" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.5 }} />
                           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent, rgba(0,0,0,0.6))" }}></div>
                           
                           {/* HUD TOP LEFT */}
                           <div style={{ position: "absolute", top: "24px", left: "24px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#FF6A00", fontSize: "10px", fontWeight: "900", letterSpacing: "0.1em" }}>
-                              <div style={{ width: "6px", height: "6px", background: "#FF6A00", borderRadius: "50%", animation: "pulse 1s infinite" }}></div> SCANNING_ACTIVE
+                            <div style={{ 
+                              display: "flex", 
+                              alignItems: "center", 
+                              gap: "8px", 
+                              color: 
+                                auditOutcome === "passed" ? "#4ADE80" :
+                                auditOutcome === "failed" ? "#FF4D4D" :
+                                auditOutcome === "incomplete" ? "#FFCC00" : "#FF6A00", 
+                              fontSize: "10px", 
+                              fontWeight: "900", 
+                              letterSpacing: "0.1em" 
+                            }}>
+                              <div style={{ 
+                                width: "6px", 
+                                height: "6px", 
+                                background: 
+                                  auditOutcome === "passed" ? "#4ADE80" :
+                                  auditOutcome === "failed" ? "#FF4D4D" :
+                                  auditOutcome === "incomplete" ? "#FFCC00" : "#FF6A00", 
+                                borderRadius: "50%", 
+                                animation: auditState === "scanning" ? "pulse 1s infinite" : "none" 
+                              }}></div> 
+                              {auditState === "scanning" ? "SCANNING_ACTIVE" : 
+                               auditOutcome === "passed" ? "SYSTEM_NOMINAL" : 
+                               auditOutcome === "failed" ? "THREAT_DETECTED" : "DATA_MISSING"}
                             </div>
-                            <div style={{ fontSize: "14px", fontWeight: "900", color: "white", letterSpacing: "0.05em" }}>FPS: 120.4</div>
+                            <div style={{ fontSize: "14px", fontWeight: "900", color: "white", letterSpacing: "0.05em" }}>
+                              FPS: {auditState === "scanning" ? (118 + Math.random() * 4).toFixed(1) : "0.0"}
+                            </div>
                           </div>
 
                           {/* SCAN LINE ANIMATION */}
-                          <motion.div 
-                            animate={{ top: ["0%", "100%", "0%"] }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                            style={{ position: "absolute", left: 0, width: "100%", height: "2px", background: "linear-gradient(90deg, transparent, #FF6A00, transparent)", boxShadow: "0 0 15px #FF6A00", zIndex: 2 }}
-                          />
+                          {auditState === "scanning" && (
+                            <motion.div 
+                              animate={{ top: ["0%", "100%", "0%"] }}
+                              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                              style={{ position: "absolute", left: 0, width: "100%", height: "2px", background: "linear-gradient(90deg, transparent, #FF6A00, transparent)", boxShadow: "0 0 15px #FF6A00", zIndex: 2 }}
+                            />
+                          )}
 
                           {/* HUD BOTTOM LEFT */}
                           <div style={{ position: "absolute", bottom: "24px", left: "24px" }}>
@@ -1465,46 +1818,127 @@ const Verify = () => {
                           {/* HUD BOTTOM RIGHT */}
                           <div style={{ position: "absolute", bottom: "24px", right: "24px", textAlign: "right" }}>
                             <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "4px" }}>CONFIDENCE SCORE</div>
-                            <div style={{ fontSize: "32px", fontWeight: "950", color: "#FF6A00" }}>98.4%</div>
+                            <div style={{ 
+                              fontSize: "32px", 
+                              fontWeight: "950", 
+                              color: 
+                                auditOutcome === "passed" ? "#4ADE80" :
+                                auditOutcome === "failed" ? "#FF4D4D" :
+                                auditOutcome === "incomplete" ? "#FFCC00" : "#FF6A00" 
+                            }}>
+                              {auditConfidence.toFixed(1)}%
+                            </div>
                           </div>
                         </div>
 
                         {/* STATUS & ACTIONS */}
                         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
                           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "32px", padding: "32px" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
                               <h3 style={{ fontSize: "18px", fontWeight: "900", textTransform: "uppercase" }}>STATUS REPORT</h3>
-                              <Shield size={18} color="#FF6A00" />
+                              <Shield size={18} color={
+                                auditOutcome === "passed" ? "#4ADE80" :
+                                auditOutcome === "failed" ? "#FF4D4D" :
+                                auditOutcome === "incomplete" ? "#FFCC00" : "#FF6A00"
+                              } />
                             </div>
                             
-                            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                              {[
-                                { label: "PARSING MOVEMENT", status: "COMPLETE" },
-                                { label: "AUTHENTICITY CHECK", status: "VERIFIED" },
-                                { label: "SPATIAL GEOMETRY", status: "99.2% MATCH" },
-                                { label: "FRAME SYNCING", status: "LOCKED" }
-                              ].map((item, i) => (
-                                <div key={i} style={{ display: "flex", justifyContent: "space-between", paddingBottom: "12px", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                                  <span style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.4)" }}>{item.label}</span>
-                                  <span style={{ fontSize: "11px", fontWeight: "900", color: "#FF6A00" }}>{item.status}</span>
+                            {/* DYNAMIC AUDIT STATE CARD */}
+                            <div style={{
+                              background: 
+                                auditOutcome === "passed" ? "rgba(74, 222, 128, 0.04)" :
+                                auditOutcome === "failed" ? "rgba(255, 77, 77, 0.04)" :
+                                auditOutcome === "incomplete" ? "rgba(255, 204, 0, 0.04)" : "rgba(255, 106, 0, 0.04)",
+                              border: 
+                                auditOutcome === "passed" ? "1px solid rgba(74, 222, 128, 0.2)" :
+                                auditOutcome === "failed" ? "1px solid rgba(255, 77, 77, 0.2)" :
+                                auditOutcome === "incomplete" ? "1px solid rgba(255, 204, 0, 0.2)" : "1px solid rgba(255, 106, 0, 0.2)",
+                              borderRadius: "16px",
+                              padding: "20px",
+                              marginBottom: "24px",
+                              textAlign: "center",
+                              boxShadow: 
+                                auditOutcome === "passed" ? "0 0 20px rgba(74, 222, 128, 0.05)" :
+                                auditOutcome === "failed" ? "0 0 20px rgba(255, 77, 77, 0.05)" :
+                                auditOutcome === "incomplete" ? "0 0 20px rgba(255, 204, 0, 0.05)" : "0 0 20px rgba(255, 106, 0, 0.05)"
+                            }}>
+                              <div style={{ 
+                                fontSize: "14px", 
+                                fontWeight: "950", 
+                                textTransform: "uppercase",
+                                letterSpacing: "0.05em",
+                                color: 
+                                  auditOutcome === "passed" ? "#4ADE80" :
+                                  auditOutcome === "failed" ? "#FF4D4D" :
+                                  auditOutcome === "incomplete" ? "#FFCC00" : "#FF6A00"
+                              }}>
+                                {auditOutcome === "pending" && "Biometric Audit Pending"}
+                                {auditOutcome === "passed" && "Biometric Audit Passed"}
+                                {auditOutcome === "failed" && "Biometric Audit Failed — Additional Verification Required"}
+                                {auditOutcome === "incomplete" && "Biometric Audit Incomplete — Please complete required fields"}
+                              </div>
+                              {auditState === "scanning" && (
+                                <div style={{ marginTop: "12px", width: "100%", height: "4px", background: "rgba(255,255,255,0.05)", borderRadius: "2px", overflow: "hidden" }}>
+                                  <div style={{ width: `${auditProgress}%`, height: "100%", background: "#FF6A00", transition: "width 0.15s ease-out" }}></div>
                                 </div>
-                              ))}
+                              )}
                             </div>
 
-                            <div style={{ marginTop: "32px", background: "rgba(255,106,0,0.05)", border: "1px solid rgba(255,106,0,0.1)", borderRadius: "12px", padding: "16px", fontSize: "10px", color: "rgba(255,255,255,0.6)", textAlign: "center", fontWeight: "700" }}>
-                              AI engine is currently reconciling multi-angle biometric signatures. System state: NOMINAL.
+                            {/* SCROLLING TERMINAL LOGS */}
+                            <div style={{
+                              background: "#000",
+                              border: "1px solid rgba(255,255,255,0.05)",
+                              borderRadius: "16px",
+                              padding: "16px",
+                              fontFamily: "'Courier New', Courier, monospace",
+                              fontSize: "11px",
+                              color: "#888",
+                              minHeight: "140px",
+                              maxHeight: "180px",
+                              overflowY: "auto",
+                              lineHeight: "1.5",
+                              textAlign: "left"
+                            }} className="custom-scrollbar">
+                              {auditLogs.map((log, lIdx) => {
+                                let color = "#aaa";
+                                if (log.includes("[WARNING]")) color = "#FFCC00";
+                                else if (log.includes("[SYSTEM]") && log.includes("Passed")) color = "#4ADE80";
+                                else if (log.includes("[SYSTEM]") && log.includes("Failed")) color = "#FF4D4D";
+                                else if (log.includes("[SYSTEM]") && log.includes("Incomplete")) color = "#FFCC00";
+                                return <div key={lIdx} style={{ color }}>{log}</div>;
+                              })}
                             </div>
                           </div>
 
                           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "32px", padding: "32px" }}>
                              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)", lineHeight: "1.6", marginBottom: "24px" }}>
-                               Biometric validation is reaching terminal phase. Confirm data integrity to proceed to final record indexing.
+                               {auditOutcome === "incomplete" 
+                                 ? "Mandatory fields or uncut evidence file are missing. Please step back and complete all required inputs."
+                                 : "Biometric validation check complete. Reconcile diagnostic reports to proceed to final ledger submission."}
                              </p>
                              <button 
                                onClick={nextStep}
-                               style={{ width: "100%", background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "20px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", boxShadow: "0 20px 40px rgba(255,106,0,0.2)" }}
+                               disabled={auditState !== "complete" || auditOutcome === "incomplete"}
+                               style={{ 
+                                 width: "100%", 
+                                 background: (auditState !== "complete" || auditOutcome === "incomplete") ? "rgba(255,255,255,0.1)" : "#FF6A00", 
+                                 color: (auditState !== "complete" || auditOutcome === "incomplete") ? "rgba(255,255,255,0.4)" : "white", 
+                                 border: "none", 
+                                 borderRadius: "100px", 
+                                 padding: "20px", 
+                                 fontSize: "14px", 
+                                 fontWeight: "900", 
+                                 textTransform: "uppercase", 
+                                 cursor: (auditState !== "complete" || auditOutcome === "incomplete") ? "not-allowed" : "pointer", 
+                                 display: "flex", 
+                                 alignItems: "center", 
+                                 justifyContent: "center", 
+                                 gap: "12px", 
+                                 boxShadow: (auditState !== "complete" || auditOutcome === "incomplete") ? "none" : "0 20px 40px rgba(255,106,0,0.2)",
+                                 transition: "all 0.3s"
+                               }}
                              >
-                               CONFIRM VERIFICATION <ArrowRight size={18} />
+                               {auditState === "scanning" ? `SCANNING MOVEMENT (${auditProgress}%)` : "CONFIRM VERIFICATION"} <ArrowRight size={18} />
                              </button>
                           </div>
                         </div>

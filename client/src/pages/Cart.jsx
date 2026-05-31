@@ -1,10 +1,10 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ShoppingBag, ArrowLeft, Trash2, ChevronRight, Plus, Minus, CheckCircle2, Shield } from "lucide-react";
+import { ShoppingBag, ArrowLeft, Trash2, ChevronRight, Plus, Minus, CheckCircle2, Shield, AlertCircle } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { apiCall } from "../utils/api";
+import { apiCall, formatProductImage } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 
 
@@ -47,7 +47,9 @@ const Cart = () => {
   const [cardNumber, setCardNumber] = React.useState("");
   const [expiryDate, setExpiryDate] = React.useState("");
   const [cvv, setCvv] = React.useState("");
+  const [billingZip, setBillingZip] = React.useState("");
   const [shippingAddress, setShippingAddress] = React.useState("");
+  const [formError, setFormError] = React.useState("");
 
   const [successMessages, setSuccessMessages] = React.useState({
     msg_shop: 'Thank you! Your order has been processed securely. Your items will be processed and shipped shortly.',
@@ -72,35 +74,142 @@ const Cart = () => {
     fetchMessages();
   }, []);
 
+  const formatAmex = (digits) => {
+    let formatted = "";
+    if (digits.length > 0) formatted += digits.substring(0, 4);
+    if (digits.length > 4) formatted += " " + digits.substring(4, 10);
+    if (digits.length > 10) formatted += " " + digits.substring(10, 15);
+    return formatted;
+  };
+
+  const formatStandard = (digits) => {
+    let parts = [];
+    for (let i = 0; i < digits.length; i += 4) {
+      parts.push(digits.substring(i, i + 4));
+    }
+    return parts.join(" ");
+  };
 
   const handleCardNumberChange = (e) => {
-    const rawVal = e.target.value.replace(/\D/g, "");
-    const limitedVal = rawVal.substring(0, 16);
-    let formattedVal = "";
-    for (let i = 0; i < limitedVal.length; i++) {
-      if (i > 0 && i % 4 === 0) formattedVal += " ";
-      formattedVal += limitedVal[i];
+    const raw = e.target.value.replace(/\D/g, "");
+    const isAmex = raw.startsWith("34") || raw.startsWith("37");
+    const isStandard = raw.startsWith("4") || 
+                       /^(5[1-5]|222[1-9]|22[3-9]|2[3-6]|27[0-1]|2720)/.test(raw) || 
+                       /^(6011|622|64[4-9]|65)/.test(raw);
+    const maxLength = isAmex ? 15 : (isStandard ? 16 : 19);
+    const limited = raw.substring(0, maxLength);
+    
+    if (isAmex) {
+      setCardNumber(formatAmex(limited));
+    } else {
+      setCardNumber(formatStandard(limited));
     }
-    setCardNumber(formattedVal);
   };
 
   const handleExpiryDateChange = (e) => {
-    const rawVal = e.target.value.replace(/\D/g, "");
-    const limitedVal = rawVal.substring(0, 4);
-    let formattedVal = "";
-    if (limitedVal.length > 2) {
-      formattedVal = `${limitedVal.substring(0, 2)}/${limitedVal.substring(2)}`;
+    const raw = e.target.value.replace(/\D/g, "");
+    const limited = raw.substring(0, 4);
+    let formatted = "";
+    if (limited.length > 2) {
+      formatted = `${limited.substring(0, 2)}/${limited.substring(2)}`;
     } else {
-      formattedVal = limitedVal;
+      formatted = limited;
     }
-    setExpiryDate(formattedVal);
+    setExpiryDate(formatted);
   };
 
   const handleCvvChange = (e) => {
     const cleanCard = cardNumber.replace(/\s/g, "");
     const isAmex = cleanCard.startsWith("34") || cleanCard.startsWith("37");
-    const rawVal = e.target.value.replace(/\D/g, "");
-    setCvv(rawVal.substring(0, isAmex ? 4 : 3));
+    const raw = e.target.value.replace(/\D/g, "");
+    const limited = raw.substring(0, isAmex ? 4 : 3);
+    setCvv(limited);
+  };
+
+  const handleBillingZipChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    const limited = raw.substring(0, 6);
+    setBillingZip(limited);
+  };
+
+  const validateCardDetails = () => {
+    if (!shippingAddress.trim()) {
+      return "Shipping address is required.";
+    }
+    if (!cardholderName.trim()) {
+      return "Name on card is required.";
+    }
+    if (/[^a-zA-Z\s.-]/.test(cardholderName)) {
+      return "Name on card can only contain letters, spaces, hyphens, and periods.";
+    }
+
+    const cleanCard = cardNumber.replace(/\s/g, "");
+    if (!cleanCard) {
+      return "Please enter a valid card number.";
+    }
+    if (/[^\d]/.test(cleanCard)) {
+      return "Card number must contain numbers only.";
+    }
+
+    const isAmex = cleanCard.startsWith("34") || cleanCard.startsWith("37");
+    const isStandard = cleanCard.startsWith("4") || 
+                       /^(5[1-5]|222[1-9]|22[3-9]|2[3-6]|27[0-1]|2720)/.test(cleanCard) || 
+                       /^(6011|622|64[4-9]|65)/.test(cleanCard);
+
+    if (isAmex) {
+      if (cleanCard.length < 15) return "Card number is incomplete.";
+      if (cleanCard.length > 15) return "Card number is too long.";
+    } else if (isStandard) {
+      if (cleanCard.length < 16) return "Card number is incomplete.";
+      if (cleanCard.length > 16) return "Card number is too long.";
+    } else {
+      if (cleanCard.length < 12) return "Card number is incomplete.";
+      if (cleanCard.length > 19) return "Card number is too long.";
+    }
+
+    if (!expiryDate) {
+      return "Expiration date is required.";
+    }
+    if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
+      return "Expiration date must be in MM/YY format.";
+    }
+    const [mmStr, yyStr] = expiryDate.split("/");
+    const mm = parseInt(mmStr, 10);
+    const yy = parseInt(yyStr, 10);
+    if (mm < 1 || mm > 12) {
+      return "Please enter a valid expiration month (01-12).";
+    }
+    const now = new Date();
+    const currentYear = now.getFullYear() % 100;
+    const currentMonth = now.getMonth() + 1;
+    if (yy < currentYear || (yy === currentYear && mm < currentMonth)) {
+      return "Expiration date must be a valid future date.";
+    }
+
+    const rawCvv = cvv.replace(/\s/g, "");
+    if (!rawCvv) {
+      return "CVV/CVC is required.";
+    }
+    if (/[^\d]/.test(rawCvv)) {
+      return "CVV/CVC must contain numbers only.";
+    }
+    const requiredCvvLength = isAmex ? 4 : 3;
+    if (rawCvv.length !== requiredCvvLength) {
+      return `CVV/CVC must be exactly ${requiredCvvLength} digits.`;
+    }
+
+    const rawZip = billingZip.replace(/\s/g, "");
+    if (!rawZip) {
+      return "Billing zip code is required.";
+    }
+    if (/[^\d]/.test(rawZip)) {
+      return "Billing zip code must contain numbers only.";
+    }
+    if (rawZip.length < 5 || rawZip.length > 6) {
+      return "Billing zip code must be 5 or 6 digits.";
+    }
+
+    return null;
   };
 
   const removeItem = (id, size, color) => {
@@ -209,7 +318,7 @@ const Cart = () => {
                     const uniqueKey = `${item.id}-${item.size || ""}-${item.color || ""}`;
                     return (
                       <div key={uniqueKey} style={{ background: "#161616", borderRadius: "24px", padding: "24px", display: "flex", gap: "24px", border: "1px solid rgba(255,255,255,0.05)", transition: "all 0.3s ease" }}>
-                        <img src={item.img} alt={item.title} style={{ width: "120px", height: "120px", borderRadius: "16px", objectFit: "cover" }} />
+                        <img src={formatProductImage(item.img)} alt={item.title} style={{ width: "120px", height: "120px", borderRadius: "16px", objectFit: "cover" }} />
                         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                           <div>
                             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", alignItems: "flex-start" }}>
@@ -306,8 +415,16 @@ const Cart = () => {
                   <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingBottom: "16px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                     {items.map(item => (
                       <div key={`summary-${item.id}-${item.size || ""}-${item.color || ""}`} style={{ display: "flex", justifyContent: "space-between", color: "white", fontSize: "13px" }}>
-                        <span style={{ fontWeight: "700" }}>{item.qty}x {item.title}</span>
-                        <span style={{ color: "rgba(255,255,255,0.7)" }}>${(item.price * item.qty).toFixed(2)}</span>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                          <span style={{ fontWeight: "700" }}>{item.qty}x {item.title}</span>
+                          {(item.size || item.color) && (
+                            <div style={{ display: "flex", gap: "5px", flexWrap: "wrap" }}>
+                              {item.size && <span style={{ background: "rgba(255,106,0,0.12)", color: "#FF6A00", fontSize: "9px", fontWeight: "900", padding: "2px 7px", borderRadius: "4px", textTransform: "uppercase" }}>{item.size}</span>}
+                              {item.color && <span style={{ background: "rgba(255,255,255,0.06)", color: "#aaa", fontSize: "9px", fontWeight: "800", padding: "2px 7px", borderRadius: "4px" }}>{item.color}</span>}
+                            </div>
+                          )}
+                        </div>
+                        <span style={{ color: "rgba(255,255,255,0.7)", whiteSpace: "nowrap", paddingLeft: "8px" }}>${(item.price * item.qty).toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
@@ -454,14 +571,13 @@ const Cart = () => {
               >
                 ✕
               </button>
-
               {isSuccess ? (
                 <div style={{ textAlign: "center", padding: "20px 0" }}>
                   <div style={{ width: "80px", height: "80px", background: "rgba(255, 106, 0, 0.1)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px", border: "2px solid #FF6A00" }}>
                     <CheckCircle2 size={48} color="#FF6A00" />
                   </div>
                   <h3 style={{ fontSize: "28px", fontWeight: "950", textTransform: "uppercase", marginBottom: "16px" }}>PAYMENT SUCCESSFUL</h3>
-                  <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "15px", lineHeight: "1.6", marginBottom: "32px" }}>
+                  <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "15px", lineHeight: "1.6", marginBottom: "24px" }}>
                     {(() => {
                       const hasPass = items.some(item => item.title.toLowerCase().includes("spectator pass"));
                       const hasOtherItems = items.some(item => !item.title.toLowerCase().includes("spectator pass"));
@@ -475,6 +591,32 @@ const Cart = () => {
                       }
                     })()}
                   </p>
+
+                  {/* ORDER RECEIPT — shows sizes per item */}
+                  <div style={{ background: "rgba(255,106,0,0.05)", border: "1px solid rgba(255,106,0,0.15)", borderRadius: "16px", padding: "18px", marginBottom: "28px", textAlign: "left" }}>
+                    <div style={{ fontSize: "9px", fontWeight: "900", color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>ORDER RECEIPT</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      {items.map((item, i) => (
+                        <div key={`receipt-${item.id}-${i}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px" }}>
+                          <div>
+                            <div style={{ fontSize: "13px", fontWeight: "800", color: "white" }}>{item.qty}x {item.title}</div>
+                            {(item.size || item.color) && (
+                              <div style={{ display: "flex", gap: "4px", marginTop: "3px", flexWrap: "wrap" }}>
+                                {item.size && <span style={{ background: "rgba(255,106,0,0.15)", color: "#FF6A00", fontSize: "9px", fontWeight: "900", padding: "1px 7px", borderRadius: "4px", textTransform: "uppercase" }}>{item.size}</span>}
+                                {item.color && <span style={{ background: "rgba(255,255,255,0.05)", color: "#aaa", fontSize: "9px", fontWeight: "800", padding: "1px 7px", borderRadius: "4px" }}>{item.color}</span>}
+                              </div>
+                            )}
+                          </div>
+                          <span style={{ fontSize: "13px", fontWeight: "900", color: "#FF6A00", whiteSpace: "nowrap" }}>${(item.price * item.qty).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", marginTop: "12px", paddingTop: "10px", display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.5)" }}>TOTAL PAID</span>
+                      <span style={{ fontSize: "16px", fontWeight: "950", color: "white" }}>${total.toFixed(2)}</span>
+                    </div>
+                  </div>
+
                   <button 
                     type="button"
                     onClick={() => { setShowCheckout(false); setIsSuccess(false); setItems([]); localStorage.removeItem("rogue_cart_items"); }}
@@ -493,6 +635,14 @@ const Cart = () => {
                 <form 
                   onSubmit={async (e) => {
                     e.preventDefault();
+                    setFormError("");
+                    
+                    const validationErr = validateCardDetails();
+                    if (validationErr) {
+                      setFormError(validationErr);
+                      return;
+                    }
+
                     setIsProcessing(true);
                     try {
                       const payload = {
@@ -519,7 +669,7 @@ const Cart = () => {
                       setIsSuccess(true);
                     } catch (err) {
                       setIsProcessing(false);
-                      alert(`Checkout failed: ${err.message || 'Server error'}`);
+                      setFormError(err.message || 'Server error during payment.');
                     }
                   }}
                   style={{ display: "flex", flexDirection: "column", gap: "24px" }}
@@ -529,13 +679,25 @@ const Cart = () => {
                     <h3 style={{ fontSize: "24px", fontWeight: "950", textTransform: "uppercase", marginTop: "4px" }}>ORDER SUMMARY</h3>
                   </div>
 
+                  {formError && (
+                    <div style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid #EF4444", color: "#EF4444", padding: "12px", borderRadius: "12px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "8px", textAlign: "left" }}>
+                      <AlertCircle size={16} /> {formError}
+                    </div>
+                  )}
+
                   <div style={{ background: "rgba(255, 106, 0, 0.05)", border: "1px dashed rgba(255, 106, 0, 0.2)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "12px" }}>
                     {items.map((item, i) => (
-                      <div key={`modal-${item.id}-${i}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ textAlign: "left" }}>
+                      <div key={`modal-${item.id}-${i}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                        <div style={{ textAlign: "left", flex: 1 }}>
                           <div style={{ fontSize: "14px", fontWeight: "800", color: "white" }}>{item.qty}x {item.title}</div>
+                          {(item.size || item.color) && (
+                            <div style={{ display: "flex", gap: "5px", marginTop: "4px", flexWrap: "wrap" }}>
+                              {item.size && <span style={{ background: "rgba(255,106,0,0.12)", color: "#FF6A00", fontSize: "9px", fontWeight: "900", padding: "2px 8px", borderRadius: "4px", textTransform: "uppercase", letterSpacing: "0.03em" }}>{item.size}</span>}
+                              {item.color && <span style={{ background: "rgba(255,255,255,0.06)", color: "#aaa", fontSize: "9px", fontWeight: "800", padding: "2px 8px", borderRadius: "4px" }}>{item.color}</span>}
+                            </div>
+                          )}
                         </div>
-                        <div style={{ textAlign: "right", fontSize: "14px", fontWeight: "900", color: "#FF6A00" }}>
+                        <div style={{ textAlign: "right", fontSize: "14px", fontWeight: "900", color: "#FF6A00", whiteSpace: "nowrap" }}>
                           ${(item.price * item.qty).toFixed(2)}
                         </div>
                       </div>
@@ -555,24 +717,28 @@ const Cart = () => {
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                     <div style={{ textAlign: "left" }}>
                       <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>SHIPPING ADDRESS</label>
-                      <textarea placeholder="123 Main St, New York, NY 10001" value={shippingAddress} onChange={(e) => setShippingAddress(e.target.value)} required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px", minHeight: "60px", fontFamily: "inherit" }} />
+                      <textarea placeholder="123 Main St, New York, NY 10001" value={shippingAddress} onChange={(e) => setShippingAddress(e.target.value)} style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px", minHeight: "60px", fontFamily: "inherit" }} />
                     </div>
                     <div style={{ textAlign: "left" }}>
                       <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>CARDHOLDER NAME</label>
-                      <input type="text" placeholder="John Doe" value={cardholderName} onChange={(e) => setCardholderName(e.target.value)} required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                      <input type="text" placeholder="John Doe" value={cardholderName} onChange={(e) => setCardholderName(e.target.value.replace(/[^a-zA-Z\s.-]/g, ""))} style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
                     </div>
                     <div style={{ textAlign: "left" }}>
                       <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>CARD NUMBER</label>
-                      <input type="text" placeholder="•••• •••• •••• ••••" value={cardNumber} onChange={handleCardNumberChange} required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                      <input type="text" placeholder="•••• •••• •••• ••••" value={cardNumber} onChange={handleCardNumberChange} style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", textAlign: "left" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", textAlign: "left" }}>
                       <div>
                         <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>EXPIRY DATE</label>
-                        <input type="text" placeholder="MM/YY" value={expiryDate} onChange={handleExpiryDateChange} required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                        <input type="text" placeholder="MM/YY" value={expiryDate} onChange={handleExpiryDateChange} style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
                       </div>
                       <div>
                         <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>CVV</label>
-                        <input type="text" placeholder="•••" value={cvv} onChange={handleCvvChange} required style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                        <input type="text" placeholder="•••" value={cvv} onChange={handleCvvChange} style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>ZIP CODE</label>
+                        <input type="text" placeholder="10001" value={billingZip} onChange={handleBillingZipChange} style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
                       </div>
                     </div>
                   </div>

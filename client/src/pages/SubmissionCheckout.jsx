@@ -21,6 +21,149 @@ const SubmissionCheckout = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
+  const [cardholderName, setCardholderName] = useState(
+    submissionData ? (submissionData.athleteName || submissionData.athleteId || (user ? user.name : "")) : ""
+  );
+  const [cardNumber, setCardNumber] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [cvv, setCvv] = useState("");
+  const [billingZip, setBillingZip] = useState("");
+
+  const formatAmex = (digits) => {
+    let formatted = "";
+    if (digits.length > 0) formatted += digits.substring(0, 4);
+    if (digits.length > 4) formatted += " " + digits.substring(4, 10);
+    if (digits.length > 10) formatted += " " + digits.substring(10, 15);
+    return formatted;
+  };
+
+  const formatStandard = (digits) => {
+    let parts = [];
+    for (let i = 0; i < digits.length; i += 4) {
+      parts.push(digits.substring(i, i + 4));
+    }
+    return parts.join(" ");
+  };
+
+  const handleCardNumberChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    const isAmex = raw.startsWith("34") || raw.startsWith("37");
+    const isStandard = raw.startsWith("4") || 
+                       /^(5[1-5]|222[1-9]|22[3-9]|2[3-6]|27[0-1]|2720)/.test(raw) || 
+                       /^(6011|622|64[4-9]|65)/.test(raw);
+    const maxLength = isAmex ? 15 : (isStandard ? 16 : 19);
+    const limited = raw.substring(0, maxLength);
+    
+    if (isAmex) {
+      setCardNumber(formatAmex(limited));
+    } else {
+      setCardNumber(formatStandard(limited));
+    }
+  };
+
+  const handleExpiryDateChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    const limited = raw.substring(0, 4);
+    let formatted = "";
+    if (limited.length > 2) {
+      formatted = `${limited.substring(0, 2)}/${limited.substring(2)}`;
+    } else {
+      formatted = limited;
+    }
+    setExpiryDate(formatted);
+  };
+
+  const handleCvvChange = (e) => {
+    const cleanCard = cardNumber.replace(/\s/g, "");
+    const isAmex = cleanCard.startsWith("34") || cleanCard.startsWith("37");
+    const raw = e.target.value.replace(/\D/g, "");
+    const limited = raw.substring(0, isAmex ? 4 : 3);
+    setCvv(limited);
+  };
+
+  const handleBillingZipChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    const limited = raw.substring(0, 6);
+    setBillingZip(limited);
+  };
+
+  const validateCardDetails = () => {
+    if (!cardholderName.trim()) {
+      return "Name on card is required.";
+    }
+    if (/[^a-zA-Z\s.-]/.test(cardholderName)) {
+      return "Name on card can only contain letters, spaces, hyphens, and periods.";
+    }
+
+    const cleanCard = cardNumber.replace(/\s/g, "");
+    if (!cleanCard) {
+      return "Please enter a valid card number.";
+    }
+    if (/[^\d]/.test(cleanCard)) {
+      return "Card number must contain numbers only.";
+    }
+
+    const isAmex = cleanCard.startsWith("34") || cleanCard.startsWith("37");
+    const isStandard = cleanCard.startsWith("4") || 
+                       /^(5[1-5]|222[1-9]|22[3-9]|2[3-6]|27[0-1]|2720)/.test(cleanCard) || 
+                       /^(6011|622|64[4-9]|65)/.test(cleanCard);
+
+    if (isAmex) {
+      if (cleanCard.length < 15) return "Card number is incomplete.";
+      if (cleanCard.length > 15) return "Card number is too long.";
+    } else if (isStandard) {
+      if (cleanCard.length < 16) return "Card number is incomplete.";
+      if (cleanCard.length > 16) return "Card number is too long.";
+    } else {
+      if (cleanCard.length < 12) return "Card number is incomplete.";
+      if (cleanCard.length > 19) return "Card number is too long.";
+    }
+
+    if (!expiryDate) {
+      return "Expiration date is required.";
+    }
+    if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
+      return "Expiration date must be in MM/YY format.";
+    }
+    const [mmStr, yyStr] = expiryDate.split("/");
+    const mm = parseInt(mmStr, 10);
+    const yy = parseInt(yyStr, 10);
+    if (mm < 1 || mm > 12) {
+      return "Please enter a valid expiration month (01-12).";
+    }
+    const now = new Date();
+    const currentYear = now.getFullYear() % 100;
+    const currentMonth = now.getMonth() + 1;
+    if (yy < currentYear || (yy === currentYear && mm < currentMonth)) {
+      return "Expiration date must be a valid future date.";
+    }
+
+    const rawCvv = cvv.replace(/\s/g, "");
+    if (!rawCvv) {
+      return "CVV/CVC is required.";
+    }
+    if (/[^\d]/.test(rawCvv)) {
+      return "CVV/CVC must contain numbers only.";
+    }
+    const requiredCvvLength = isAmex ? 4 : 3;
+    if (rawCvv.length !== requiredCvvLength) {
+      return `CVV/CVC must be exactly ${requiredCvvLength} digits.`;
+    }
+
+    const rawZip = billingZip.replace(/\s/g, "");
+    if (!rawZip) {
+      return "Billing zip code is required.";
+    }
+    if (/[^\d]/.test(rawZip)) {
+      return "Billing zip code must contain numbers only.";
+    }
+    if (rawZip.length < 5 || rawZip.length > 6) {
+      return "Billing zip code must be 5 or 6 digits.";
+    }
+
+    return null;
+  };
+
   if (!submissionData) {
     return (
       <div style={{ padding: "200px 20px", textAlign: "center", color: "white", background: "#0A0A0A", minHeight: "100vh" }}>
@@ -100,9 +243,15 @@ const SubmissionCheckout = () => {
   };
 
   const handlePayment = async () => {
-    setLoading(true);
     setError("");
-    
+    const validationError = validateCardDetails();
+    if (validationError) {
+      setError(validationError);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    setLoading(true);
     try {
       if (!submissionData.id || submissionData.id === 'TEMP') {
         throw new Error("Invalid submission ID. Please try submitting again.");
@@ -185,11 +334,42 @@ const SubmissionCheckout = () => {
                   )}
                   
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "32px" }}>
-                    <input type="text" placeholder="CARDHOLDER NAME" defaultValue={submissionData.athleteName || submissionData.athleteId || (user ? user.name : "")} style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "16px", color: "white", outline: "none" }} />
-                    <input type="text" placeholder="CARD NUMBER (0000 0000 0000 0000)" style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "16px", color: "white", outline: "none" }} />
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                      <input type="text" placeholder="MM/YY" style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "16px", color: "white", outline: "none" }} />
-                      <input type="text" placeholder="CVC" style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "16px", color: "white", outline: "none" }} />
+                    <input 
+                      type="text" 
+                      placeholder="CARDHOLDER NAME" 
+                      value={cardholderName} 
+                      onChange={(e) => setCardholderName(e.target.value.replace(/[^a-zA-Z\s.-]/g, ""))} 
+                      style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "16px", color: "white", outline: "none" }} 
+                    />
+                    <input 
+                      type="text" 
+                      placeholder="CARD NUMBER" 
+                      value={cardNumber} 
+                      onChange={handleCardNumberChange} 
+                      style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "16px", color: "white", outline: "none" }} 
+                    />
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
+                      <input 
+                        type="text" 
+                        placeholder="MM/YY" 
+                        value={expiryDate} 
+                        onChange={handleExpiryDateChange} 
+                        style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "16px", color: "white", outline: "none" }} 
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="CVV/CVC" 
+                        value={cvv} 
+                        onChange={handleCvvChange} 
+                        style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "16px", color: "white", outline: "none" }} 
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="ZIP CODE" 
+                        value={billingZip} 
+                        onChange={handleBillingZipChange} 
+                        style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "16px", color: "white", outline: "none" }} 
+                      />
                     </div>
                   </div>
 

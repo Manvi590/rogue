@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, ShoppingBag, Plus, Minus, Check, Star } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Plus, Minus, Check, Star, AlertCircle } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ScrollReveal from "../components/ScrollReveal";
-import { apiCall } from "../utils/api";
+import { apiCall, formatProductImage } from "../utils/api";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -100,7 +100,7 @@ const ProductDetail = () => {
         title: dbProduct.name,
         price: dbProduct.price,
         desc: dbProduct.description,
-        img: dbProduct.image_url || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=600&q=80",
+        img: formatProductImage(dbProduct.image_url),
         badge: dbProduct.category?.toUpperCase() || "GEAR",
         category: dbProduct.category?.toUpperCase() || "APPAREL",
         fullDesc: dbProduct.description,
@@ -114,13 +114,19 @@ const ProductDetail = () => {
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
   const [added, setAdded] = useState(false);
+  const [sizeError, setSizeError] = useState("");
 
   useEffect(() => {
     if (product) {
-      setSelectedSize(product.sizes[0] || "");
+      // Only auto-select if exactly one size option — force deliberate choice for multi-size
+      if (product.sizes.length === 1) {
+        setSelectedSize(product.sizes[0]);
+      } else {
+        setSelectedSize("");
+      }
       setSelectedColor(product.colors[0] || "");
     }
-  }, [product]);
+  }, [product?.id]);
 
   const incrementQty = () => setQuantity(q => q + 1);
   const decrementQty = () => setQuantity(q => q > 1 ? q - 1 : 1);
@@ -149,6 +155,14 @@ const ProductDetail = () => {
   };
 
   const handleAddToCart = () => {
+    // Required size guard — block if sizes exist but none selected
+    if (product.sizes.length > 0 && !selectedSize) {
+      setSizeError("Please select an award size before adding to cart.");
+      document.getElementById("size-selector-section")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    setSizeError("");
+
     const numericPrice = getCalculatedPrice();
     const cartItem = {
       id: product.id,
@@ -256,28 +270,66 @@ const ProductDetail = () => {
 
                 {/* SIZES / OPTIONS */}
                 {product.sizes.length > 0 && (
-                  <div style={{ marginBottom: "28px" }}>
-                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>SELECT OPTION / SIZE</label>
+                  <div id="size-selector-section" style={{ marginBottom: "28px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em" }}>SELECT OPTION / SIZE</label>
+                      {product.sizes.length > 1 && (
+                        <span style={{ fontSize: "9px", fontWeight: "700", color: "#FF6A00", textTransform: "uppercase", letterSpacing: "0.08em" }}>REQUIRED</span>
+                      )}
+                    </div>
+
+                    {sizeError && (
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.35)", borderRadius: "12px", padding: "10px 14px", marginBottom: "14px", fontSize: "12px", fontWeight: "700", color: "#ef4444" }}>
+                        <AlertCircle size={14} />
+                        {sizeError}
+                      </div>
+                    )}
+
                     <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                      {product.sizes.map(size => (
-                        <button
-                          key={size}
-                          onClick={() => setSelectedSize(size)}
-                          style={{
-                            padding: "12px 24px",
-                            borderRadius: "100px",
-                            background: selectedSize === size ? "#FF6A00" : "rgba(255, 255, 255, 0.03)",
-                            color: selectedSize === size ? "white" : "rgba(255, 255, 255, 0.6)",
-                            border: selectedSize === size ? "1px solid #FF6A00" : "1px solid rgba(255, 255, 255, 0.05)",
-                            fontSize: "12px",
-                            fontWeight: "800",
-                            cursor: "pointer",
-                            transition: "all 0.2s"
-                          }}
-                        >
-                          {size}
-                        </button>
-                      ))}
+                      {product.sizes.map((size, idx) => {
+                        const isSelected = selectedSize === size;
+                        // For DB products, find matching size data for price/stock
+                        const dbSizeData = product.dbSizes?.find(sz => sz.size === size);
+                        const sizePrice = dbSizeData ? parseFloat(dbSizeData.price || 0).toFixed(2) : null;
+                        const sizeStock = dbSizeData ? (dbSizeData.stock ?? dbSizeData.stockCount ?? null) : null;
+                        return (
+                          <button
+                            key={size}
+                            onClick={() => { setSelectedSize(size); setSizeError(""); }}
+                            style={{
+                              padding: sizePrice ? "10px 20px" : "12px 24px",
+                              borderRadius: "16px",
+                              background: isSelected ? "linear-gradient(135deg, #FF6A00, #FF8C00)" : "rgba(255,255,255,0.03)",
+                              color: isSelected ? "white" : "rgba(255,255,255,0.65)",
+                              border: isSelected ? "2px solid #FF6A00" : "1px solid rgba(255,255,255,0.08)",
+                              fontSize: "12px",
+                              fontWeight: "900",
+                              cursor: "pointer",
+                              transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              gap: "2px",
+                              boxShadow: isSelected ? "0 6px 20px rgba(255,106,0,0.35), 0 0 0 3px rgba(255,106,0,0.15)" : "none",
+                              transform: isSelected ? "scale(1.04)" : "scale(1)",
+                              minWidth: "80px"
+                            }}
+                            onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.background = "rgba(255,106,0,0.1)"; e.currentTarget.style.borderColor = "rgba(255,106,0,0.4)"; e.currentTarget.style.color = "#FF6A00"; } }}
+                            onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "rgba(255,255,255,0.65)"; } }}
+                          >
+                            <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                              {isSelected && <Check size={11} />}
+                              {size}
+                            </span>
+                            {sizePrice && (
+                              <span style={{ fontSize: "10px", fontWeight: "700", opacity: 0.85 }}>${sizePrice}</span>
+                            )}
+                            {sizeStock !== null && (
+                              <span style={{ fontSize: "9px", fontWeight: "600", opacity: 0.6 }}>{sizeStock} in stock</span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -339,8 +391,19 @@ const ProductDetail = () => {
                   </div>
                 </div>
 
+                {/* SELECTED SIZE BADGE (shows selected variation above CTA) */}
+                {selectedSize && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", padding: "10px 16px", background: "rgba(255,106,0,0.06)", border: "1px solid rgba(255,106,0,0.2)", borderRadius: "12px" }}>
+                    <Check size={13} color="#FF6A00" />
+                    <span style={{ fontSize: "11px", fontWeight: "800", color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Selected:</span>
+                    <span style={{ fontSize: "12px", fontWeight: "900", color: "#FF6A00" }}>{selectedSize}</span>
+                    <span style={{ marginLeft: "auto", fontSize: "13px", fontWeight: "950", color: "white" }}>${getCalculatedPrice().toFixed(2)}</span>
+                  </div>
+                )}
+
                 {/* ADD TO CART ACTION BUTTON */}
                 <button
+                  id="add-to-cart-btn"
                   onClick={handleAddToCart}
                   style={{
                     width: "100%",

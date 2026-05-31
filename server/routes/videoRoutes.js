@@ -41,12 +41,19 @@ const {
 const { videoUpload, thumbnailUpload, evidenceUpload } = require('../config/upload');
 const { protect, admin } = require('../middleware/authMiddleware');
 
-// Protect all routes - require auth and admin privileges
+// ==========================================
+// PUBLIC ROUTES (no auth required)
+// ==========================================
+// Featured videos for homepage/display
+router.get('/featured', getFeaturedVideos);
+router.get('/newest', getNewestRecordVideos);
+
+// Protect all routes below - require auth and admin privileges
 router.use(protect);
 router.use(admin);
 
 // ==========================================
-// 🎬 RECORD VIDEOS ROUTES
+// 🎬 RECORD VIDEOS ROUTES (ADMIN)
 // ==========================================
 router.get('/record', getRecordVideos);
 router.post('/record', createRecordVideo);
@@ -61,16 +68,14 @@ router.post('/attempt', createAttemptVideo);
 router.delete('/attempt/:id', deleteAttemptVideo);
 
 // ==========================================
-// ⭐ FEATURED VIDEOS ROUTES
+// ⭐ FEATURED VIDEOS ROUTES (ADMIN)
 // ==========================================
-router.get('/featured', getFeaturedVideos);
 router.post('/featured', createFeaturedVideo);
 router.delete('/featured/:id', deleteFeaturedVideo);
 
 // ==========================================
-// 🆕 NEWEST RECORDS VIDEOS ROUTES
+// 🆕 NEWEST RECORDS VIDEOS ROUTES (ADMIN)
 // ==========================================
-router.get('/newest', getNewestRecordVideos);
 router.post('/newest', createNewestRecordVideo);
 router.delete('/newest/:id', deleteNewestRecordVideo);
 

@@ -13,6 +13,8 @@ const getFormattedCategory = (c) => ({
   order: c.order_num || 0,
   active: c.active,
   isDefault: c.is_default,
+  rules: c.rules || '',
+  submissionRequirements: c.submission_requirements || '',
   createdAt: c.created_at,
   updatedAt: c.updated_at
 });
@@ -65,7 +67,7 @@ const getCategoryById = async (req, res) => {
 // POST /api/categories
 const createCategory = async (req, res) => {
   try {
-    const { name, description, parent, order = 0, active = true } = req.body;
+    const { name, description, parent, order = 0, active = true, rules = '', submissionRequirements = '' } = req.body;
     if (!name) return res.status(400).json({ message: 'Name is required' });
     const slug = slugify(name);
 
@@ -87,7 +89,9 @@ const createCategory = async (req, res) => {
         parent: parent || null,
         order_num: parseInt(order) || 0,
         active: active !== undefined ? active : true,
-        is_default: false
+        is_default: false,
+        rules,
+        submission_requirements: submissionRequirements
       }])
       .select()
       .single();
@@ -102,7 +106,7 @@ const createCategory = async (req, res) => {
 // PUT /api/categories/:id
 const updateCategory = async (req, res) => {
   try {
-    const { name, description, parent, order, active } = req.body;
+    const { name, description, parent, order, active, rules, submissionRequirements } = req.body;
 
     const { data: existingCat, error: findError } = await supabase
       .from('categories')
@@ -124,6 +128,8 @@ const updateCategory = async (req, res) => {
     if (typeof parent !== 'undefined') updates.parent = parent || null;
     if (typeof order !== 'undefined') updates.order_num = parseInt(order);
     if (typeof active !== 'undefined') updates.active = active;
+    if (typeof rules !== 'undefined') updates.rules = rules;
+    if (typeof submissionRequirements !== 'undefined') updates.submission_requirements = submissionRequirements;
 
     const { data: cat, error } = await supabase
       .from('categories')
@@ -178,11 +184,30 @@ const deleteCategory = async (req, res) => {
 const seedDefaultCategories = async (req, res) => {
   try {
     const defaultList = [
-      'Athletics','Strength','Endurance','Balance','Skills','Gaming','Water Sports','Reaction','Mind & Memory','Action Sports','Other'
+      { name: 'Strength', order: 1 },
+      { name: 'Speed', order: 2 },
+      { name: 'Endurance', order: 3 },
+      { name: 'Balance', order: 4 },
+      { name: 'Flexibility', order: 5 },
+      { name: 'Fitness', order: 6 },
+      { name: 'Sports', order: 7 },
+      { name: 'Gaming', order: 8 },
+      { name: 'Entertainment', order: 9 },
+      { name: 'Creative Skills', order: 10 },
+      { name: 'Stunts', order: 11 },
+      { name: 'Food Challenges', order: 12 },
+      { name: 'Animal Records', order: 13 },
+      { name: 'Team Records', order: 14 },
+      { name: 'Kids / Youth Records', order: 15 },
+      { name: 'Senior Records', order: 16 },
+      { name: 'Extreme Challenges', order: 17 },
+      { name: 'Precision Skills', order: 18 },
+      { name: 'Technology / Innovation', order: 19 },
+      { name: 'Miscellaneous', order: 20 },
     ];
     const created = [];
-    for (let name of defaultList) {
-      const slug = slugify(name);
+    for (let cat of defaultList) {
+      const slug = slugify(cat.name);
       const { data: existing } = await supabase
         .from('categories')
         .select('*')
@@ -190,14 +215,14 @@ const seedDefaultCategories = async (req, res) => {
         .maybeSingle();
 
       if (!existing) {
-        const isDefault = name === 'Other';
         const { data: c, error } = await supabase
           .from('categories')
           .insert([{
-            name,
+            name: cat.name,
             slug,
-            is_default: isDefault,
-            active: true
+            is_default: true,
+            active: true,
+            order_num: cat.order
           }])
           .select()
           .single();

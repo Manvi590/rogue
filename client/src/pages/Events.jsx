@@ -14,7 +14,13 @@ import {
   BarChart3,
   Edit3,
   Plus,
-  Trash2
+  Trash2,
+  ArrowLeft,
+  Bell,
+  Share2,
+  Info,
+  Lock,
+  ExternalLink
 } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
@@ -22,6 +28,66 @@ import Footer from "../components/Footer";
 import ScrollReveal from "../components/ScrollReveal";
 import { useAuth } from "../context/AuthContext";
 import { apiCall } from "../utils/api";
+
+const Countdown = ({ targetDate, status }) => {
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    if (status === "CANCELLED" || status?.toUpperCase() === "CANCELLED") {
+      setTimeLeft("EVENT CANCELLED");
+      return;
+    }
+    if (status === "LIVE" || status?.toUpperCase() === "LIVE") {
+      setTimeLeft("EVENT IS LIVE NOW!");
+      return;
+    }
+    if (status === "PAST" || status?.toUpperCase() === "PAST" || status?.toUpperCase() === "COMPLETED") {
+      setTimeLeft("EVENT COMPLETED");
+      return;
+    }
+
+    const calculate = () => {
+      const difference = new Date(targetDate) - new Date();
+      if (difference <= 0) {
+        setTimeLeft("EVENT HAS STARTED!");
+        return;
+      }
+
+      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((difference / 1000 / 60) % 60);
+      const seconds = Math.floor((difference / 1000) % 60);
+
+      let str = "";
+      if (days > 0) str += `${days}D `;
+      str += `${hours.toString().padStart(2, '0')}H ${minutes.toString().padStart(2, '0')}M ${seconds.toString().padStart(2, '0')}S`;
+      setTimeLeft(str);
+    };
+
+    calculate();
+    const interval = setInterval(calculate, 1000);
+    return () => clearInterval(interval);
+  }, [targetDate, status]);
+
+  return (
+    <div style={{
+      background: "rgba(255, 106, 0, 0.08)",
+      border: "1px solid rgba(255, 106, 0, 0.3)",
+      padding: "16px 28px",
+      borderRadius: "16px",
+      display: "inline-flex",
+      flexDirection: "column",
+      gap: "4px",
+      alignItems: "center",
+      boxShadow: "0 0 20px rgba(255,106,0,0.15)",
+      width: "100%",
+      maxWidth: "340px"
+    }}>
+      <div style={{ fontSize: "9px", fontWeight: "950", color: "#FF6A00", letterSpacing: "1px", textTransform: "uppercase" }}>COUNTDOWN TO START</div>
+      <div style={{ fontSize: "28px", fontWeight: "950", color: "white", fontFamily: "monospace", letterSpacing: "1px" }}>{timeLeft}</div>
+    </div>
+  );
+};
 
 const eventsData = [
   {
@@ -34,7 +100,16 @@ const eventsData = [
     viewers: "34,285",
     img: "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1600&q=80",
     isFeatured: true,
-    desc: "The pinnacle of raw powerlifting. The world's top heavyweight lifters battle for the absolute bench press record live."
+    desc: "The pinnacle of raw powerlifting. The world's top heavyweight lifters battle for the absolute bench press record live.",
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    ticketLink: "/shop?category=tickets",
+    sponsors: "Rogue Fitness, Hanger 24, Thorne Nutrition",
+    rules: "1. All lifters must use certified Rogue plates.\n2. Bench shirt is prohibited (raw lifting standards apply).\n3. Elbow lock must be fully held until marshal call.",
+    location: "Rogue Arena Main Stage",
+    judges: "Marshal Team A",
+    isPaid: true,
+    ticketPrice: 49.00,
+    rawDate: new Date(Date.now()).toISOString()
   },
   {
     id: "tetris-showdown",
@@ -45,18 +120,36 @@ const eventsData = [
     athletes: "2 PLAYERS",
     viewers: "18,490",
     img: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=800&q=80",
-    desc: "The final game between two absolute block-stacking legends competing for the maxout 999,999 record."
+    desc: "The final game between two absolute block-stacking legends competing for the maxout 999,999 record.",
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+    ticketLink: "/shop?category=tickets",
+    sponsors: "Nintendo Classic, Retro Gaming Hub, Hyperkin",
+    rules: "1. Standard NES hardware must be used.\n2. Standard score capture system is active.\n3. Matches are played to a maxout of 999,999 or killscreen.",
+    location: "Retro eSports Hub",
+    judges: "Adjudicator team Alpha",
+    isPaid: false,
+    ticketPrice: 0,
+    rawDate: new Date(Date.now()).toISOString()
   },
   {
     id: "dash-final",
     status: "UPCOMING",
     title: "THE 100M DASH FINAL",
     category: "ATHLETICS",
-    time: "IN 18 HRS (TOMORROW 02:00 PM)",
+    time: "TOMORROW 02:00 PM",
     athletes: "12 ATHLETES",
     img: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=1600&q=80",
     isFeatured: true,
-    desc: "Speed unleashed. A line-up of the fastest sprinters on earth competing for the sub-9.6s record live from Olympic Hub."
+    desc: "Speed unleashed. A line-up of the fastest sprinters on earth competing for the sub-9.6s record live from Olympic Hub.",
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+    ticketLink: "/shop?category=tickets",
+    sponsors: "Adidas Track, Seiko Timing, Gatorade",
+    rules: "1. Zero tolerance for false starts.\n2. Competitors must wear certified track shoes.\n3. Automatic digital timing is final.",
+    location: "Olympic Stadium Track",
+    judges: "IAAF Certified Officials",
+    isPaid: true,
+    ticketPrice: 65.00,
+    rawDate: new Date(Date.now() + 86400000).toISOString()
   },
   {
     id: "street-workout",
@@ -65,7 +158,16 @@ const eventsData = [
     category: "AGILITY",
     time: "TOMORROW 10:00 AM",
     athletes: "24 ATHLETES",
-    img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80"
+    img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80",
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+    ticketLink: "/shop?category=tickets",
+    sponsors: "Barstarzz, Calisthenics Club, Red Bull",
+    rules: "1. Standard 2-minute freestyle rounds.\n2. Safety pads are voluntary but recommended.\n3. Judged based on dynamic skills, static holds, and flow.",
+    location: "Shibuya Outdoor Bar Park",
+    judges: "Calisthenics Judges",
+    isPaid: false,
+    ticketPrice: 0,
+    rawDate: new Date(Date.now() + 72000000).toISOString()
   },
   {
     id: "speed-climbing",
@@ -74,7 +176,16 @@ const eventsData = [
     category: "SPEED",
     time: "SUN, OCT 22 04:00 PM",
     athletes: "18 ATHLETES",
-    img: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=800&q=80"
+    img: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=800&q=80",
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+    ticketLink: "/shop?category=tickets",
+    sponsors: "Petzl, Black Diamond, The North Face",
+    rules: "1. Vertical 15m climbing wall with standard holds.\n2. Automatic safety belay must be worn.\n3. Time captured automatically upon hitting touch plate.",
+    location: "Vertical Arena Climb Zone",
+    judges: "IFSC Certified Referees",
+    isPaid: true,
+    ticketPrice: 35.00,
+    rawDate: new Date(Date.now() + 172800000).toISOString()
   },
   {
     id: "water-swim-final",
@@ -85,7 +196,16 @@ const eventsData = [
     athletes: "8 SWIMMERS",
     img: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80",
     isFeatured: true,
-    desc: "A freezing duel of raw human endurance. Competitors swim a full 50 meters in near-freezing sub-zero glacial waters."
+    desc: "A freezing duel of raw human endurance. Competitors swim a full 50 meters in near-freezing sub-zero glacial waters.",
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    ticketLink: "/shop?category=tickets",
+    sponsors: "Speedo Ice, Glacial Swim Federation, Thorne Nutrition",
+    rules: "1. Water temperature must be between 0-2 degrees Celsius.\n2. Standard textile swimwear only (no neoprene suits).\n3. Medical check required immediately after exit.",
+    location: "Hokkaido Glacial Lake Hub",
+    judges: "Open Water Swim Adjudicators",
+    isPaid: true,
+    ticketPrice: 50.00,
+    rawDate: new Date(Date.now() - 172800000).toISOString()
   },
   {
     id: "reaction-test",
@@ -94,7 +214,16 @@ const eventsData = [
     category: "REACTION",
     time: "COMPLETED (OCT 12)",
     athletes: "10 ATHLETES",
-    img: "https://images.unsplash.com/photo-1591123720164-de1348028a82?auto=format&fit=crop&w=800&q=80"
+    img: "https://images.unsplash.com/photo-1591123720164-de1348028a82?auto=format&fit=crop&w=800&q=80",
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+    ticketLink: "/shop?category=tickets",
+    sponsors: "Reaction Tech, Cyber Athletics League",
+    rules: "1. Dynamic lighting targets must be hit within 0.5s active time.\n2. Hands must return to baseline bar after each hit.\n3. 60-second limit per match.",
+    location: "Cyber Arena Hub",
+    judges: "AWR Adjudication Unit",
+    isPaid: false,
+    ticketPrice: 0,
+    rawDate: new Date(Date.now() - 259200000).toISOString()
   }
 ];
 
@@ -106,6 +235,29 @@ const Events = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState("create"); // "create" | "edit"
   const [selectedEventId, setSelectedEventId] = useState(null);
+  
+  const [viewingEvent, setViewingEvent] = useState(null);
+  
+  const [reminders, setReminders] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("awr_event_reminders") || "[]");
+    } catch {
+      return [];
+    }
+  });
+
+  const toggleReminder = (eventId) => {
+    let updated;
+    if (reminders.includes(eventId)) {
+      updated = reminders.filter(id => id !== eventId);
+      showToast("🔔 Reminder removed for this event.");
+    } else {
+      updated = [...reminders, eventId];
+      showToast("🔔 Reminder set! We will notify you before the event starts.");
+    }
+    setReminders(updated);
+    localStorage.setItem("awr_event_reminders", JSON.stringify(updated));
+  };
 
   // Form Fields
   const [formFields, setFormFields] = useState({
@@ -120,7 +272,13 @@ const Events = () => {
     ticketPrice: "49.00",
     competitors: "",
     judges: "",
-    category: "WORLD RECORD"
+    category: "WORLD RECORD",
+    isFeatured: false,
+    videoUrl: "",
+    ticketLink: "",
+    sponsors: "",
+    rules: "",
+    status: "upcoming"
   });
 
   // Ticket Scanning Station States
@@ -300,7 +458,17 @@ const Events = () => {
       if (data && data.length > 0) {
         const formatted = data.map(item => {
           const isPast = new Date(item.date) < new Date();
-          const status = item.isLive ? "LIVE" : (isPast ? "PAST" : "UPCOMING");
+          let status = "UPCOMING";
+          if (item.status?.toUpperCase() === "CANCELLED" || item.rawStatus?.toUpperCase() === "CANCELLED") {
+            status = "CANCELLED";
+          } else if (item.isLive || item.is_live || item.status?.toUpperCase() === "LIVE") {
+            status = "LIVE";
+          } else if (isPast || item.status?.toUpperCase() === "PAST" || item.status?.toUpperCase() === "COMPLETED") {
+            status = "PAST";
+          } else {
+            status = "UPCOMING";
+          }
+
           return {
             id: item.id || item._id,
             status,
@@ -312,12 +480,17 @@ const Events = () => {
             viewers: "24,850+",
             img: item.imageUrl || item.image || "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1600&q=80",
             desc: item.description,
-            isFeatured: true,
+            isFeatured: item.isFeatured !== undefined ? item.isFeatured : true,
             isPaid: item.isPaid,
             ticketPrice: item.ticketPrice,
             streamUrl: item.streamUrl,
             rawDate: item.date,
-            location: item.location
+            location: item.location,
+            videoUrl: item.videoUrl || item.video_url || "",
+            ticketLink: item.ticketLink || item.ticket_link || "",
+            sponsors: item.sponsors || "",
+            rules: item.rules || "",
+            rawStatus: item.status || "upcoming"
           };
         });
         setDbEvents(formatted);
@@ -337,7 +510,12 @@ const Events = () => {
   }, [user]);
 
   const finalEvents = dbEvents.length > 0 ? dbEvents : eventsData;
-  const filteredEvents = finalEvents.filter(event => event.status === activeTab);
+  const filteredEvents = finalEvents.filter(event => {
+    if (activeTab === "LIVE") return event.status === "LIVE";
+    if (activeTab === "PAST") return event.status === "PAST" || event.status === "COMPLETED";
+    if (activeTab === "UPCOMING") return event.status === "UPCOMING" || event.status === "CANCELLED";
+    return event.status === activeTab;
+  });
   const featuredEvent = filteredEvents.find(e => e.isFeatured) || filteredEvents[0];
   const otherEvents = filteredEvents.filter(e => e.id !== (featuredEvent?.id || ""));
 
@@ -366,7 +544,13 @@ const Events = () => {
         ticketPrice: event.ticketPrice ? event.ticketPrice.toString() : "49.00",
         competitors: event.athletes === "CONTESTANTS SELECTED" ? "" : event.athletes,
         judges: event.judges === "Rogue Marshal Team" ? "" : event.judges,
-        category: event.category || "WORLD RECORD"
+        category: event.category || "WORLD RECORD",
+        isFeatured: event.isFeatured || false,
+        videoUrl: event.videoUrl || "",
+        ticketLink: event.ticketLink || "",
+        sponsors: event.sponsors || "",
+        rules: event.rules || "",
+        status: event.rawStatus || "upcoming"
       });
     } else {
       setSelectedEventId(null);
@@ -382,7 +566,13 @@ const Events = () => {
         ticketPrice: "49.00",
         competitors: "",
         judges: "",
-        category: "WORLD RECORD"
+        category: "WORLD RECORD",
+        isFeatured: false,
+        videoUrl: "",
+        ticketLink: "",
+        sponsors: "",
+        rules: "",
+        status: "upcoming"
       });
     }
     setIsModalOpen(true);
@@ -405,7 +595,13 @@ const Events = () => {
         ticketPrice: formFields.isPaid ? parseFloat(formFields.ticketPrice) : 0,
         competitors: formFields.competitors,
         judges: formFields.judges,
-        category: formFields.category
+        category: formFields.category,
+        isFeatured: formFields.isFeatured,
+        videoUrl: formFields.videoUrl,
+        ticketLink: formFields.ticketLink,
+        sponsors: formFields.sponsors,
+        rules: formFields.rules,
+        status: formFields.status
       };
 
       if (modalType === "create") {
@@ -418,6 +614,9 @@ const Events = () => {
 
       setIsModalOpen(false);
       fetchEvents();
+      if (viewingEvent && viewingEvent.id === selectedEventId) {
+        setViewingEvent(prev => ({ ...prev, ...payload, img: payload.imageUrl, desc: payload.description }));
+      }
     } catch (err) {
       showToast(`Error: ${err.message || "Failed to save event"}`);
     }
@@ -604,6 +803,65 @@ const Events = () => {
                   </div>
                 </div>
 
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>TEASER / PROMO VIDEO URL</label>
+                    <input 
+                      type="text" 
+                      value={formFields.videoUrl}
+                      onChange={e => setFormFields({...formFields, videoUrl: e.target.value})}
+                      placeholder="e.g. https://example.com/teaser.mp4"
+                      style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>EXTERNAL TICKET PURCHASE LINK</label>
+                    <input 
+                      type="text" 
+                      value={formFields.ticketLink}
+                      onChange={e => setFormFields({...formFields, ticketLink: e.target.value})}
+                      placeholder="e.g. https://tickets.example.com"
+                      style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>EVENT SPONSORS (COMMA SEPARATED)</label>
+                    <input 
+                      type="text" 
+                      value={formFields.sponsors}
+                      onChange={e => setFormFields({...formFields, sponsors: e.target.value})}
+                      placeholder="e.g. Rogue Fitness, Thorne Nutrition, Red Bull"
+                      style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>EVENT STATUS OVERRIDE</label>
+                    <select 
+                      value={formFields.status}
+                      onChange={e => setFormFields({...formFields, status: e.target.value})}
+                      style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none", cursor: "pointer" }}
+                    >
+                      <option value="upcoming" style={{ background: "#161616" }}>UPCOMING (AUTO DATE CHECKS)</option>
+                      <option value="live" style={{ background: "#161616" }}>LIVE NOW</option>
+                      <option value="completed" style={{ background: "#161616" }}>COMPLETED</option>
+                      <option value="cancelled" style={{ background: "#161616" }}>CANCELLED</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>OFFICIAL EVENT RULES & RULES (NEWLINES OK)</label>
+                  <textarea 
+                    value={formFields.rules}
+                    onChange={e => setFormFields({...formFields, rules: e.target.value})}
+                    placeholder="Enter official rules or guidelines, one per line..."
+                    style={{ width: "100%", height: "80px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none", resize: "none" }}
+                  />
+                </div>
+
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", alignItems: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <input 
@@ -627,6 +885,19 @@ const Events = () => {
                     <label htmlFor="isPaid" style={{ fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>PAID SPECTATOR PASS</label>
                   </div>
 
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <input 
+                      type="checkbox" 
+                      id="isFeatured"
+                      checked={formFields.isFeatured}
+                      onChange={e => setFormFields({...formFields, isFeatured: e.target.checked})}
+                      style={{ accentColor: "#FF6A00", width: "16px", height: "16px" }}
+                    />
+                    <label htmlFor="isFeatured" style={{ fontSize: "12px", fontWeight: "800", cursor: "pointer" }}>FEATURE ON EVENTS HUB</label>
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px" }}>
                   {formFields.isPaid && (
                     <div>
                       <label style={{ display: "block", fontSize: "9px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "4px" }}>TICKET PRICE ($ USD)</label>
@@ -658,6 +929,369 @@ const Events = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* DYNAMIC PREMIUM EVENT DETAILS POPUP MODAL */}
+        {viewingEvent && (
+          <div style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0, 0, 0, 0.9)",
+            backdropFilter: "blur(20px)",
+            padding: "20px"
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setViewingEvent(null);
+          }}
+          >
+            <div style={{
+              background: "linear-gradient(135deg, #121212 0%, #070707 100%)",
+              border: "1px solid rgba(255, 106, 0, 0.3)",
+              borderRadius: "32px",
+              padding: "40px",
+              maxWidth: "1000px",
+              width: "100%",
+              boxShadow: "0 30px 80px rgba(255, 106, 0, 0.2)",
+              position: "relative",
+              overflowY: "auto",
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
+              gap: "28px"
+            }}>
+              {/* HEADER SECTION WITH CLOSE BUTTON */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "20px" }}>
+                <div>
+                  <span style={{ color: "#FF6A00", fontSize: "11px", fontWeight: "950", letterSpacing: "2px", textTransform: "uppercase" }}>
+                    {viewingEvent.category} • {viewingEvent.athletes}
+                  </span>
+                  <h2 style={{ fontSize: "clamp(24px, 4vw, 42px)", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", color: "white", marginTop: "4px", marginBottom: "8px" }}>
+                    {viewingEvent.title}
+                  </h2>
+                  {/* Status Pills */}
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                    <span style={{
+                      background: viewingEvent.status === "LIVE" ? "rgba(239, 68, 68, 0.15)" : viewingEvent.status === "CANCELLED" ? "rgba(239, 68, 68, 0.1)" : "rgba(255, 106, 0, 0.15)",
+                      border: viewingEvent.status === "LIVE" ? "1px solid rgba(239, 68, 68, 0.4)" : viewingEvent.status === "CANCELLED" ? "1px solid rgba(239, 68, 68, 0.2)" : "1px solid rgba(255, 106, 0, 0.3)",
+                      color: viewingEvent.status === "LIVE" ? "#EF4444" : viewingEvent.status === "CANCELLED" ? "#EF4444" : "#FF6A00",
+                      padding: "4px 12px",
+                      borderRadius: "100px",
+                      fontSize: "10px",
+                      fontWeight: "950",
+                      textTransform: "uppercase",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px"
+                    }}>
+                      {viewingEvent.status === "LIVE" && <span style={{ width: "6px", height: "6px", background: "#EF4444", borderRadius: "50%", animation: "pulse 1s infinite" }}></span>}
+                      {viewingEvent.status === "LIVE" ? "LIVE NOW" : viewingEvent.status}
+                    </span>
+                    {viewingEvent.isPaid ? (
+                      <span style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "4px 12px", borderRadius: "100px", fontSize: "10px", fontWeight: "900" }}>
+                        🎫 SPECTATOR PASS REQUIRED - ${viewingEvent.ticketPrice}
+                      </span>
+                    ) : (
+                      <span style={{ background: "rgba(34, 197, 94, 0.1)", border: "1px solid rgba(34, 197, 94, 0.2)", color: "#22C55E", padding: "4px 12px", borderRadius: "100px", fontSize: "10px", fontWeight: "900" }}>
+                        🎉 COMPLIMENTARY ACCESS
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setViewingEvent(null)}
+                  style={{
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "50%",
+                    width: "44px",
+                    height: "44px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    color: "white",
+                    fontSize: "16px",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.15)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* TWO-COLUMN GRID */}
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "32px",
+                width: "100%"
+              }}
+              className="event-popup-grid"
+              >
+                {/* LEFT COLUMN: BANNER, COUNTDOWN, VIDEO */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                  {/* BANNER POSTER */}
+                  <div style={{
+                    position: "relative",
+                    width: "100%",
+                    height: "220px",
+                    borderRadius: "20px",
+                    overflow: "hidden",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.5)"
+                  }}>
+                    <img src={viewingEvent.img} alt={viewingEvent.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.8), transparent)" }} />
+                  </div>
+
+                  {/* COUNTDOWN WIDGET */}
+                  <div style={{ width: "100%" }}>
+                    <Countdown targetDate={viewingEvent.rawDate} status={viewingEvent.status} />
+                  </div>
+
+                  {/* VIDEO PLAYER TRAILER */}
+                  <div style={{ width: "100%" }}>
+                    <div style={{ fontSize: "11px", fontWeight: "950", color: "#FF6A00", letterSpacing: "1px", textTransform: "uppercase", marginBottom: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <Play size={12} fill="#FF6A00" /> EVENT TEASER & HIGHLIGHT TRAILER
+                    </div>
+                    <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", borderRadius: "16px", overflow: "hidden", border: "1px solid rgba(255, 106, 0, 0.3)", background: "#000", boxShadow: "0 10px 30px rgba(0,0,0,0.6)" }}>
+                      <video 
+                        src={viewingEvent.videoUrl || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"} 
+                        controls 
+                        playsInline
+                        webkit-playsinline="true"
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGHT COLUMN: HIGHLIGHTS, DETAILS, RULES, SPONSORS, SHARING & ACTIONS */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                  {/* DESCRIPTION */}
+                  <div>
+                    <div style={{ fontSize: "10px", fontWeight: "950", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "6px" }}>EVENT HIGHLIGHTS</div>
+                    <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.7)", lineHeight: "1.6", margin: 0 }}>
+                      {viewingEvent.desc || "No description provided. Experience a legendary showcase of record-breaking skill and power live at Apex World Records!"}
+                    </p>
+                  </div>
+
+                  {/* SCHEDULING DETAILS CARD */}
+                  <div style={{
+                    background: "rgba(255,255,255,0.02)",
+                    border: "1px solid rgba(255,255,255,0.05)",
+                    borderRadius: "20px",
+                    padding: "20px",
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "16px"
+                  }}>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "10px", fontWeight: "950", color: "#FF6A00", textTransform: "uppercase", marginBottom: "4px" }}>
+                        <Calendar size={12} /> DATE & TIME
+                      </div>
+                      <div style={{ fontSize: "12px", fontWeight: "900", color: "white" }}>
+                        {new Date(viewingEvent.rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </div>
+                      <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", marginTop: "2px" }}>
+                        {new Date(viewingEvent.rawDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "10px", fontWeight: "950", color: "#FF6A00", textTransform: "uppercase", marginBottom: "4px" }}>
+                        <MapPin size={12} /> VENUE LOCATION
+                      </div>
+                      <div style={{ fontSize: "12px", fontWeight: "900", color: "white" }}>
+                        {viewingEvent.location || "Apex Arena Hub"}
+                      </div>
+                      <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", marginTop: "2px" }}>
+                        Official Verified Stage
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* RULES & REGULATION */}
+                  {viewingEvent.rules && (
+                    <div>
+                      <div style={{ fontSize: "10px", fontWeight: "950", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>OFFICIAL RULES & REGULATIONS</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        {viewingEvent.rules.split("\n").filter(r => r.trim()).map((rule, idx) => (
+                          <div key={idx} style={{ display: "flex", gap: "10px", fontSize: "12px", color: "rgba(255,255,255,0.8)", lineHeight: "1.4" }}>
+                            <span style={{ color: "#FF6A00", fontWeight: "950" }}>{idx + 1}.</span>
+                            <span>{rule}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* EVENT SPONSORS */}
+                  <div>
+                    <div style={{ fontSize: "10px", fontWeight: "950", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>EVENT SPONSORS</div>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      {viewingEvent.sponsors ? (
+                        viewingEvent.sponsors.split(",").map((s, idx) => (
+                          <span key={idx} style={{
+                            background: "rgba(255, 106, 0, 0.08)",
+                            border: "1px solid rgba(255, 106, 0, 0.25)",
+                            color: "#FF6A00",
+                            padding: "6px 14px",
+                            borderRadius: "100px",
+                            fontSize: "11px",
+                            fontWeight: "800"
+                          }}>
+                            {s.trim()}
+                          </span>
+                        ))
+                      ) : (
+                        ["AWR Gold Club", "Rogue Fitness", "Seiko Timing", "Red Bull"].map((s, idx) => (
+                          <span key={idx} style={{
+                            background: "rgba(255, 255, 255, 0.03)",
+                            border: "1px solid rgba(255, 255, 255, 0.08)",
+                            color: "rgba(255,255,255,0.6)",
+                            padding: "6px 14px",
+                            borderRadius: "100px",
+                            fontSize: "11px",
+                            fontWeight: "800"
+                          }}>
+                            {s}
+                          </span>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* STREAM & PASS BUTTONS */}
+                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "20px", display: "flex", flexDirection: "column", gap: "16px" }}>
+                    <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                      {viewingEvent.status === "LIVE" ? (
+                        <Link to={`/stream/${viewingEvent.id}`} style={{ textDecoration: "none", flex: 1 }}>
+                          <button style={{ width: "100%", background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 28px", fontSize: "13px", fontWeight: "950", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", boxShadow: "0 10px 20px rgba(255,106,0,0.3)" }}>
+                            WATCH LIVESTREAM <Play size={14} fill="white" />
+                          </button>
+                        </Link>
+                      ) : viewingEvent.isPaid ? (
+                        <a href={viewingEvent.ticketLink || "/shop?category=tickets"} target={viewingEvent.ticketLink ? "_blank" : "_self"} rel="noopener noreferrer" style={{ textDecoration: "none", flex: 1 }}>
+                          <button style={{ width: "100%", background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 28px", fontSize: "13px", fontWeight: "950", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", boxShadow: "0 10px 20px rgba(255,106,0,0.3)" }}>
+                            SECURE ACCESS TICKET (${viewingEvent.ticketPrice || "49.00"}) <ExternalLink size={14} />
+                          </button>
+                        </a>
+                      ) : (
+                        <button disabled style={{ flex: 1, background: "rgba(34, 197, 94, 0.15)", border: "1px solid rgba(34, 197, 94, 0.3)", color: "#22C55E", borderRadius: "100px", padding: "16px 28px", fontSize: "13px", fontWeight: "950", textTransform: "uppercase", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                          FREE PUBLIC ACCESS PASS ✅
+                        </button>
+                      )}
+
+                      {/* NOTIFY/REMINDER TOGGLER */}
+                      {(viewingEvent.status === "UPCOMING" || viewingEvent.status === "CANCELLED") && (
+                        <button
+                          onClick={() => toggleReminder(viewingEvent.id)}
+                          style={{
+                            background: reminders.includes(viewingEvent.id) ? "rgba(34, 197, 94, 0.15)" : "rgba(255, 255, 255, 0.05)",
+                            border: reminders.includes(viewingEvent.id) ? "1px solid rgba(34, 197, 94, 0.4)" : "1px solid rgba(255, 255, 255, 0.15)",
+                            color: reminders.includes(viewingEvent.id) ? "#22C55E" : "white",
+                            borderRadius: "100px",
+                            padding: "16px 24px",
+                            fontSize: "12px",
+                            fontWeight: "900",
+                            textTransform: "uppercase",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            transition: "all 0.2s"
+                          }}
+                          onMouseEnter={e => {
+                            if (!reminders.includes(viewingEvent.id)) {
+                              e.currentTarget.style.background = "rgba(255, 106, 0, 0.1)";
+                              e.currentTarget.style.borderColor = "#FF6A00";
+                            }
+                          }}
+                          onMouseLeave={e => {
+                            if (!reminders.includes(viewingEvent.id)) {
+                              e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+                              e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.15)";
+                            }
+                          }}
+                        >
+                          <Bell size={14} fill={reminders.includes(viewingEvent.id) ? "#22C55E" : "none"} />
+                          {reminders.includes(viewingEvent.id) ? "NOTIFY SET ✓" : "NOTIFY ME"}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* SOCIAL NETWORKS SHARING ROW */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "16px" }}>
+                      <div style={{ fontSize: "10px", fontWeight: "950", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "1px" }}>SHARE SHOWDOWN WITH FRIENDS</div>
+                      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                        {/* Facebook */}
+                        <button
+                          onClick={() => {
+                            const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`;
+                            window.open(fbUrl, "_blank", "width=600,height=400");
+                          }}
+                          style={{ flex: 1, minWidth: "100px", background: "#1877F2", border: "none", color: "white", padding: "10px 14px", borderRadius: "12px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                        >
+                          Facebook
+                        </button>
+
+                        {/* Twitter */}
+                        <button
+                          onClick={() => {
+                            const tweetText = `AWR Showcase: Check out this dynamic showdown event! ${viewingEvent.title}`;
+                            const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(window.location.href)}`;
+                            window.open(xUrl, "_blank", "width=600,height=400");
+                          }}
+                          style={{ flex: 1, minWidth: "100px", background: "#000", border: "1px solid rgba(255,255,255,0.15)", color: "white", padding: "10px 14px", borderRadius: "12px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                        >
+                          X/Twitter
+                        </button>
+
+                        {/* Instagram */}
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(window.location.href);
+                            showToast("📸 Link copied! Share it on your Instagram Story or Bio!");
+                          }}
+                          style={{ flex: 1, minWidth: "100px", background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)", border: "none", color: "white", padding: "10px 14px", borderRadius: "12px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                        >
+                          Instagram
+                        </button>
+
+                        {/* TikTok */}
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(window.location.href);
+                            showToast("🎵 Link copied! Highlight this event in your TikTok video bio!");
+                          }}
+                          style={{ flex: 1, minWidth: "100px", background: "#000000", border: "1px solid #00f2fe", color: "white", padding: "10px 14px", borderRadius: "12px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                        >
+                          TikTok
+                        </button>
+
+                        {/* YouTube */}
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(window.location.href);
+                            showToast("🎥 Link copied! Drop the link in your video descriptions!");
+                          }}
+                          style={{ flex: 1, minWidth: "100px", background: "#FF0000", border: "none", color: "white", padding: "10px 14px", borderRadius: "12px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                        >
+                          YouTube
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -1145,7 +1779,32 @@ const Events = () => {
           >
             {/* FEATURED EVENT */}
             {featuredEvent && (
-              <div style={{ position: "relative", width: "100%", height: "550px", borderRadius: "32px", overflow: "hidden", marginBottom: "60px", boxShadow: "0 40px 80px rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.05)" }}>
+              <div 
+                onClick={(e) => {
+                  if (e.target.closest("button") || e.target.closest("a")) return;
+                  setViewingEvent(featuredEvent);
+                }}
+                style={{ 
+                  position: "relative", 
+                  width: "100%", 
+                  height: "550px", 
+                  borderRadius: "32px", 
+                  overflow: "hidden", 
+                  marginBottom: "60px", 
+                  boxShadow: "0 40px 80px rgba(0,0,0,0.5)", 
+                  border: "1px solid rgba(255,255,255,0.05)",
+                  cursor: "pointer",
+                  transition: "all 0.3s ease-in-out" 
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(255, 106, 0, 0.5)";
+                  e.currentTarget.style.boxShadow = "0 40px 80px rgba(255, 106, 0, 0.15)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                  e.currentTarget.style.boxShadow = "0 40px 80px rgba(0,0,0,0.5)";
+                }}
+              >
                 <img src={featuredEvent.img} alt={featuredEvent.title} style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.65)" }} />
                 <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.95) 0%, transparent 60%)" }}></div>
                 
@@ -1203,20 +1862,40 @@ const Events = () => {
                   
                   <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
                     {featuredEvent.status === "LIVE" ? (
-                      <Link to={`/stream/${featuredEvent.id}`} style={{ textDecoration: "none" }}>
-                        <button style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 36px", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.3)", transition: "all 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}>
-                          WATCH STREAM <Play size={16} fill="white" />
+                      <div style={{ display: "flex", gap: "12px" }}>
+                        <Link to={`/stream/${featuredEvent.id}`} style={{ textDecoration: "none" }}>
+                          <button style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 36px", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.3)", transition: "all 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}>
+                            WATCH STREAM <Play size={16} fill="white" />
+                          </button>
+                        </Link>
+                        <button 
+                          onClick={() => setViewingEvent(featuredEvent)}
+                          style={{ background: "rgba(255, 255, 255, 0.08)", border: "1px solid rgba(255, 255, 255, 0.2)", color: "white", borderRadius: "100px", padding: "16px 36px", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px" }}
+                        >
+                          READ MORE <Info size={16} />
                         </button>
-                      </Link>
-                    ) : featuredEvent.status === "UPCOMING" ? (
-                      <Link to="/schedule" style={{ textDecoration: "none" }}>
-                        <button style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 36px", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.3)" }}>
-                          VIEW SCHEDULE <ArrowRight size={16} />
+                      </div>
+                    ) : featuredEvent.status === "UPCOMING" || featuredEvent.status === "CANCELLED" ? (
+                      <div style={{ display: "flex", gap: "12px" }}>
+                        <button 
+                          onClick={() => setViewingEvent(featuredEvent)}
+                          style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 36px", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.3)" }}
+                        >
+                          WATCH PROMO <Play size={16} fill="white" />
                         </button>
-                      </Link>
+                        <button 
+                          onClick={() => setViewingEvent(featuredEvent)}
+                          style={{ background: "rgba(255, 255, 255, 0.08)", border: "1px solid rgba(255, 255, 255, 0.2)", color: "white", borderRadius: "100px", padding: "16px 36px", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px" }}
+                        >
+                          READ MORE <Info size={16} />
+                        </button>
+                      </div>
                     ) : (
-                      <button style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "none", borderRadius: "100px", padding: "16px 36px", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "10px" }}>
-                        EVENT COMPLETED
+                      <button 
+                        onClick={() => setViewingEvent(featuredEvent)}
+                        style={{ background: "rgba(255, 255, 255, 0.08)", border: "1px solid rgba(255, 255, 255, 0.2)", color: "white", borderRadius: "100px", padding: "16px 36px", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px" }}
+                      >
+                        VIEW RECAP / DETAILS <Info size={16} />
                       </button>
                     )}
 
@@ -1250,7 +1929,30 @@ const Events = () => {
                 </h3>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "24px" }}>
                   {otherEvents.map((item) => (
-                    <div key={item.id} style={{ position: "relative", borderRadius: "24px", overflow: "hidden", height: "260px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <div 
+                      key={item.id} 
+                      onClick={(e) => {
+                        if (e.target.closest("button") || e.target.closest("a")) return;
+                        setViewingEvent(item);
+                      }}
+                      style={{ 
+                        position: "relative", 
+                        borderRadius: "24px", 
+                        overflow: "hidden", 
+                        height: "260px", 
+                        border: "1px solid rgba(255,255,255,0.05)",
+                        cursor: "pointer",
+                        transition: "all 0.3s ease-in-out" 
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = "rgba(255, 106, 0, 0.6)";
+                        e.currentTarget.style.boxShadow = "0 10px 30px rgba(255, 106, 0, 0.15)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
+                    >
                       <img src={item.img} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.4 }} />
                       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.95), transparent 70%)" }} />
                       
@@ -1258,13 +1960,19 @@ const Events = () => {
                       {user && user.isAdmin && dbEvents.length > 0 && (
                         <div style={{ position: "absolute", top: "16px", right: "16px", display: "flex", gap: "8px", zIndex: 10 }}>
                           <button
-                            onClick={() => openModal("edit", item)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openModal("edit", item);
+                            }}
                             style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "50%", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "white" }}
                           >
                             <Edit3 size={12} />
                           </button>
                           <button
-                            onClick={() => handleDelete(item.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(item.id);
+                            }}
                             style={{ background: "rgba(239,68,68,0.2)", backdropFilter: "blur(10px)", border: "1px solid rgba(239,68,68,0.4)", borderRadius: "50%", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#EF4444" }}
                           >
                             <Trash2 size={12} />
@@ -1285,12 +1993,41 @@ const Events = () => {
                             <span>•</span>
                             <span>{item.athletes}</span>
                           </div>
-                          {item.status === "LIVE" && (
+                          {item.status === "LIVE" ? (
                             <Link to={`/stream/${item.id}`} style={{ textDecoration: "none" }}>
                               <button style={{ background: "#FF6A00", border: "none", borderRadius: "50%", width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "white" }}>
                                 <Play size={14} fill="white" style={{ marginLeft: "2px" }} />
                               </button>
                             </Link>
+                          ) : (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setViewingEvent(item);
+                              }}
+                              style={{ 
+                                background: "rgba(255, 106, 0, 0.1)", 
+                                border: "1px solid rgba(255, 106, 0, 0.3)", 
+                                borderRadius: "100px", 
+                                padding: "6px 14px", 
+                                fontSize: "9px", 
+                                fontWeight: "950", 
+                                color: "#FF6A00", 
+                                cursor: "pointer", 
+                                textTransform: "uppercase",
+                                transition: "all 0.2s"
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.background = "#FF6A00";
+                                e.currentTarget.style.color = "white";
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.background = "rgba(255, 106, 0, 0.1)";
+                                e.currentTarget.style.color = "#FF6A00";
+                              }}
+                            >
+                              READ MORE
+                            </button>
                           )}
                         </div>
                       </div>
@@ -1376,6 +2113,11 @@ const Events = () => {
         </div>
 
         <style>{`
+          @media (max-width: 768px) {
+            .event-popup-grid {
+              grid-template-columns: 1fr !important;
+            }
+          }
           @keyframes pulse {
             0% { transform: scale(1); opacity: 1; }
             50% { transform: scale(1.5); opacity: 0.5; }

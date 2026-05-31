@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { 
   Trophy, 
   Globe, 
@@ -52,6 +52,7 @@ const CustomSelect = ({ value, onChange, options, label }) => (
 );
 
 const GlobalLeaderboard = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   
   const categories = ["All Categories", "Athletics", "Strength", "Endurance", "Balance", "Skills", "Gaming", "Water Sports", "Reaction", "Mind & Memory", "Action Sports", "Other"];
@@ -65,14 +66,14 @@ const GlobalLeaderboard = () => {
   const [activeSort, setActiveSort] = useState("Highest Score");
 
   const mockGlobalData = [
-    { rank: "#01", name: "Leo Vance", points: 24850, country: "USA", records: 12, trend: "+2", avatar: "https://randomuser.me/api/portraits/men/32.jpg", category: "Strength", ageGroup: "Adult Division (18–49)", score: "355 KG", date: "2026-05-18" },
-    { rank: "#02", name: "Elena Petrov", points: 22410, country: "RUS", records: 10, trend: "-1", avatar: "https://randomuser.me/api/portraits/women/44.jpg", category: "Endurance", ageGroup: "Adult Division (18–49)", score: "19h 12m", date: "2026-05-15" },
-    { rank: "#03", name: "Jamal Carter", points: 21900, country: "GBR", records: 15, trend: "STABLE", avatar: "https://randomuser.me/api/portraits/men/85.jpg", category: "Athletics", ageGroup: "Adult Division (18–49)", score: "9.76 Sec", date: "2026-05-10" },
-    { rank: "#04", name: "Sarah Kim", points: 19540, country: "KOR", records: 8, trend: "+5", avatar: "https://randomuser.me/api/portraits/women/15.jpg", category: "Gaming", ageGroup: "Teen Legends Division (13–17)", score: "3.13 Sec", date: "2026-05-17" },
-    { rank: "#05", name: "Marcus Rossi", points: 18210, country: "ITA", records: 9, trend: "STABLE", avatar: "https://randomuser.me/api/portraits/men/12.jpg", category: "Balance", ageGroup: "Masters Division (50+)", score: "2h 15m", date: "2026-05-01" },
-    { rank: "#06", name: "Chen Wei", points: 17800, country: "CHN", records: 11, trend: "-2", avatar: "https://randomuser.me/api/portraits/men/45.jpg", category: "Reaction", ageGroup: "Junior Champions Division (5–12)", score: "0.15 Sec", date: "2026-04-20" },
-    { rank: "#07", name: "Mina Chen", points: 16950, country: "JPN", records: 7, trend: "+1", avatar: "https://randomuser.me/api/portraits/women/22.jpg", category: "Skills", ageGroup: "Teen Legends Division (13–17)", score: "10,500 Pts", date: "2026-05-19" },
-    { rank: "#08", name: "David Lu", points: 15400, country: "CAN", records: 6, trend: "STABLE", avatar: "https://randomuser.me/api/portraits/men/76.jpg", category: "Mind & Memory", ageGroup: "Adult Division (18–49)", score: "52 Cards / 14s", date: "2026-03-15" }
+    { rank: "#01", name: "Leo Vance", points: 24850, country: "USA", records: 12, trend: "+2", avatar: "https://randomuser.me/api/portraits/men/32.jpg", category: "Strength", ageGroup: "Adult Division (18–49)", score: "355 KG", date: "2026-05-18", recordId: "bench-press", profileId: "leo-vance" },
+    { rank: "#02", name: "Elena Petrov", points: 22410, country: "RUS", records: 10, trend: "-1", avatar: "https://randomuser.me/api/portraits/women/44.jpg", category: "Endurance", ageGroup: "Adult Division (18–49)", score: "19h 12m", date: "2026-05-15", recordId: "plank-holds", profileId: "leo-vance" },
+    { rank: "#03", name: "Jamal Carter", points: 21900, country: "GBR", records: 15, trend: "STABLE", avatar: "https://randomuser.me/api/portraits/men/85.jpg", category: "Athletics", ageGroup: "Adult Division (18–49)", score: "9.76 Sec", date: "2026-05-10", recordId: "sprinting", profileId: "jamal-carter" },
+    { rank: "#04", name: "Sarah Kim", points: 19540, country: "KOR", records: 8, trend: "+5", avatar: "https://randomuser.me/api/portraits/women/15.jpg", category: "Gaming", ageGroup: "Teen Legends Division (13–17)", score: "3.13 Sec", date: "2026-05-17", recordId: "rubik-s-cube", profileId: "jamal-carter" },
+    { rank: "#05", name: "Marcus Rossi", points: 18210, country: "ITA", records: 9, trend: "STABLE", avatar: "https://randomuser.me/api/portraits/men/12.jpg", category: "Balance", ageGroup: "Masters Division (50+)", score: "2h 15m", date: "2026-05-01", recordId: "stair-climbing", profileId: "leo-vance" },
+    { rank: "#06", name: "Chen Wei", points: 17800, country: "CHN", records: 11, trend: "-2", avatar: "https://randomuser.me/api/portraits/men/45.jpg", category: "Reaction", ageGroup: "Junior Champions Division (5–12)", score: "0.15 Sec", date: "2026-04-20", recordId: "stair-climbing", profileId: "jamal-carter" },
+    { rank: "#07", name: "Mina Chen", points: 16950, country: "JPN", records: 7, trend: "+1", avatar: "https://randomuser.me/api/portraits/women/22.jpg", category: "Skills", ageGroup: "Teen Legends Division (13–17)", score: "10,500 Pts", date: "2026-05-19", recordId: "stair-climbing", profileId: "jamal-carter" },
+    { rank: "#08", name: "David Lu", points: 15400, country: "CAN", records: 6, trend: "STABLE", avatar: "https://randomuser.me/api/portraits/men/76.jpg", category: "Mind & Memory", ageGroup: "Adult Division (18–49)", score: "52 Cards / 14s", date: "2026-03-15", recordId: "stair-climbing", profileId: "jamal-carter" }
   ];
 
   const getFilteredData = () => {
@@ -227,6 +228,7 @@ const GlobalLeaderboard = () => {
                     initial={{ opacity: 0, x: -20 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05 }}
+                    onClick={() => navigate(`/record/${r.recordId}`)}
                     style={{ 
                       display: "grid", 
                       gridTemplateColumns: "80px 1.5fr 150px 200px 150px 150px 120px", 
@@ -237,8 +239,16 @@ const GlobalLeaderboard = () => {
                       transition: "background 0.3s ease",
                       cursor: "pointer"
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,106,0,0.05)"}
-                    onMouseLeave={(e) => e.currentTarget.style.background = i < 3 && activeSort === "Highest Score" ? "rgba(255,106,0,0.02)" : "transparent"}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(255,106,0,0.05)";
+                      const scoreValEl = e.currentTarget.querySelector(".score-hover-value");
+                      if (scoreValEl) scoreValEl.style.color = "#FF6A00";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = i < 3 && activeSort === "Highest Score" ? "rgba(255,106,0,0.02)" : "transparent";
+                      const scoreValEl = e.currentTarget.querySelector(".score-hover-value");
+                      if (scoreValEl) scoreValEl.style.color = "white";
+                    }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       {i === 0 && activeSort === "Highest Score" && <Crown size={16} color="#FFD700" />}
@@ -252,19 +262,33 @@ const GlobalLeaderboard = () => {
                       </div>
                     </div>
                     
-                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/profile/${r.profileId}`);
+                      }}
+                      style={{ display: "flex", alignItems: "center", gap: "16px", cursor: "pointer" }}
+                      onMouseEnter={(e) => {
+                        const nameEl = e.currentTarget.querySelector(".athlete-hover-name");
+                        if (nameEl) nameEl.style.color = "#FF6A00";
+                      }}
+                      onMouseLeave={(e) => {
+                        const nameEl = e.currentTarget.querySelector(".athlete-hover-name");
+                        if (nameEl) nameEl.style.color = "white";
+                      }}
+                    >
                       <div style={{ position: "relative" }}>
                         <img src={r.avatar} alt={r.name} style={{ width: "48px", height: "48px", borderRadius: "12px", border: i < 3 && activeSort === "Highest Score" ? "2px solid #FF6A00" : "1px solid rgba(255,255,255,0.1)", objectFit: "cover" }} />
                         {i < 3 && activeSort === "Highest Score" && <div style={{ position: "absolute", top: -5, right: -5, background: "#FF6A00", color: "white", padding: "4px", borderRadius: "50%" }}><Star size={8} fill="white" /></div>}
                       </div>
                       <div>
-                        <div style={{ fontSize: "16px", fontWeight: "900", letterSpacing: "-0.02em" }}>{r.name}</div>
+                        <div className="athlete-hover-name" style={{ fontSize: "16px", fontWeight: "900", letterSpacing: "-0.02em", color: "white", transition: "color 0.2s" }}>{r.name}</div>
                         <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "6px", marginTop: "4px", fontWeight: "700" }}>
                           <Flag size={10} /> {r.country}
                         </div>
                       </div>
                     </div>
-
+ 
                     <div style={{ fontSize: "13px", fontWeight: "800", color: "rgba(255,255,255,0.8)" }}>{r.category}</div>
                     
                     <div>
@@ -273,9 +297,9 @@ const GlobalLeaderboard = () => {
                       </div>
                     </div>
                     
-                    <div style={{ fontSize: "15px", fontWeight: "900", color: "white" }}>{r.score}</div>
+                    <div className="score-hover-value" style={{ fontSize: "15px", fontWeight: "900", color: "white", transition: "color 0.2s" }}>{r.score}</div>
                     <div style={{ fontSize: "13px", fontWeight: "700", color: "rgba(255,255,255,0.5)" }}>{r.date}</div>
-
+ 
                     <div style={{ textAlign: "right", fontSize: "18px", fontWeight: "950", color: "#FF6A00" }}>
                       {r.points.toLocaleString()}
                     </div>

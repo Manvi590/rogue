@@ -47,6 +47,7 @@ const RecordDetail = () => {
         title: "Fastest 1,000 Step Stair Climb",
         value: "4 Min 32.5 Sec",
         athlete: "Marcus Vance",
+        memberNumber: "AWR-000245",
         date: "April 18, 2024",
         location: "Chicago, IL, USA",
         cat: "Endurance",
@@ -57,6 +58,7 @@ const RecordDetail = () => {
         title: "Fastest 100M Sprint",
         value: "9.58 Seconds",
         athlete: "Usain Bolt",
+        memberNumber: "AWR-958209",
         date: "August 16, 2009",
         location: "Berlin, Germany",
         cat: "Athletics",
@@ -67,6 +69,7 @@ const RecordDetail = () => {
         title: "Heaviest Raw Bench Press",
         value: "355 KG (782.6 LBS)",
         athlete: "Julius Maddox",
+        memberNumber: "AWR-355782",
         date: "May 12, 2021",
         location: "Reykjavik, Iceland",
         cat: "Strength",
@@ -77,6 +80,7 @@ const RecordDetail = () => {
         title: "Heaviest Deadlift Attempt",
         value: "501 KG",
         athlete: "Thor Bjornsson",
+        memberNumber: "AWR-501202",
         date: "May 02, 2020",
         location: "Reykjavik, Iceland",
         cat: "Strength",
@@ -87,6 +91,7 @@ const RecordDetail = () => {
         title: "Longest Continuous Plank Hold",
         value: "9 Hrs 30 Min 01 Sec",
         athlete: "Daniel Scali",
+        memberNumber: "AWR-930010",
         date: "August 06, 2023",
         location: "Adelaide, Australia",
         cat: "Endurance",
@@ -97,6 +102,7 @@ const RecordDetail = () => {
         title: "Fastest 3x3x3 Rubik's Cube Solve",
         value: "3.13 Seconds",
         athlete: "Max Park",
+        memberNumber: "AWR-313000",
         date: "June 11, 2023",
         location: "California, USA",
         cat: "Skills",
@@ -115,6 +121,7 @@ const RecordDetail = () => {
       title: defaultTitle,
       value: "Verified Record",
       athlete: "Alexander 'Apex' Thorne",
+      memberNumber: "AWR-100003",
       date: "October 14, 2024",
       location: "Rogue Arena Hub",
       cat: "Verified Record",
@@ -123,7 +130,11 @@ const RecordDetail = () => {
     };
   };
 
-  const record = getRecordData(id);
+  const recordRaw = getRecordData(id);
+  const record = {
+    ...recordRaw,
+    memberNumber: recordRaw.memberNumber || recordRaw.member_number || ""
+  };
 
   const getStatusPriority = (status) => {
     if (!status) return 99;
@@ -137,15 +148,15 @@ const RecordDetail = () => {
 
   // Mock attempts history based on current record
   const mockAttempts = [
-    { id: 1, name: record.athlete, value: record.value, date: record.date, status: "CURRENT RECORD", img: record.img, color: "#10B981", bg: "rgba(16, 185, 129, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" },
-    { id: 2, name: "Daniel Kim", value: "Pending Verification", date: "May 12, 2024", status: "PENDING REVIEW", img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=400&q=80", color: "#F59E0B", bg: "rgba(245, 158, 11, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" },
-    { id: 3, name: "Liam Thompson", value: "Failed - Rule 3B", date: "May 14, 2024", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4" },
-    { id: 4, name: "Alex Rodriguez", value: "Failed - Time Limit", date: "May 13, 2024", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4" },
-    { id: 5, name: "James Walker", value: "Broken (Previous)", date: "May 10, 2024", status: "BROKEN", img: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=400&q=80", color: "#9CA3AF", bg: "rgba(156, 163, 175, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4" },
-    { id: 6, name: "Ethan Hunt", value: "Failed - Form Violation", date: "May 15, 2024", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" },
-    { id: 7, name: "Sarah Connor", value: "Failed - Equipment Issue", date: "May 16, 2024", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" },
-    { id: 8, name: "Marcus Johnson", value: "Failed - Incomplete Rep", date: "May 18, 2024", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4" },
-    { id: 9, name: "David Chen", value: "Failed - Disqualified", date: "May 19, 2024", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4" }
+    { id: 1, name: record.athlete, memberNumber: record.memberNumber, value: record.value, date: record.date, status: "CURRENT RECORD", img: record.img, color: "#10B981", bg: "rgba(16, 185, 129, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" },
+    { id: 2, name: "Daniel Kim", memberNumber: "AWR-883920", value: "Pending Verification", date: "May 12, 2024", status: "PENDING REVIEW", img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=400&q=80", color: "#F59E0B", bg: "rgba(245, 158, 11, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" },
+    { id: 3, name: "Liam Thompson", memberNumber: "AWR-293810", value: "Failed - Rule 3B", date: "May 14, 2024", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4" },
+    { id: 4, name: "Alex Rodriguez", memberNumber: "AWR-192837", value: "Failed - Time Limit", date: "May 13, 2024", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4" },
+    { id: 5, name: "James Walker", memberNumber: "AWR-485920", value: "Broken (Previous)", date: "May 10, 2024", status: "BROKEN", img: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=400&q=80", color: "#9CA3AF", bg: "rgba(156, 163, 175, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4" },
+    { id: 6, name: "Ethan Hunt", memberNumber: "AWR-007007", value: "Failed - Form Violation", date: "May 15, 2024", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" },
+    { id: 7, name: "Sarah Connor", memberNumber: "AWR-800101", value: "Failed - Equipment Issue", date: "May 16, 2024", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" },
+    { id: 8, name: "Marcus Johnson", memberNumber: "AWR-384910", value: "Failed - Incomplete Rep", date: "May 18, 2024", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4" },
+    { id: 9, name: "David Chen", memberNumber: "AWR-902182", value: "Failed - Disqualified", date: "May 19, 2024", status: "FAILED ATTEMPT", img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=400&q=80", color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)", videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4" }
   ];
 
   const attempts = mockAttempts.sort((a, b) => {
@@ -183,10 +194,32 @@ const RecordDetail = () => {
 
             <div style={{ display: "flex", alignItems: "center", gap: "40px", flexWrap: "wrap" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#FF6A00", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", fontWeight: "900" }}>{record.athlete[0]}</div>
+                <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#FF6A00", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", fontWeight: "900" }}>{record.athlete ? record.athlete[0] : ""}</div>
                 <div>
                   <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", fontWeight: "800" }}>ATHLETE</div>
-                  <div style={{ fontSize: "18px", fontWeight: "900" }}>{record.athlete}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                    <div style={{ fontSize: "18px", fontWeight: "900" }}>{record.athlete}</div>
+                    {record.memberNumber && (
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,0.03)", padding: "3px 10px", borderRadius: "100px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                        <span style={{ fontSize: "8px", color: "#FF5500", fontWeight: "900", letterSpacing: "0.5px", textTransform: "uppercase" }}>MID:</span>
+                        <span style={{ fontSize: "10px", color: "#fff", fontWeight: "800", letterSpacing: "0.5px" }}>{record.memberNumber}</span>
+                        <div style={{ display: "inline-flex", background: "rgba(34, 197, 94, 0.15)", borderRadius: "50%", padding: "1.5px", border: "1px solid rgba(34, 197, 94, 0.3)" }} title="Verified Member">
+                          <svg viewBox="0 0 24 24" width="8" height="8" stroke="#22c55e" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        </div>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(record.memberNumber);
+                            alert(`Member ID (${record.memberNumber}) copied to clipboard!`);
+                          }}
+                          style={{ background: "none", border: "none", color: "#FF5500", padding: 0, margin: "0 0 0 2px", cursor: "pointer", display: "flex", alignItems: "center" }}
+                          title="Copy Member Number"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <div>
@@ -265,55 +298,94 @@ const RecordDetail = () => {
                 </button>
               </div>
 
-              <div style={{ position: "relative", padding: "0 40px" }}>
+              <div className="attempt-history-container">
+                <style>{`
+                  .attempt-history-scroll::-webkit-scrollbar {
+                    display: none;
+                  }
+                  .attempt-history-scroll {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                  }
+                  .attempt-history-container {
+                    position: relative;
+                    padding: 0 44px;
+                    transition: padding 0.3s ease;
+                  }
+                  .attempt-nav-btn {
+                    position: absolute;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    background: rgba(0, 0, 0, 0.75);
+                    border: 1px solid rgba(255, 106, 0, 0.3);
+                    color: white;
+                    border-radius: 50%;
+                    width: 38px;
+                    height: 38px;
+                    display: flex;
+                    alignItems: center;
+                    justifyContent: center;
+                    cursor: pointer;
+                    zIndex: 2;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                    transition: all 0.2s ease-in-out;
+                  }
+                  .attempt-nav-btn:hover {
+                    transform: translateY(-50%) scale(1.1);
+                    border-color: #FF6A00;
+                    box-shadow: 0 0 12px rgba(255, 106, 0, 0.5);
+                  }
+                  .attempt-nav-btn:active {
+                    transform: translateY(-50%) scale(0.95);
+                  }
+                  .attempt-nav-btn.left {
+                    left: 0;
+                  }
+                  .attempt-nav-btn.right {
+                    right: 0;
+                  }
+
+                  @media (max-width: 768px) {
+                    .attempt-history-container {
+                      padding: 0 32px;
+                    }
+                    .attempt-nav-btn {
+                      width: 32px;
+                      height: 32px;
+                    }
+                  }
+                  @media (max-width: 480px) {
+                    .attempt-history-container {
+                      padding: 0 24px;
+                    }
+                    .attempt-nav-btn {
+                      width: 28px;
+                      height: 28px;
+                    }
+                  }
+                `}</style>
+
+                {/* Left Navigation Arrow */}
                 <button 
+                  type="button"
                   onClick={() => scrollAttempts('left')}
-                  style={{
-                    position: "absolute",
-                    left: 0,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    background: "rgba(0,0,0,0.6)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    color: "white",
-                    borderRadius: "50%",
-                    width: "36px",
-                    height: "36px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    zIndex: 2,
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.5)"
-                  }}
+                  className="attempt-nav-btn left"
+                  aria-label="Previous Attempt"
                 >
                   <ChevronLeft size={20} />
                 </button>
 
+                {/* Right Navigation Arrow */}
                 <button 
+                  type="button"
                   onClick={() => scrollAttempts('right')}
-                  style={{
-                    position: "absolute",
-                    right: 0,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    background: "rgba(0,0,0,0.6)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    color: "white",
-                    borderRadius: "50%",
-                    width: "36px",
-                    height: "36px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    zIndex: 2,
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.5)"
-                  }}
+                  className="attempt-nav-btn right"
+                  aria-label="Next Attempt"
                 >
                   <ChevronRight size={20} />
                 </button>
 
+                {/* Attempt horizontal scroll list */}
                 <div 
                   ref={scrollRef}
                   className="attempt-history-scroll" 
@@ -322,65 +394,70 @@ const RecordDetail = () => {
                     gap: "16px", 
                     overflowX: "auto", 
                     paddingBottom: "20px",
-                    msOverflowStyle: "none", 
-                    scrollbarWidth: "none",
-                    scrollBehavior: "smooth"
+                    scrollBehavior: "smooth",
+                    WebkitOverflowScrolling: "touch"
                   }}
                 >
-                  <style>{`
-                    .attempt-history-scroll::-webkit-scrollbar {
-                      display: none;
-                    }
-                  `}</style>
                 
-                {attempts.map(attempt => (
-                  <div key={attempt.id} 
-                  onClick={(e) => { e.stopPropagation(); setSelectedAttempt(attempt); }}
-                  style={{ 
-                    flex: "0 0 240px", 
-                    background: "#161616", 
-                    borderRadius: "16px", 
-                    overflow: "hidden", 
-                    border: attempt.status === "CURRENT RECORD" ? "1px solid #10B981" : "1px solid rgba(255,255,255,0.05)",
-                    cursor: "pointer",
-                    transition: "transform 0.2s, box-shadow 0.2s"
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-4px)";
-                    e.currentTarget.style.boxShadow = "0 10px 20px rgba(0,0,0,0.4)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
-                  >
-                    {/* Thumbnail */}
-                    <div style={{ position: "relative", height: "135px" }}>
-                      <img src={attempt.img} alt={attempt.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.2)" }}>
-                          <Play fill="white" size={16} />
+                {attempts.map(attempt => {
+                  const isSelected = selectedAttempt?.id === attempt.id;
+                  return (
+                    <div key={attempt.id} 
+                      onClick={(e) => { e.stopPropagation(); setSelectedAttempt(attempt); }}
+                      style={{ 
+                        flex: "0 0 240px", 
+                        background: "#161616", 
+                        borderRadius: "16px", 
+                        overflow: "hidden", 
+                        border: isSelected ? "2px solid #FF6A00" : (attempt.status === "CURRENT RECORD" ? "1px solid #10B981" : "1px solid rgba(255,255,255,0.05)"),
+                        boxShadow: isSelected ? "0 0 15px rgba(255,106,0,0.3)" : "none",
+                        transform: isSelected ? "translateY(-2px)" : "translateY(0)",
+                        cursor: "pointer",
+                        transition: "all 0.25s ease"
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.transform = "translateY(-4px)";
+                          e.currentTarget.style.borderColor = "rgba(255, 106, 0, 0.4)";
+                          e.currentTarget.style.boxShadow = "0 8px 16px rgba(0,0,0,0.4)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.transform = "translateY(0)";
+                          e.currentTarget.style.borderColor = attempt.status === "CURRENT RECORD" ? "#10B981" : "rgba(255,255,255,0.05)";
+                          e.currentTarget.style.boxShadow = "none";
+                        }
+                      }}
+                    >
+                      {/* Thumbnail */}
+                      <div style={{ position: "relative", height: "135px" }}>
+                        <img src={attempt.img} alt={attempt.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.2)" }}>
+                            <Play fill="white" size={16} />
+                          </div>
+                        </div>
+                        <div style={{ position: "absolute", bottom: "8px", right: "8px", background: "rgba(0,0,0,0.8)", padding: "4px 8px", borderRadius: "4px", fontSize: "10px", fontWeight: "700" }}>
+                          0:00
                         </div>
                       </div>
-                      <div style={{ position: "absolute", bottom: "8px", right: "8px", background: "rgba(0,0,0,0.8)", padding: "4px 8px", borderRadius: "4px", fontSize: "10px", fontWeight: "700" }}>
-                        0:00
-                      </div>
-                    </div>
-                    
-                    {/* Info */}
-                    <div style={{ padding: "16px" }}>
-                      <div style={{ fontSize: "14px", fontWeight: "800", marginBottom: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{attempt.name}</div>
-                      <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.6)", marginBottom: "12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{attempt.value}</div>
                       
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
-                        <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", fontWeight: "600" }}>{attempt.date}</div>
-                        <div style={{ fontSize: "9px", fontWeight: "900", padding: "4px 8px", borderRadius: "4px", background: attempt.bg, color: attempt.color, textTransform: "uppercase" }}>
-                          {attempt.status}
+                      {/* Info */}
+                      <div style={{ padding: "16px" }}>
+                        <div style={{ fontSize: "14px", fontWeight: "800", marginBottom: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{attempt.name}</div>
+                        <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.6)", marginBottom: "12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{attempt.value}</div>
+                        
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+                          <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", fontWeight: "600" }}>{attempt.date}</div>
+                          <div style={{ fontSize: "9px", fontWeight: "900", padding: "4px 8px", borderRadius: "4px", background: attempt.bg, color: attempt.color, textTransform: "uppercase" }}>
+                            {attempt.status}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 </div>
               </div>
             </div>
@@ -609,7 +686,29 @@ const RecordDetail = () => {
                     <div>
                       <span style={{ background: selectedAttempt.bg, color: selectedAttempt.color, fontSize: "12px", fontWeight: "900", padding: "6px 16px", borderRadius: "100px", textTransform: "uppercase" }}>{selectedAttempt.status}</span>
                       <h2 style={{ fontSize: "32px", fontWeight: "950", textTransform: "uppercase", color: "white", lineHeight: "1.1", marginTop: "24px", marginBottom: "8px" }}>{selectedAttempt.name}</h2>
-                      <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px", fontWeight: "600" }}>Attempt Date: <strong style={{ color: "white" }}>{selectedAttempt.date}</strong></p>
+                      
+                      {selectedAttempt.memberNumber && (
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,0.03)", padding: "4px 12px", borderRadius: "100px", border: "1px solid rgba(255,255,255,0.05)", marginBottom: "12px" }}>
+                          <span style={{ fontSize: "9px", color: "#FF5500", fontWeight: "900", letterSpacing: "0.5px", textTransform: "uppercase" }}>MID:</span>
+                          <span style={{ fontSize: "11px", color: "#fff", fontWeight: "800", letterSpacing: "0.5px" }}>{selectedAttempt.memberNumber}</span>
+                          <div style={{ display: "inline-flex", background: "rgba(34, 197, 94, 0.15)", borderRadius: "50%", padding: "2px", border: "1px solid rgba(34, 197, 94, 0.3)" }} title="Verified Member">
+                            <svg viewBox="0 0 24 24" width="10" height="10" stroke="#22c55e" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                          </div>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(selectedAttempt.memberNumber);
+                              alert(`Member ID (${selectedAttempt.memberNumber}) copied to clipboard!`);
+                            }}
+                            style={{ background: "none", border: "none", color: "#FF5500", padding: 0, margin: "0 0 0 4px", cursor: "pointer", display: "flex", alignItems: "center" }}
+                            title="Copy Member Number"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                          </button>
+                        </div>
+                      )}
+
+                      <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px", fontWeight: "600", marginTop: selectedAttempt.memberNumber ? "0px" : "8px" }}>Attempt Date: <strong style={{ color: "white" }}>{selectedAttempt.date}</strong></p>
                     </div>
 
                     <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", padding: "24px", borderRadius: "16px" }}>

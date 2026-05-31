@@ -29,6 +29,12 @@ const getEvents = async (req, res) => {
       competitors: e.competitors,
       judges: e.judges,
       isFeatured: e.is_featured,
+      videoUrl: e.video_url || '',
+      ticketLink: e.ticket_link || '',
+      sponsors: e.sponsors || '',
+      rules: e.rules || '',
+      status: e.status || 'upcoming',
+      category: e.category || 'WORLD RECORD',
       createdAt: e.created_at,
       updatedAt: e.updated_at
     }));
@@ -70,6 +76,12 @@ const getEventById = async (req, res) => {
       competitors: event.competitors,
       judges: event.judges,
       isFeatured: event.is_featured,
+      videoUrl: event.video_url || '',
+      ticketLink: event.ticket_link || '',
+      sponsors: event.sponsors || '',
+      rules: event.rules || '',
+      status: event.status || 'upcoming',
+      category: event.category || 'WORLD RECORD',
       createdAt: event.created_at,
       updatedAt: event.updated_at
     };
@@ -84,7 +96,7 @@ const getEventById = async (req, res) => {
 // @route   POST /api/events
 // @access  Private/Admin
 const createEvent = async (req, res) => {
-  const { title, description, date, location, image, imageUrl, isLive, streamUrl, isPaid, ticketPrice, competitors, judges, isFeatured } = req.body;
+  const { title, description, date, location, image, imageUrl, isLive, streamUrl, isPaid, ticketPrice, competitors, judges, isFeatured, videoUrl, ticketLink, sponsors, rules, status, category } = req.body;
 
   try {
     if (!title || !description || !date || !location) {
@@ -109,7 +121,13 @@ const createEvent = async (req, res) => {
         ticket_price: isPaid ? parseFloat(ticketPrice) : 0.00,
         competitors: competitors || '',
         judges: judges || '',
-        is_featured: isFeatured || false
+        is_featured: isFeatured || false,
+        video_url: videoUrl || '',
+        ticket_link: ticketLink || '',
+        sponsors: sponsors || '',
+        rules: rules || '',
+        status: status || 'upcoming',
+        category: category || 'WORLD RECORD'
       }])
       .select()
       .single();
@@ -132,6 +150,12 @@ const createEvent = async (req, res) => {
       competitors: event.competitors,
       judges: event.judges,
       isFeatured: event.is_featured,
+      videoUrl: event.video_url || '',
+      ticketLink: event.ticket_link || '',
+      sponsors: event.sponsors || '',
+      rules: event.rules || '',
+      status: event.status || 'upcoming',
+      category: event.category || 'WORLD RECORD',
       createdAt: event.created_at,
       updatedAt: event.updated_at
     };
@@ -146,7 +170,7 @@ const createEvent = async (req, res) => {
 // @route   PUT /api/events/:id
 // @access  Private/Admin
 const updateEvent = async (req, res) => {
-  const { title, description, date, location, image, imageUrl, isLive, streamUrl, isPaid, ticketPrice, competitors, judges, isFeatured } = req.body;
+  const { title, description, date, location, image, imageUrl, isLive, streamUrl, isPaid, ticketPrice, competitors, judges, isFeatured, videoUrl, ticketLink, sponsors, rules, status, category } = req.body;
 
   try {
     // Check if event exists
@@ -177,6 +201,12 @@ const updateEvent = async (req, res) => {
       competitors: competitors !== undefined ? competitors : existingEvent.competitors,
       judges: judges !== undefined ? judges : existingEvent.judges,
       is_featured: isFeatured !== undefined ? isFeatured : existingEvent.is_featured,
+      video_url: videoUrl !== undefined ? videoUrl : existingEvent.video_url,
+      ticket_link: ticketLink !== undefined ? ticketLink : existingEvent.ticket_link,
+      sponsors: sponsors !== undefined ? sponsors : existingEvent.sponsors,
+      rules: rules !== undefined ? rules : existingEvent.rules,
+      status: status !== undefined ? status : existingEvent.status,
+      category: category !== undefined ? category : existingEvent.category,
       updated_at: new Date()
     };
 
@@ -205,6 +235,12 @@ const updateEvent = async (req, res) => {
       competitors: event.competitors,
       judges: event.judges,
       isFeatured: event.is_featured,
+      videoUrl: event.video_url || '',
+      ticketLink: event.ticket_link || '',
+      sponsors: event.sponsors || '',
+      rules: event.rules || '',
+      status: event.status || 'upcoming',
+      category: event.category || 'WORLD RECORD',
       createdAt: event.created_at,
       updatedAt: event.updated_at
     };

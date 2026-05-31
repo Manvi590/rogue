@@ -46,3 +46,20 @@ export const apiCall = async (endpoint, method = 'GET', body = null, token = nul
     throw error;
   }
 };
+
+// Dynamic Product Image Formatter
+export const formatProductImage = (url) => {
+  if (!url) return "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=600&q=80";
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
+    const backendBase = API_URL.replace("/api", "");
+    if (url.includes("localhost:5000")) {
+      return url.replace("http://localhost:5000", backendBase);
+    }
+    if (url.includes("localhost:5001")) {
+      return url.replace("http://localhost:5001", backendBase);
+    }
+    return url;
+  }
+  const backendBase = API_URL.replace("/api", "");
+  return `${backendBase}${url.startsWith("/") ? "" : "/"}${url}`;
+};

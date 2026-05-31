@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowRight, Star } from "lucide-react";
+import { ArrowRight, Star, UploadCloud, Trash2 } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ScrollReveal from "../components/ScrollReveal";
-import { apiCall } from "../utils/api";
+import { apiCall, formatProductImage } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 
 const Shop = () => {
@@ -33,8 +33,11 @@ const Shop = () => {
   const [awardPrice, setAwardPrice] = useState("");
   const [awardDesc, setAwardDesc] = useState("");
   const [awardStock, setAwardStock] = useState("10");
-  const [awardImg, setAwardImg] = useState("");
   const [awardCategory, setAwardCategory] = useState("CERTIFICATES");
+  const [awardImageFile, setAwardImageFile] = useState(null);
+  const [awardImagePreview, setAwardImagePreview] = useState("");
+  const [dragActive, setDragActive] = useState(false);
+  const awardFileInputRef = React.useRef(null);
 
   // Framed Award Orders states
   const [awardOrders, setAwardOrders] = useState([
@@ -59,7 +62,7 @@ const Shop = () => {
       name: awardName,
       description: awardDesc,
       price: parseFloat(awardPrice),
-      imageUrl: awardImg || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=600&q=80",
+      imageUrl: "",
       category: awardCategory,
       stockCount: parseInt(awardStock) || 10,
       sizes: [],
@@ -68,7 +71,31 @@ const Shop = () => {
 
     try {
       if (user && user.token) {
-        const newProd = await apiCall("/admin/products", "POST", payload, user.token);
+        let newProd = await apiCall("/admin/products", "POST", payload, user.token);
+        
+        if (awardImageFile) {
+          try {
+            const formData = new FormData();
+            formData.append("productImage", awardImageFile);
+            
+            const res = await fetch(import.meta.env.VITE_API_URL + `/admin/products/${newProd.id}/image`, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${user.token}` },
+              body: formData
+            });
+            
+            if (!res.ok) throw new Error("Upload response not OK");
+            
+            const uploadData = await res.json();
+            // Update the local product's image url
+            newProd = uploadData.product || { ...newProd, image_url: uploadData.imageUrl };
+            showToast("Product image uploaded successfully.");
+          } catch (uploadErr) {
+            console.error("Image upload failed:", uploadErr);
+            showToast("Image upload failed. Please try again.");
+          }
+        }
+        
         setDbProducts(prev => [newProd, ...prev]);
         showToast("🎖️ Custom Award Product Created Successfully in Database!");
       } else {
@@ -81,7 +108,7 @@ const Shop = () => {
         name: payload.name,
         description: payload.description,
         price: payload.price,
-        image_url: payload.imageUrl,
+        image_url: awardImagePreview || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=600&q=80",
         category: payload.category,
         stock_count: payload.stockCount
       };
@@ -94,7 +121,8 @@ const Shop = () => {
     setAwardPrice("");
     setAwardDesc("");
     setAwardStock("10");
-    setAwardImg("");
+    setAwardImageFile(null);
+    setAwardImagePreview("");
   };
 
   const handleToggleShipping = (orderId) => {
@@ -192,7 +220,7 @@ const Shop = () => {
         title: p.name,
         price: `$${parseFloat(p.price).toFixed(2)}`,
         desc: p.description,
-        img: p.image_url || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=600&q=80",
+        img: formatProductImage(p.image_url),
         badge: p.category?.toUpperCase() || "GEAR",
         category: p.category?.toUpperCase() || "APPAREL"
       }))
@@ -512,6 +540,21 @@ const Shop = () => {
                         }}>
                           CERTIFICATE OF RECORD ACHIEVEMENT
                         </h4>
+                        <div style={{
+                          fontSize: "7px",
+                          fontWeight: "800",
+                          letterSpacing: "1.5px",
+                          marginTop: "4px",
+                          opacity: 0.8,
+                          color:
+                            certTheme === "parchment" ? "#555" :
+                            certTheme === "gold" ? "#d4af37" :
+                            certTheme === "glacial" ? "#38bdf8" :
+                            "#FF6A00",
+                          textTransform: "uppercase"
+                        }}>
+                          MEMBER NUMBER: {user?.memberNumber || user?.member_number || "AWR-000245"}
+                        </div>
                       </div>
 
                       <div style={{ textAlign: "center", zIndex: 2, padding: "0 20px" }}>
@@ -710,7 +753,7 @@ const Shop = () => {
                     />
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                     <div>
                       <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>CATALOG STOCK COUNT</label>
                       <input 
@@ -732,15 +775,111 @@ const Shop = () => {
                         <option value="LIMITED DROP">LIMITED DROP</option>
                       </select>
                     </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>AWARD PHOTO / THUMBNAIL URL</label>
-                      <input 
-                        type="text" 
-                        placeholder="Paste image URL here..."
-                        value={awardImg}
-                        onChange={e => setAwardImg(e.target.value)}
-                        style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }}
-                      />
+                  </div>
+
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>UPLOAD PRODUCT IMAGE</label>
+                    <input 
+                      type="file" 
+                      ref={awardFileInputRef}
+                      accept=".jpg,.jpeg,.png,.webp"
+                      style={{ display: "none" }}
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          const file = e.target.files[0];
+                          if (file.size > 10 * 1024 * 1024) {
+                            showToast("Image size must be less than 10MB.");
+                            return;
+                          }
+                          const ext = file.name.split('.').pop().toLowerCase();
+                          if (!['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+                            showToast("Invalid image format. Allowed: JPG, JPEG, PNG, WEBP.");
+                            return;
+                          }
+                          setAwardImageFile(file);
+                          setAwardImagePreview(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                    
+                    <div
+                      onDragEnter={(e) => { e.preventDefault(); setDragActive(true); }}
+                      onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                      onDragLeave={(e) => { e.preventDefault(); setDragActive(false); }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setDragActive(false);
+                        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                          const file = e.dataTransfer.files[0];
+                          if (file.size > 10 * 1024 * 1024) {
+                            showToast("Image size must be less than 10MB.");
+                            return;
+                          }
+                          const ext = file.name.split('.').pop().toLowerCase();
+                          if (!['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+                            showToast("Invalid image format. Allowed: JPG, JPEG, PNG, WEBP.");
+                            return;
+                          }
+                          setAwardImageFile(file);
+                          setAwardImagePreview(URL.createObjectURL(file));
+                        }
+                      }}
+                      onClick={() => awardFileInputRef.current?.click()}
+                      style={{
+                        background: dragActive ? "rgba(255, 106, 0, 0.1)" : "rgba(255,255,255,0.02)",
+                        border: dragActive ? "2px dashed #FF6A00" : "1px dashed rgba(255,255,255,0.15)",
+                        borderRadius: "16px",
+                        padding: "30px 20px",
+                        textAlign: "center",
+                        cursor: "pointer",
+                        transition: "all 0.3s ease",
+                        position: "relative",
+                        overflow: "hidden"
+                      }}
+                    >
+                      {awardImagePreview ? (
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", position: "relative" }}>
+                          <img src={awardImagePreview} alt="Award Preview" style={{ maxWidth: "200px", maxHeight: "150px", borderRadius: "12px", objectFit: "cover", border: "1px solid rgba(255,255,255,0.1)" }} />
+                          <div style={{ fontSize: "12px", color: "white", fontWeight: "700" }}>{awardImageFile?.name}</div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setAwardImageFile(null);
+                              setAwardImagePreview("");
+                            }}
+                            style={{
+                              background: "rgba(239, 68, 68, 0.15)",
+                              border: "none",
+                              color: "#ef4444",
+                              padding: "6px 14px",
+                              borderRadius: "100px",
+                              fontSize: "11px",
+                              fontWeight: "900",
+                              textTransform: "uppercase",
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              transition: "all 0.2s"
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = "rgba(239, 68, 68, 0.3)"}
+                            onMouseLeave={e => e.currentTarget.style.background = "rgba(239, 68, 68, 0.15)"}
+                          >
+                            <Trash2 size={12} /> Remove Image
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+                          <UploadCloud size={36} color="#FF6A00" />
+                          <div style={{ fontSize: "13px", fontWeight: "800", color: "white" }}>
+                            DRAG & DROP IMAGE HERE OR <span style={{ color: "#FF6A00", textDecoration: "underline" }}>BROWSE</span>
+                          </div>
+                          <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)" }}>
+                            Supports JPG, JPEG, PNG, WEBP up to 10MB
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 

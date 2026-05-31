@@ -16,6 +16,7 @@ const ATHLETES = {
   "leo-vance": {
     name: "Leo Vance",
     username: "leo_vance_02",
+    memberNumber: "AWR-000245",
     rank: "02",
     img: "https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=700&q=80",
     cover: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1600&q=80",
@@ -46,6 +47,7 @@ const ATHLETES = {
   "jamal-carter": {
     name: "Jamal Carter",
     username: "jamal_sprinter",
+    memberNumber: "AWR-100001",
     rank: "01",
     img: "https://images.unsplash.com/photo-1594882645126-14020914d58d?auto=format&fit=crop&w=800&q=80",
     cover: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1600&q=80",
@@ -360,6 +362,28 @@ const Profile = () => {
                   {isOwnProfile ? `@${user.username || "athlete"}` : `@${athlete.username}`}
                 </span>
               </div>
+              
+              {(isOwnProfile ? user.memberNumber : athlete.memberNumber) && (
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,0.03)", padding: "4px 12px", borderRadius: "100px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <span style={{ fontSize: "9px", color: "#FF5500", fontWeight: "900", letterSpacing: "0.5px", textTransform: "uppercase" }}>MID:</span>
+                  <span style={{ fontSize: "11px", color: "#fff", fontWeight: "800", letterSpacing: "0.5px" }}>
+                    {isOwnProfile ? user.memberNumber : athlete.memberNumber}
+                  </span>
+                  <div style={{ display: "inline-flex", background: "rgba(34, 197, 94, 0.15)", borderRadius: "50%", padding: "2px", border: "1px solid rgba(34, 197, 94, 0.3)" }} title="Verified Member">
+                    <svg viewBox="0 0 24 24" width="10" height="10" stroke="#22c55e" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(isOwnProfile ? user.memberNumber : athlete.memberNumber);
+                      alert(`Member ID (${isOwnProfile ? user.memberNumber : athlete.memberNumber}) copied to clipboard!`);
+                    }}
+                    style={{ background: "none", border: "none", color: "#FF5500", padding: 0, margin: "0 0 0 4px", cursor: "pointer", display: "flex", alignItems: "center" }}
+                    title="Copy Member Number"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  </button>
+                </div>
+              )}
             </div>
 
             <h1 style={{ 

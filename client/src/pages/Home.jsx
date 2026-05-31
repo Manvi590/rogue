@@ -242,6 +242,26 @@ const AnimatedStat = ({ end, suffix, duration = 2000 }) => {
    MAIN COMPONENT
 ───────────────────────────────────────────────────────── */
 
+const STATIC_NEWEST = [
+  { img: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80", cat: "ATHLETICS", title: "Most Basketball Three-Pointers in 1 Minute", avatar: "https://randomuser.me/api/portraits/men/32.jpg", name: "James Carter", value: "42 Shots" },
+  { img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80", cat: "FITNESS", title: "Fastest 100m Sand Sprint", avatar: "https://randomuser.me/api/portraits/women/44.jpg", name: "Elena Petrov", value: "11.2 Sec", slug: "sprinting" },
+  { img: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=600&q=80", cat: "STRENGTH", title: "Most Consecutive Pull-Ups", avatar: "https://randomuser.me/api/portraits/men/85.jpg", name: "Marcus S.", value: "89 Reps" },
+  { img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=600&q=80", cat: "ENDURANCE", title: "Longest Plank Hold (Under 18)", avatar: "https://randomuser.me/api/portraits/men/12.jpg", name: "Leo Rossi", value: "1h 12m", slug: "plank-holds" },
+  { img: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=600&q=80", cat: "GAMING", title: "Highest Score in Retro Tetris", avatar: "https://randomuser.me/api/portraits/women/15.jpg", name: "Sarah Kim", value: "999,999" },
+  { img: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=600&q=80", cat: "ACTION", title: "Fastest 360 Flip on Skateboard", avatar: "https://randomuser.me/api/portraits/men/45.jpg", name: "Ryan G.", value: "0.8 Sec" },
+  { img: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80", cat: "REACTION", title: "Fastest Light Button Hits", avatar: "https://randomuser.me/api/portraits/women/22.jpg", name: "Mina Chen", value: "24 Hits/s" },
+  { img: "https://images.unsplash.com/photo-1591123720164-de1348028a82?auto=format&fit=crop&w=600&q=80", cat: "MIND", title: "Blindfolded Rubik's Solve", avatar: "https://randomuser.me/api/portraits/men/76.jpg", name: "David Lu", value: "14.5 Sec", slug: "rubik-s-cube" },
+  { img: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=600&q=80", cat: "SPEED", title: "Fastest 50m Crawl", avatar: "https://randomuser.me/api/portraits/women/67.jpg", name: "Alice B.", value: "9.8 Sec" }
+];
+
+const STATIC_FEATURED = [
+  { img: "https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=700&q=80", badge: "Strength", name: "Leo Vance", records: "4", rank: 2, slug: "deadlifts" },
+  { img: "https://images.unsplash.com/photo-1594882645126-14020914d58d?auto=format&fit=crop&w=800&q=80", badge: "Speed", name: "Jamal Carter", records: "7", rank: 1, slug: "sprinting" },
+  { img: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=700&q=80", badge: "Endurance", name: "Elena Petrov", records: "2", rank: 4, slug: "plank-holds" },
+  { img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=700&q=80", badge: "Gym", name: "Iron K.", records: "5", rank: 3, slug: "bench-press" },
+  { img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=700&q=80", badge: "Track", name: "Marcus S.", records: "3", rank: 5, slug: "stair-climbing" }
+];
+
 const Home = () => {
   const navigate = useNavigate();
   const [showAllCats, setShowAllCats] = useState(false);
@@ -249,12 +269,82 @@ const Home = () => {
   const [homeSearchQuery, setHomeSearchQuery] = useState("");
   const [featuredStream, setFeaturedStream] = useState(null);
 
+  // Live homepage data from admin controls
+  const [newestRecords, setNewestRecords] = useState(STATIC_NEWEST);
+  const [featuredHolders, setFeaturedHolders] = useState(STATIC_FEATURED);
+  const [sidebarVideos, setSidebarVideos] = useState([
+    { time: "0:53", img: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=400&q=80" },
+    { time: "0:48", img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=400&q=80" },
+    { time: "0:47", img: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=400&q=80" },
+    { time: "0:46", img: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=400&q=80" },
+    { time: "0:45", img: "https://images.unsplash.com/photo-1591123720164-de1348028a82?auto=format&fit=crop&w=400&q=80" },
+    { time: "0:44", img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=400&q=80" }
+  ]);
+
   useEffect(() => {
+    // Fetch live homepage records from admin controls
+    const fetchHomepageData = async () => {
+      try {
+        const sections = await apiCall("/records/explore/homepage-sections", "GET");
+        if (sections) {
+          // Newest / Newly Verified records
+          const newlyVerified = sections.newly_verified || [];
+          const recentUploads = sections.recent_uploads || [];
+          const combinedNewest = [...newlyVerified, ...recentUploads];
+          if (combinedNewest.length > 0) {
+            setNewestRecords(combinedNewest.map((r, i) => ({
+              img: r.thumbnail_url || STATIC_NEWEST[i % STATIC_NEWEST.length]?.img || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80",
+              cat: (r.category || "RECORD").toUpperCase(),
+              title: r.title,
+              avatar: "https://ui-avatars.com/api/?name=" + encodeURIComponent(r.title) + "&background=FF6A00&color=fff",
+              name: "Verified Athlete",
+              value: `${r.value} ${r.unit}`,
+              slug: r.id
+            })));
+          }
+
+          // Featured + Top Ranked records
+          const featuredRecs = sections.featured || [];
+          const topRanked = sections.top_ranked || [];
+          const combinedFeatured = [...featuredRecs, ...topRanked];
+          if (combinedFeatured.length > 0) {
+            setFeaturedHolders(combinedFeatured.map((r, i) => ({
+              img: r.thumbnail_url || STATIC_FEATURED[i % STATIC_FEATURED.length]?.img || "https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=700&q=80",
+              badge: r.category || "Record",
+              name: r.title,
+              records: r.value + " " + r.unit,
+              rank: i + 1,
+              slug: r.id
+            })));
+          }
+        }
+      } catch (error) {
+        // Silently fall back to static data
+        console.log("Using static homepage data (admin controls not configured)");
+      }
+    };
+
+    // Fetch featured videos for sidebar
+    const fetchFeaturedVideos = async () => {
+      try {
+        const videos = await apiCall("/admin/videos/featured", "GET");
+        if (videos && videos.length > 0) {
+          setSidebarVideos(videos.slice(0, 6).map(v => ({
+            time: v.duration ? `${Math.floor(v.duration / 60)}:${String(v.duration % 60).padStart(2, '0')}` : "0:30",
+            img: v.thumbnail_url || "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=400&q=80",
+            videoUrl: v.video_url,
+            title: v.title
+          })));
+        }
+      } catch (error) {
+        // Use static sidebar videos
+      }
+    };
+
     const fetchFeaturedStream = async () => {
       try {
         const events = await apiCall("/events", "GET");
         if (events && events.length > 0) {
-          // Find first event that is live and featured
           const featured = events.find(e => e.isLive && e.isFeatured);
           const fallbackFeatured = featured || events.find(e => e.isFeatured);
           if (fallbackFeatured) {
@@ -265,6 +355,9 @@ const Home = () => {
         console.error("Failed to load featured stream on homepage:", error);
       }
     };
+
+    fetchHomepageData();
+    fetchFeaturedVideos();
     fetchFeaturedStream();
   }, []);
 
@@ -487,16 +580,9 @@ const Home = () => {
               </Link>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "15px", flex: 1 }}>
-              {[
-                { time: "0:53", img: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=400&q=80" },
-                { time: "0:48", img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=400&q=80" },
-                { time: "0:47", img: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=400&q=80" },
-                { time: "0:46", img: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=400&q=80" },
-                { time: "0:45", img: "https://images.unsplash.com/photo-1591123720164-de1348028a82?auto=format&fit=crop&w=400&q=80" },
-                { time: "0:44", img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=400&q=80" }
-              ].map((video, idx) => (
+              {sidebarVideos.map((video, idx) => (
                 <div key={idx} style={{ position: "relative", borderRadius: "12px", overflow: "hidden", height: "78px", boxShadow: "0 4px 12px rgba(0,0,0,0.15)", cursor: "pointer", flexShrink: 0 }}>
-                  <img src={video.img} alt="Live Stream" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  <img src={video.img} alt={video.title || "Live Stream"} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                   <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)" }} />
                   <div style={{ position: "absolute", bottom: "8px", left: "12px", color: "white", fontSize: "12px", fontWeight: "700" }}>{video.time}</div>
                   <Play style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", color: "#FF6A00", fill: "#FF6A00", width: 40, height: 40, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.4))" }} />
@@ -611,17 +697,7 @@ const Home = () => {
           <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "150px", background: "linear-gradient(to left, rgba(255,255,255,0.9) 0%, transparent 100%)", zIndex: 5, pointerEvents: "none" }} />
 
           <InfiniteSlider speed={40} gap={24} cardWidth="300px">
-            {[
-              { img: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80", cat: "ATHLETICS", title: "Most Basketball Three-Pointers in 1 Minute", avatar: "https://randomuser.me/api/portraits/men/32.jpg", name: "James Carter", value: "42 Shots" },
-              { img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80", cat: "FITNESS", title: "Fastest 100m Sand Sprint", avatar: "https://randomuser.me/api/portraits/women/44.jpg", name: "Elena Petrov", value: "11.2 Sec", slug: "sprinting" },
-              { img: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=600&q=80", cat: "STRENGTH", title: "Most Consecutive Pull-Ups", avatar: "https://randomuser.me/api/portraits/men/85.jpg", name: "Marcus S.", value: "89 Reps" },
-              { img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=600&q=80", cat: "ENDURANCE", title: "Longest Plank Hold (Under 18)", avatar: "https://randomuser.me/api/portraits/men/12.jpg", name: "Leo Rossi", value: "1h 12m", slug: "plank-holds" },
-              { img: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=600&q=80", cat: "GAMING", title: "Highest Score in Retro Tetris", avatar: "https://randomuser.me/api/portraits/women/15.jpg", name: "Sarah Kim", value: "999,999" },
-              { img: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=600&q=80", cat: "ACTION", title: "Fastest 360 Flip on Skateboard", avatar: "https://randomuser.me/api/portraits/men/45.jpg", name: "Ryan G.", value: "0.8 Sec" },
-              { img: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80", cat: "REACTION", title: "Fastest Light Button Hits", avatar: "https://randomuser.me/api/portraits/women/22.jpg", name: "Mina Chen", value: "24 Hits/s" },
-              { img: "https://images.unsplash.com/photo-1591123720164-de1348028a82?auto=format&fit=crop&w=600&q=80", cat: "MIND", title: "Blindfolded Rubik's Solve", avatar: "https://randomuser.me/api/portraits/men/76.jpg", name: "David Lu", value: "14.5 Sec", slug: "rubik-s-cube" },
-              { img: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=600&q=80", cat: "SPEED", title: "Fastest 50m Crawl", avatar: "https://randomuser.me/api/portraits/women/67.jpg", name: "Alice B.", value: "9.8 Sec" }
-            ].map((rec, idx) => (
+            {newestRecords.map((rec, idx) => (
               <NewestCard key={idx} {...rec} />
             ))}
           </InfiniteSlider>
@@ -723,11 +799,9 @@ const Home = () => {
         </div>
         <div className="slider-wrapper holders-slider-wrapper">
           <InfiniteSlider gap={20} speed={32} reverse={true} cardWidth="260px">
-            <HolderCard img="https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=700&q=80" badge="Strength" name="Leo Vance" records="4" rank={2} slug="deadlifts" />
-            <HolderCard img="https://images.unsplash.com/photo-1594882645126-14020914d58d?auto=format&fit=crop&w=800&q=80" badge="Speed" name="Jamal Carter" records="7" rank={1} slug="sprinting" />
-            <HolderCard img="https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=700&q=80" badge="Endurance" name="Elena Petrov" records="2" rank={4} slug="plank-holds" />
-            <HolderCard img="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=700&q=80" badge="Gym" name="Iron K." records="5" rank={3} slug="bench-press" />
-            <HolderCard img="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=700&q=80" badge="Track" name="Marcus S." records="3" rank={5} slug="stair-climbing" />
+            {featuredHolders.map((holder, idx) => (
+              <HolderCard key={idx} {...holder} />
+            ))}
           </InfiniteSlider>
         </div>
       </section>

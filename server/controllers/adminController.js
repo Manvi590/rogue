@@ -11,7 +11,7 @@ const getAllUsers = async (req, res) => {
   try {
     const { data: users, error } = await supabase
       .from('users')
-      .select('id, name, email, is_admin, profile_image, username, phone, gender, dob, weight, weight_unit, height, height_unit, country, city, created_at')
+      .select('id, name, email, is_admin, role, account_status, membership_type, profile_image, username, phone, gender, dob, weight, weight_unit, height, height_unit, country, city, street_address, apartment, state, zip_code, created_at, member_number')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -25,13 +25,27 @@ const getAllUsers = async (req, res) => {
 const updateUserByAdmin = async (req, res) => {
   const { name, email, is_admin, role, admin_notes, username, phone, gender, dob, weight, weight_unit, height, height_unit, country, city } = req.body;
   try {
+    // Fetch current user details to preserve values if not explicitly provided
+    const { data: currentUser } = await supabase
+      .from('users')
+      .select('is_admin, role, account_status, membership_type')
+      .eq('id', req.params.id)
+      .single();
+
+    const finalRole = role !== undefined ? role : (currentUser?.role || 'athlete');
+    const finalIsAdmin = role !== undefined ? (role === 'system_admin') : (is_admin !== undefined ? !!is_admin : !!currentUser?.is_admin);
+    const finalAccountStatus = req.body.account_status !== undefined ? req.body.account_status : (currentUser?.account_status || 'active');
+    const finalMembershipType = req.body.membership_type !== undefined ? req.body.membership_type : (currentUser?.membership_type || 'free_athlete');
+
     const { data: updatedUser, error } = await supabase
       .from('users')
       .update({
         name,
         email,
-        is_admin: !!is_admin,
-        role,
+        is_admin: finalIsAdmin,
+        role: finalRole,
+        account_status: finalAccountStatus,
+        membership_type: finalMembershipType,
         admin_notes,
         username,
         phone,
@@ -46,7 +60,7 @@ const updateUserByAdmin = async (req, res) => {
         updated_at: new Date()
       })
       .eq('id', req.params.id)
-      .select('id, name, email, is_admin, role, admin_notes, username, phone, gender, dob, weight, height, country, city')
+      .select('id, name, email, is_admin, role, account_status, admin_notes, username, phone, gender, dob, weight, height, country, city, member_number')
       .single();
 
     if (error) throw error;
@@ -188,12 +202,24 @@ const getAllEventsByAdmin = async (req, res) => {
 // @route   POST /api/admin/events
 // @access  Private/Admin
 const createEventByAdmin = async (req, res) => {
-  const { title, description, date, location, imageUrl } = req.body;
+  const { title, description, date, location, imageUrl, videoUrl, ticketLink, sponsors, rules, status, category } = req.body;
   try {
     const { data: createdEvent, error } = await supabase
       .from('events')
       .insert([
-        { title, description, date, location, image_url: imageUrl }
+        { 
+          title, 
+          description, 
+          date, 
+          location, 
+          image_url: imageUrl,
+          video_url: videoUrl || '',
+          ticket_link: ticketLink || '',
+          sponsors: sponsors || '',
+          rules: rules || '',
+          status: status || 'upcoming',
+          category: category || 'WORLD RECORD'
+        }
       ])
       .select()
       .single();
@@ -209,7 +235,7 @@ const createEventByAdmin = async (req, res) => {
 // @route   PUT /api/admin/events/:id
 // @access  Private/Admin
 const updateEventByAdmin = async (req, res) => {
-  const { title, description, date, location, imageUrl } = req.body;
+  const { title, description, date, location, imageUrl, videoUrl, ticketLink, sponsors, rules, status, category } = req.body;
   try {
     const { data: updatedEvent, error } = await supabase
       .from('events')
@@ -219,6 +245,12 @@ const updateEventByAdmin = async (req, res) => {
         date,
         location,
         image_url: imageUrl,
+        video_url: videoUrl,
+        ticket_link: ticketLink,
+        sponsors: sponsors,
+        rules: rules,
+        status: status,
+        category: category,
         updated_at: new Date()
       })
       .eq('id', req.params.id)
@@ -610,12 +642,46 @@ const getPaymentsLedger = async (req, res) => {
       });
     });
 
+    // 5. Fetch Manual Revenues
+    let manualRevenues = [];
+    try {
+      const { data: manualData, error: manualError } = await supabase
+        .from('manual_revenues')
+        .select('*');
+      if (!manualError && manualData) {
+        manualRevenues = manualData;
+      } else {
+        manualRevenues = global.inMemoryManualRevenues || [];
+      }
+    } catch (err) {
+      manualRevenues = global.inMemoryManualRevenues || [];
+    }
+
+    const manualItems = manualRevenues.map(r => ({
+      id: r.transaction_id || `TXN-MAN-${r.id.substring(0, 8).toUpperCase()}`,
+      customerName: r.customer_name || 'Manual Customer',
+      customerEmail: r.customer_email || '',
+      paymentType: 'manual',
+      amount: parseFloat(r.amount) || 0.00,
+      status: 'paid',
+      referenceId: r.id,
+      createdAt: r.date_received || r.created_at || new Date().toISOString(),
+      category: r.category,
+      notes: r.notes,
+      orderNumber: r.order_number,
+      memberNumber: r.member_number,
+      receiptUrl: r.receipt_url,
+      title: r.title,
+      paymentMethod: r.payment_method
+    }));
+
     // Merge and sort
     const allPayments = [
       ...shopItems,
       ...membershipItems,
       ...ticketItems,
-      ...feeItems
+      ...feeItems,
+      ...manualItems
     ];
 
     allPayments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -640,6 +706,17 @@ const getPaymentsLedger = async (req, res) => {
         else if (p.paymentType === 'ticket') ticketRevenue += amt;
         else if (p.paymentType === 'submission') submissionRevenue += amt;
         else if (p.paymentType === 'challenge') challengeRevenue += amt;
+        else if (p.paymentType === 'manual') {
+          const cat = String(p.category || '').toLowerCase();
+          if (cat.includes('membership')) membershipRevenue += amt;
+          else if (cat.includes('product') || cat.includes('sale') || cat.includes('shop') || cat.includes('merchandise')) shopRevenue += amt;
+          else if (cat.includes('ticket')) ticketRevenue += amt;
+          else if (cat.includes('submission')) submissionRevenue += amt;
+          else if (cat.includes('challenge')) challengeRevenue += amt;
+          else {
+            shopRevenue += amt; // Fallback to shop sales / general product revenue
+          }
+        }
       } else if (p.status === 'refunded') {
         refundRevenue += amt;
       } else if (p.status === 'failed') {
@@ -773,6 +850,124 @@ const updatePaymentStatus = async (req, res) => {
     res.status(400).json({ message: 'Invalid paymentType' });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+// @desc    Create a manual revenue entry
+// @route   POST /api/admin/payments/create
+// @access  Private/Admin
+const createManualRevenue = async (req, res) => {
+  const {
+    title,
+    category,
+    amount,
+    dateReceived,
+    paymentMethod,
+    customerName,
+    memberNumber,
+    customerEmail,
+    transactionId,
+    orderNumber,
+    notes,
+    receiptUrl
+  } = req.body;
+
+  // Validation so the form cannot be submitted with missing required fields
+  if (!title || !category || amount === undefined || amount === null || !paymentMethod || !customerName || !customerEmail) {
+    return res.status(400).json({ message: "Revenue entry could not be saved. Please check the required fields." });
+  }
+
+  const numericAmount = parseFloat(amount);
+  if (isNaN(numericAmount) || numericAmount < 0) {
+    return res.status(400).json({ message: "Revenue entry could not be saved. Amount must be a valid non-negative number." });
+  }
+
+  const payload = {
+    title,
+    category,
+    amount: numericAmount,
+    date_received: dateReceived ? new Date(dateReceived).toISOString() : new Date().toISOString(),
+    payment_method: paymentMethod,
+    customer_name: customerName,
+    member_number: memberNumber || null,
+    customer_email: customerEmail,
+    transaction_id: transactionId || null,
+    order_number: orderNumber || null,
+    notes: notes || null,
+    receipt_url: receiptUrl || null
+  };
+
+  try {
+    // Save the full revenue entry to the database (manual_revenues table)
+    const { data, error } = await supabase
+      .from('manual_revenues')
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Synchronize global in-memory backup
+    global.inMemoryManualRevenues = global.inMemoryManualRevenues || [];
+    global.inMemoryManualRevenues.push(data);
+
+    // Add activity log to audit_logs
+    try {
+      await supabase.from("audit_logs").insert({
+        actor_id: req.user ? req.user.id : null,
+        action_type: "create_manual_revenue",
+        metadata: {
+          title,
+          category,
+          amount: numericAmount,
+          customer_name: customerName,
+          customer_email: customerEmail,
+          transaction_id: transactionId || null
+        }
+      });
+    } catch (auditErr) {
+      console.error("Failed to write to audit_logs:", auditErr.message);
+    }
+
+    return res.status(201).json({
+      message: "Revenue entry added successfully.",
+      data
+    });
+  } catch (err) {
+    console.error("Database save failed, using memory fallback:", err.message);
+    
+    // In memory fallback if database table not available or fails
+    const fallbackId = `manual-${Math.random().toString(36).substr(2, 9)}`;
+    const fallbackRecord = {
+      id: fallbackId,
+      ...payload,
+      created_at: new Date().toISOString()
+    };
+
+    global.inMemoryManualRevenues = global.inMemoryManualRevenues || [];
+    global.inMemoryManualRevenues.push(fallbackRecord);
+
+    // Attempt to add activity log even during fallback
+    try {
+      await supabase.from("audit_logs").insert({
+        actor_id: req.user ? req.user.id : null,
+        action_type: "create_manual_revenue_fallback",
+        metadata: {
+          title,
+          category,
+          amount: numericAmount,
+          customer_name: customerName,
+          customer_email: customerEmail
+        }
+      });
+    } catch (auditErr) {
+      // ignore
+    }
+
+    return res.status(201).json({
+      message: "Revenue entry added successfully.",
+      data: fallbackRecord
+    });
   }
 };
 
@@ -1054,6 +1249,134 @@ const updateJudgeNotes = async (req, res) => {
   }
 };
 
+// ==========================================
+// 🖼️ PRODUCT IMAGE UPLOAD
+// ==========================================
+
+// @desc    Upload product image from admin's computer
+// @route   POST /api/admin/products/:id/image
+// @access  Private/Admin
+const uploadProductImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No image file provided' });
+    }
+
+    const productId = req.params.id;
+    const baseUrl = process.env.API_BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const imageUrl = `${baseUrl}/uploads/images/${req.file.filename}`;
+
+    // Update the product's image_url in the database
+    const { data: updatedProduct, error } = await supabase
+      .from('products')
+      .update({
+        image_url: imageUrl,
+        image_path: req.file.path,
+        updated_at: new Date()
+      })
+      .eq('id', productId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.status(200).json({
+      message: 'Product image uploaded successfully.',
+      imageUrl,
+      product: updatedProduct
+    });
+  } catch (error) {
+    console.error('Product image upload error:', error);
+    res.status(500).json({ message: 'Image upload failed. Please try again.' });
+  }
+};
+
+// ==========================================
+// 🏠 HOMEPAGE RECORDS CONTROL
+// ==========================================
+
+// @desc    Get all verified records grouped by homepage section
+// @route   GET /api/admin/homepage/records
+// @access  Private/Admin
+const getHomepageRecords = async (req, res) => {
+  try {
+    const { data: allVerified, error } = await supabase
+      .from('records')
+      .select('id, title, category, value, unit, thumbnail_url, evidence_url, homepage_section, homepage_order, created_at, user_id, status')
+      .eq('status', 'verified')
+      .order('homepage_order', { ascending: true });
+
+    if (error) throw error;
+
+    const sections = {
+      featured: [],
+      newly_verified: [],
+      recent_uploads: [],
+      top_ranked: [],
+      unassigned: []
+    };
+
+    (allVerified || []).forEach(r => {
+      if (r.homepage_section && sections[r.homepage_section]) {
+        sections[r.homepage_section].push(r);
+      } else {
+        sections.unassigned.push(r);
+      }
+    });
+
+    res.json(sections);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Set a verified record's homepage section
+// @route   PUT /api/admin/records/:id/homepage
+// @access  Private/Admin
+const updateRecordHomepageSection = async (req, res) => {
+  const { homepageSection, homepageOrder } = req.body;
+  try {
+    const { data: updatedRecord, error } = await supabase
+      .from('records')
+      .update({
+        homepage_section: homepageSection || null,
+        homepage_order: parseInt(homepageOrder) || 0,
+        updated_at: new Date()
+      })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(updatedRecord);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Remove a verified record from homepage
+// @route   DELETE /api/admin/records/:id/homepage
+// @access  Private/Admin
+const removeRecordFromHomepage = async (req, res) => {
+  try {
+    const { data: updatedRecord, error } = await supabase
+      .from('records')
+      .update({
+        homepage_section: null,
+        homepage_order: 0,
+        updated_at: new Date()
+      })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ message: 'Record removed from homepage', record: updatedRecord });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   // Users
   getAllUsers,
@@ -1073,6 +1396,8 @@ module.exports = {
   createProductByAdmin,
   updateProductByAdmin,
   deleteProductByAdmin,
+  // Product Image Upload
+  uploadProductImage,
   // Contacts
   getAllInquiries,
   deleteInquiry,
@@ -1084,6 +1409,7 @@ module.exports = {
   // Dynamic Payments Oversight
   getPaymentsLedger,
   updatePaymentStatus,
+  createManualRevenue,
   // Success Messages Manager
   updateSuccessMessages,
   // Adjudicator Management
@@ -1092,6 +1418,10 @@ module.exports = {
   submitJudgeDecision,
   approveFinalDecision,
   revertJudgeDecision,
-  updateJudgeNotes
+  updateJudgeNotes,
+  // Homepage Control
+  getHomepageRecords,
+  updateRecordHomepageSection,
+  removeRecordFromHomepage
 };
 

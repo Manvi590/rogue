@@ -1,0 +1,8 @@
+Step 1: Add import after line 15
+import AdminRankingPanel from "../components/AdminRankingPanel";
+
+Step 2: Find where rankings conditional should go (around line 520-530)
+Look for: } else if (activeTab === "coupons") {
+Add after coupons section: } else if (activeTab === "rankings") { ... }
+
+Step 3: Add rankings render in the main content area

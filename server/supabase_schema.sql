@@ -29,6 +29,9 @@ CREATE TABLE IF NOT EXISTS records (
   venue_name TEXT,
   city TEXT,
   witnesses JSONB DEFAULT '[]',
+  video_type TEXT CHECK (video_type IN ('upload', 'youtube')),
+  is_featured BOOLEAN DEFAULT FALSE,
+  video_url TEXT,
   record_type TEXT DEFAULT 'standard',
   date_set TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -150,6 +153,8 @@ CREATE TABLE IF NOT EXISTS categories (
   order_num INTEGER DEFAULT 0,
   active BOOLEAN DEFAULT TRUE,
   is_default BOOLEAN DEFAULT FALSE,
+  rules TEXT DEFAULT '',
+  submission_requirements TEXT DEFAULT '',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -478,6 +483,24 @@ CREATE TABLE IF NOT EXISTS page_content (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- FAQs Table (Frequently Asked Questions)
+CREATE TABLE IF NOT EXISTS faqs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  question TEXT NOT NULL,
+  answer TEXT NOT NULL,
+  order_index INTEGER DEFAULT 0,
+  is_published BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Homepage Settings Table
+CREATE TABLE IF NOT EXISTS homepage_settings (
+  section TEXT PRIMARY KEY,
+  config JSONB NOT NULL DEFAULT '{}',
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Certificates Table (Certificate & Award Management)
 CREATE TABLE IF NOT EXISTS certificates (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -496,6 +519,8 @@ ALTER TABLE reports DISABLE ROW LEVEL SECURITY;
 ALTER TABLE bans DISABLE ROW LEVEL SECURITY;
 ALTER TABLE media_assets DISABLE ROW LEVEL SECURITY;
 ALTER TABLE page_content DISABLE ROW LEVEL SECURITY;
+ALTER TABLE faqs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE homepage_settings DISABLE ROW LEVEL SECURITY;
 ALTER TABLE certificates DISABLE ROW LEVEL SECURITY;
 
 -- ==========================================
@@ -538,13 +563,20 @@ CREATE TABLE IF NOT EXISTS api_keys (
 CREATE TABLE IF NOT EXISTS sponsors (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   company_name TEXT NOT NULL,
+  logo_url TEXT,
   banner_url TEXT,
-  placement TEXT CHECK (placement IN ('homepage', 'livestream', 'shop', 'footer')),
+  placement TEXT CHECK (placement IN ('homepage', 'livestream', 'shop', 'footer', 'homepage_top_banner', 'homepage_sidebar', 'live_event', 'featured', 'footer_sponsor', 'video_overlay')),
   link_url TEXT,
+  package_type TEXT DEFAULT 'standard',
+  start_date DATE,
+  end_date DATE,
+  description TEXT,
+  notes TEXT,
   views_count INTEGER DEFAULT 0,
   clicks_count INTEGER DEFAULT 0,
   active_status BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Subscriptions (Subscription & Billing Controls)
@@ -575,3 +607,100 @@ ALTER TABLE api_keys DISABLE ROW LEVEL SECURITY;
 ALTER TABLE sponsors DISABLE ROW LEVEL SECURITY;
 ALTER TABLE subscriptions DISABLE ROW LEVEL SECURITY;
 ALTER TABLE vip_competitors DISABLE ROW LEVEL SECURITY;
+
+-- ========================================================
+-- 25. Homepage Section Controls for Records
+-- ========================================================
+ALTER TABLE records ADD COLUMN IF NOT EXISTS homepage_section TEXT CHECK (
+  homepage_section IN ('featured', 'newly_verified', 'recent_uploads', 'top_ranked') OR homepage_section IS NULL
+);
+ALTER TABLE records ADD COLUMN IF NOT EXISTS homepage_order INTEGER DEFAULT 0;
+
+CREATE INDEX IF NOT EXISTS idx_records_homepage_section ON records(homepage_section);
+
+-- ========================================================
+-- 26. Sponsor Extended Fields for Sponsorship Management
+-- ========================================================
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS start_date TIMESTAMP WITH TIME ZONE;
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS end_date TIMESTAMP WITH TIME ZONE;
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+
+-- ========================================================
+-- 27. Videos Homepage Flags (Featured / Newly Uploaded)
+-- ========================================================
+ALTER TABLE videos ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT FALSE;
+ALTER TABLE videos ADD COLUMN IF NOT EXISTS is_newly_uploaded BOOLEAN DEFAULT FALSE;
+ALTER TABLE videos ADD COLUMN IF NOT EXISTS category TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_videos_is_featured ON videos(is_featured);
+CREATE INDEX IF NOT EXISTS idx_videos_is_newly_uploaded ON videos(is_newly_uploaded);
+
+-- ========================================================
+-- 28. Products Image Upload Path Storage
+-- ========================================================
+ALTER TABLE products ADD COLUMN IF NOT EXISTS image_path TEXT;
+
+-- ========================================================
+-- 29. Users Home Address Persistent Fields
+-- ========================================================
+ALTER TABLE users ADD COLUMN IF NOT EXISTS street_address TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS apartment TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS state TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS zip_code TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS member_number TEXT UNIQUE;
+
+-- ========================================================
+-- 30. Events Detailed Pages & Countdown Fields
+-- ========================================================
+ALTER TABLE events ADD COLUMN IF NOT EXISTS video_url TEXT;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS ticket_link TEXT;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS sponsors TEXT;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS rules TEXT;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'upcoming';
+ALTER TABLE events ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'WORLD RECORD';
+
+-- ========================================================
+-- 31. Manual Revenues Table for Financial Oversight Page
+-- ========================================================
+CREATE TABLE IF NOT EXISTS manual_revenues (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  category TEXT NOT NULL,
+  amount NUMERIC(10, 2) NOT NULL,
+  date_received TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+  payment_method TEXT NOT NULL,
+  customer_name TEXT NOT NULL,
+  member_number TEXT,
+  customer_email TEXT NOT NULL,
+  transaction_id TEXT,
+  order_number TEXT,
+  notes TEXT,
+  receipt_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- ========================================================
+-- 32. Appeals Table
+-- ========================================================
+CREATE TABLE IF NOT EXISTS appeals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  record_id UUID REFERENCES records(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  appeal_reason TEXT NOT NULL,
+  evidence_files JSONB DEFAULT '[]',
+  status TEXT DEFAULT 'Pending' CHECK (status IN ('Pending', 'Under Review', 'Awaiting Evidence', 'Approved', 'Denied', 'Closed', 'Escalated')),
+  admin_notes TEXT,
+  resolution_history JSONB DEFAULT '[]',
+  priority TEXT DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+  reviewed_at TIMESTAMP WITH TIME ZONE,
+  resolved_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX IF NOT EXISTS idx_appeals_record_id ON appeals(record_id);
+CREATE INDEX IF NOT EXISTS idx_appeals_user_id ON appeals(user_id);
+CREATE INDEX IF NOT EXISTS idx_appeals_status ON appeals(status);
+
+ALTER TABLE appeals DISABLE ROW LEVEL SECURITY;

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, ArrowLeft, Play, Lock, Unlock, CheckCircle2 } from "lucide-react";
+import { ArrowRight, ArrowLeft, Play, Lock, Unlock, CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -113,6 +113,15 @@ const Challenges = () => {
   const [hasWatched, setHasWatched] = useState(false);
   const [selectedAttempt, setSelectedAttempt] = useState(null);
   const [showAllAttempts, setShowAllAttempts] = useState(false);
+
+  const challengeScrollRef = useRef(null);
+
+  const scrollChallengeAttempts = (direction) => {
+    if (challengeScrollRef.current) {
+      const scrollAmount = 300;
+      challengeScrollRef.current.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   useEffect(() => {
     if (selectedChallenge || selectedAttempt || showAllAttempts) {
@@ -531,9 +540,7 @@ const Challenges = () => {
                     </div>
                   </div>
                 </div>
-            </div>
-
-            {/* ATTEMPT HISTORY SECTION */}
+            </div>            {/* ATTEMPT HISTORY SECTION */}
             <div style={{ background: "#080808", borderTop: "1px solid rgba(255,255,255,0.05)", padding: "24px 40px", flexShrink: 0 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "16px" }}>
                 <div>
@@ -548,75 +555,174 @@ const Challenges = () => {
                 </button>
               </div>
 
-              <div className="attempt-history-scroll" style={{ 
-                display: "flex", 
-                gap: "16px", 
-                overflowX: "auto", 
-                paddingBottom: "8px",
-                msOverflowStyle: "none", 
-                scrollbarWidth: "none"
-              }}>
+              <div className="attempt-history-container">
                 <style>{`
                   .attempt-history-scroll::-webkit-scrollbar {
                     display: none;
                   }
+                  .attempt-history-scroll {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                  }
+                  .attempt-history-container {
+                    position: relative;
+                    padding: 0 44px;
+                    transition: padding 0.3s ease;
+                  }
+                  .attempt-nav-btn {
+                    position: absolute;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    background: rgba(0, 0, 0, 0.75);
+                    border: 1px solid rgba(255, 106, 0, 0.3);
+                    color: white;
+                    border-radius: 50%;
+                    width: 38px;
+                    height: 38px;
+                    display: flex;
+                    alignItems: center;
+                    justifyContent: center;
+                    cursor: pointer;
+                    zIndex: 2;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                    transition: all 0.2s ease-in-out;
+                  }
+                  .attempt-nav-btn:hover {
+                    transform: translateY(-50%) scale(1.1);
+                    border-color: #FF6A00;
+                    box-shadow: 0 0 12px rgba(255, 106, 0, 0.5);
+                  }
+                  .attempt-nav-btn:active {
+                    transform: translateY(-50%) scale(0.95);
+                  }
+                  .attempt-nav-btn.left {
+                    left: 0;
+                  }
+                  .attempt-nav-btn.right {
+                    right: 0;
+                  }
+
+                  @media (max-width: 768px) {
+                    .attempt-history-container {
+                      padding: 0 32px;
+                    }
+                    .attempt-nav-btn {
+                      width: 32px;
+                      height: 32px;
+                    }
+                  }
+                  @media (max-width: 480px) {
+                    .attempt-history-container {
+                      padding: 0 24px;
+                    }
+                    .attempt-nav-btn {
+                      width: 28px;
+                      height: 28px;
+                    }
+                  }
                 `}</style>
-                
-                {getMockAttempts(selectedChallenge).map(attempt => (
-                    <div key={attempt.id} 
-                      onClick={(e) => { e.stopPropagation(); setSelectedAttempt(attempt); }}
-                      style={{ 
-                      flex: "0 0 200px", 
-                      width: "200px",
-                      background: "#161616", 
-                      borderRadius: "12px", 
-                      overflow: "hidden", 
-                      border: attempt.status === "CURRENT RECORD" ? "1px solid #10B981" : "1px solid rgba(255,255,255,0.05)",
-                      cursor: "pointer",
-                      transition: "transform 0.2s, box-shadow 0.2s"
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-4px)";
-                      e.currentTarget.style.boxShadow = "0 10px 20px rgba(0,0,0,0.4)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "none";
-                    }}
-                    >
-                    {/* Thumbnail */}
-                    <div style={{ position: "relative", height: "100px" }}>
-                      <img src={attempt.img} alt={attempt.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.2)" }}>
-                          <Play fill="white" size={12} />
+
+                {/* Left Navigation Arrow */}
+                <button 
+                  type="button"
+                  onClick={() => scrollChallengeAttempts('left')}
+                  className="attempt-nav-btn left"
+                  aria-label="Previous Attempt"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+
+                {/* Right Navigation Arrow */}
+                <button 
+                  type="button"
+                  onClick={() => scrollChallengeAttempts('right')}
+                  className="attempt-nav-btn right"
+                  aria-label="Next Attempt"
+                >
+                  <ChevronRight size={20} />
+                </button>
+
+                {/* Attempt horizontal scroll list */}
+                <div 
+                  ref={challengeScrollRef}
+                  className="attempt-history-scroll" 
+                  style={{ 
+                    display: "flex", 
+                    gap: "16px", 
+                    overflowX: "auto", 
+                    paddingBottom: "12px",
+                    scrollBehavior: "smooth",
+                    WebkitOverflowScrolling: "touch"
+                  }}
+                >
+                  
+                  {getMockAttempts(selectedChallenge).map(attempt => {
+                    const isSelected = selectedAttempt?.id === attempt.id;
+                    return (
+                      <div key={attempt.id} 
+                        onClick={(e) => { e.stopPropagation(); setSelectedAttempt(attempt); }}
+                        style={{ 
+                          flex: "0 0 200px", 
+                          width: "200px",
+                          background: "#161616", 
+                          borderRadius: "12px", 
+                          overflow: "hidden", 
+                          border: isSelected ? "2px solid #FF6A00" : (attempt.status === "CURRENT RECORD" ? "1px solid #10B981" : "1px solid rgba(255,255,255,0.05)"),
+                          boxShadow: isSelected ? "0 0 15px rgba(255,106,0,0.3)" : "none",
+                          transform: isSelected ? "translateY(-2px)" : "translateY(0)",
+                          cursor: "pointer",
+                          transition: "all 0.25s ease"
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isSelected) {
+                            e.currentTarget.style.transform = "translateY(-4px)";
+                            e.currentTarget.style.borderColor = "rgba(255, 106, 0, 0.4)";
+                            e.currentTarget.style.boxShadow = "0 8px 16px rgba(0,0,0,0.4)";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSelected) {
+                            e.currentTarget.style.transform = "translateY(0)";
+                            e.currentTarget.style.borderColor = attempt.status === "CURRENT RECORD" ? "#10B981" : "rgba(255,255,255,0.05)";
+                            e.currentTarget.style.boxShadow = "none";
+                          }
+                        }}
+                      >
+                        {/* Thumbnail */}
+                        <div style={{ position: "relative", height: "100px" }}>
+                          <img src={attempt.img} alt={attempt.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.2)" }}>
+                              <Play fill="white" size={12} />
+                            </div>
+                          </div>
+                          <div style={{ position: "absolute", bottom: "6px", right: "6px", background: "rgba(0,0,0,0.8)", padding: "2px 6px", borderRadius: "4px", fontSize: "9px", fontWeight: "700" }}>
+                            0:00
+                          </div>
+                        </div>
+                        
+                        {/* Info */}
+                        <div style={{ padding: "12px" }}>
+                          <div style={{ fontSize: "12px", fontWeight: "800", marginBottom: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textTransform: "uppercase" }}>{attempt.name}</div>
+                          <div style={{ fontSize: "11px", color: "#FF6A00", fontWeight: "700", marginBottom: "10px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{attempt.value}</div>
+                          
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
+                            <div style={{ fontSize: "9px", color: "rgba(255,255,255,0.4)", fontWeight: "600" }}>{attempt.date}</div>
+                            <div style={{ fontSize: "8px", fontWeight: "900", padding: "3px 6px", borderRadius: "4px", background: attempt.bg, color: attempt.color, textTransform: "uppercase" }}>
+                              {attempt.status}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div style={{ position: "absolute", bottom: "6px", right: "6px", background: "rgba(0,0,0,0.8)", padding: "2px 6px", borderRadius: "4px", fontSize: "9px", fontWeight: "700" }}>
-                        0:00
-                      </div>
-                    </div>
-                    
-                    {/* Info */}
-                    <div style={{ padding: "12px" }}>
-                      <div style={{ fontSize: "12px", fontWeight: "800", marginBottom: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textTransform: "uppercase" }}>{attempt.name}</div>
-                      <div style={{ fontSize: "11px", color: "#FF6A00", fontWeight: "700", marginBottom: "10px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{attempt.value}</div>
-                      
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
-                        <div style={{ fontSize: "9px", color: "rgba(255,255,255,0.4)", fontWeight: "600" }}>{attempt.date}</div>
-                        <div style={{ fontSize: "8px", fontWeight: "900", padding: "3px 6px", borderRadius: "4px", background: attempt.bg, color: attempt.color, textTransform: "uppercase" }}>
-                          {attempt.status}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
 
             </div>
           </div>
-        )}
+        </div>
+      )}
 
         {/* ALL ATTEMPTS OVERLAY */}
         {showAllAttempts && selectedChallenge && (
