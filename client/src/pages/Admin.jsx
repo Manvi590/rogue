@@ -2324,6 +2324,25 @@ const Admin = () => {
                                 )}
                                 {r.status === "verified" && (
                                   <>
+                                    <button 
+                                      onClick={() => handleToggleFeatured(r.id, !r.is_featured)} 
+                                      style={{ 
+                                        background: r.is_featured ? "#FF5500" : "transparent", 
+                                        border: r.is_featured ? "none" : "1px solid rgba(255,255,255,0.2)", 
+                                        color: "white", 
+                                        padding: "6px 12px", 
+                                        borderRadius: "6px", 
+                                        cursor: "pointer", 
+                                        fontSize: "11px", 
+                                        fontWeight: "900",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "4px"
+                                      }}
+                                    >
+                                      <Star size={12} fill={r.is_featured ? "white" : "none"} />
+                                      {r.is_featured ? 'Featured' : 'Feature'}
+                                    </button>
                                     <button onClick={() => handleOpenRecordDetailModal(r)} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "11px", fontWeight: "800" }}>View Details</button>
                                   </>
                                 )}
