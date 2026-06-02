@@ -20,8 +20,7 @@ export default function InfiniteSlider({ children, gap = 32, speed = 40, reverse
           display: 'flex', 
           gap: `${gap}px`,
           width: 'max-content',
-          animation: `scroll-${loopWidth} ${speed}s linear infinite`,
-          animationDirection: reverse ? 'reverse' : 'normal'
+          animation: `scroll-${loopWidth} ${speed}s linear infinite ${reverse ? 'reverse' : 'normal'}`
         }}
       >
         {duplicatedChildren.map((child, index) => (
