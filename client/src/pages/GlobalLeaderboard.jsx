@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
+import PageNav from "../components/PageNav";
 import Footer from "../components/Footer";
 import ScrollReveal from "../components/ScrollReveal";
 import { motion } from "framer-motion";
@@ -107,6 +108,7 @@ const GlobalLeaderboard = () => {
     <PageTransition>
       <div style={{ background: "#050505", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
         <Navbar />
+
 
         {/* HERO SECTION - GLOBAL VIBE */}
         <section style={{ padding: "180px 5% 100px", position: "relative", overflow: "hidden", textAlign: "center" }}>
@@ -265,7 +267,7 @@ const GlobalLeaderboard = () => {
                     <div 
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/profile/${r.profileId}`);
+                        if (r.profileId) navigate(`/profile/${r.profileId}`);
                       }}
                       style={{ display: "flex", alignItems: "center", gap: "16px", cursor: "pointer" }}
                       onMouseEnter={(e) => {

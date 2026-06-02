@@ -3,8 +3,10 @@ import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Trophy, Calendar, MapPin, User, ShieldCheck, Share2, Play, ChevronLeft, ChevronRight } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
+import PageNav from "../components/PageNav";
 import Footer from "../components/Footer";
 import ScrollReveal from "../components/ScrollReveal";
+import { apiCall, formatProductImage, API_URL } from "../utils/api";
 
 const RecordDetail = () => {
   const { id } = useParams();
@@ -12,6 +14,7 @@ const RecordDetail = () => {
   const [isPlayingMain, setIsPlayingMain] = useState(false);
   const [showAllAttempts, setShowAllAttempts] = useState(false);
   const scrollRef = useRef(null);
+  const videoPlayerRef = useRef(null);
 
   const scrollAttempts = (direction) => {
     if (scrollRef.current) {
@@ -25,6 +28,15 @@ const RecordDetail = () => {
     window.scrollTo(0, 0);
   }, [id]);
 
+  // Scroll video player into view when playing
+  useEffect(() => {
+    if (isPlayingMain && videoPlayerRef.current) {
+      setTimeout(() => {
+        videoPlayerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  }, [isPlayingMain]);
+
   useEffect(() => {
     if (showAllAttempts) {
       document.body.style.overflow = "hidden";
@@ -36,110 +48,65 @@ const RecordDetail = () => {
     };
   }, [showAllAttempts]);
 
-  // Dynamic slug mapping for nice and realistic record data
-  const getRecordData = (slug) => {
-    const defaultTitle = slug
-      ? slug.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
-      : "World Record Achievement";
+  const [recordData, setRecordData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    const database = {
-      "stair-climbing": {
-        title: "Fastest 1,000 Step Stair Climb",
-        value: "4 Min 32.5 Sec",
-        athlete: "Marcus Vance",
-        memberNumber: "AWR-000245",
-        date: "April 18, 2024",
-        location: "Chicago, IL, USA",
-        cat: "Endurance",
-        img: "https://images.unsplash.com/photo-1578762560072-0c69fe73444e?auto=format&fit=crop&w=1200&q=80",
-        desc: "An incredible test of lower body stamina and cardiorespiratory limits. Marcus climbed a verified 1,000-step vertical stair tower at an average ascending heart rate of 188 BPM."
-      },
-      "sprinting": {
-        title: "Fastest 100M Sprint",
-        value: "9.58 Seconds",
-        athlete: "Usain Bolt",
-        memberNumber: "AWR-958209",
-        date: "August 16, 2009",
-        location: "Berlin, Germany",
-        cat: "Athletics",
-        img: "https://images.unsplash.com/photo-1502224562085-639556652f33?auto=format&fit=crop&w=1200&q=80",
-        desc: "The legendary, historically verified sprinting world record demonstrating the absolute zenith of human velocity and physical acceleration."
-      },
-      "bench-press": {
-        title: "Heaviest Raw Bench Press",
-        value: "355 KG (782.6 LBS)",
-        athlete: "Julius Maddox",
-        memberNumber: "AWR-355782",
-        date: "May 12, 2021",
-        location: "Reykjavik, Iceland",
-        cat: "Strength",
-        img: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=1200&q=80",
-        desc: "An unmatched display of raw press power. Julius Maddox successfully pressed 355 kilograms completely raw, bypassing the use of lifting gear under strict powerlifting inspection."
-      },
-      "deadlifts": {
-        title: "Heaviest Deadlift Attempt",
-        value: "501 KG",
-        athlete: "Thor Bjornsson",
-        memberNumber: "AWR-501202",
-        date: "May 02, 2020",
-        location: "Reykjavik, Iceland",
-        cat: "Strength",
-        img: "https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&w=1200&q=80",
-        desc: "Thor Bjornsson raised 501 kilograms in a sanctioned lift at his gym, which was broadcast worldwide. A triumph of sheer power and athletic resolve."
-      },
-      "plank-holds": {
-        title: "Longest Continuous Plank Hold",
-        value: "9 Hrs 30 Min 01 Sec",
-        athlete: "Daniel Scali",
-        memberNumber: "AWR-930010",
-        date: "August 06, 2023",
-        location: "Adelaide, Australia",
-        cat: "Endurance",
-        img: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=1200&q=80",
-        desc: "Daniel Scali demonstrated extreme physical and mental resilience, battling CRPS (Complex Regional Pain Syndrome) to hold a verified abdominal plank position for over nine and a half hours."
-      },
-      "rubik-s-cube": {
-        title: "Fastest 3x3x3 Rubik's Cube Solve",
-        value: "3.13 Seconds",
-        athlete: "Max Park",
-        memberNumber: "AWR-313000",
-        date: "June 11, 2023",
-        location: "California, USA",
-        cat: "Skills",
-        img: "https://images.unsplash.com/photo-1591951425328-48c1fe7179cd?auto=format&fit=crop&w=1200&q=80",
-        desc: "Max Park achieved the unthinkable by solving a standard 3x3x3 Rubik's Cube in 3.13 seconds under official WCA supervision, highlighting superior spatial intelligence and motor speeds."
+  useEffect(() => {
+    const fetchRecord = async () => {
+      try {
+        const data = await apiCall(`/records/${id}`);
+        setRecordData(data);
+      } catch (err) {
+        console.error("Failed to fetch record", err);
+      } finally {
+        setLoading(false);
       }
     };
-
-    const key = slug ? slug.toLowerCase() : "";
-    if (database[key]) {
-      return { id: slug, ...database[key] };
+    if (id) {
+      fetchRecord();
     }
+  }, [id]);
 
-    return {
-      id: slug || "rwr-general",
-      title: defaultTitle,
-      value: "Verified Record",
-      athlete: "Alexander 'Apex' Thorne",
-      memberNumber: "AWR-100003",
-      date: "October 14, 2024",
-      location: "Rogue Arena Hub",
-      cat: "Verified Record",
-      img: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1200&q=80",
-      desc: "A verified Rogue World Record athletic performance. Fully scrutinized by our Biometric Audit Engine and verified by a specialized panel of international adjudicators."
-    };
-  };
+  if (loading) {
+    return (
+      <PageTransition>
+        <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ fontSize: "24px", fontWeight: "900", color: "#FF6A00", letterSpacing: "2px" }}>LOADING RECORD...</div>
+        </div>
+      </PageTransition>
+    );
+  }
 
-  const recordRaw = getRecordData(id);
+  if (!recordData) {
+    return (
+      <PageTransition>
+        <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "24px" }}>
+          <div style={{ fontSize: "24px", fontWeight: "900", color: "#EF4444", letterSpacing: "2px" }}>RECORD NOT FOUND</div>
+          <Link to="/explore" style={{ color: "#FF6A00", textDecoration: "none", fontWeight: "800", fontSize: "14px" }}>RETURN TO EXPLORE</Link>
+        </div>
+      </PageTransition>
+    );
+  }
+
   const record = {
-    ...recordRaw,
-    memberNumber: recordRaw.memberNumber || recordRaw.member_number || ""
+    id: recordData.id,
+    title: recordData.title || "Untitled",
+    value: `${recordData.value || ""} ${recordData.unit || ""}`.trim(),
+    athlete: recordData.user?.name || recordData.user?.display_name || "Unknown Athlete",
+    memberNumber: recordData.athlete_id || "",
+    date: recordData.date_set ? new Date(recordData.date_set).toLocaleDateString() : (recordData.created_at ? new Date(recordData.created_at).toLocaleDateString() : ""),
+    location: [recordData.venue_name, recordData.city].filter(Boolean).join(", ") || "Unknown Location",
+    cat: recordData.category || "General",
+    img: recordData.thumbnail_url && recordData.thumbnail_url !== "pending_upload" ? formatProductImage(recordData.thumbnail_url) : "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1200&q=80",
+    desc: recordData.description || "No description provided.",
+    evidenceUrl: recordData.video_url || recordData.evidence_url,
+    status: recordData.status || "pending"
   };
 
   const getStatusPriority = (status) => {
     if (!status) return 99;
     const s = status.toUpperCase();
-    if (s.includes("CURRENT")) return 1;
+    if (s.includes("CURRENT") || s.includes("VERIFIED")) return 1;
     if (s.includes("PENDING")) return 2;
     if (s.includes("APPROVED") || s.includes("BROKEN")) return 3;
     if (s.includes("FAILED")) return 4;
@@ -170,18 +137,16 @@ const RecordDetail = () => {
 
   return (
     <PageTransition>
-      <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ background: "#0A0A0A", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif", paddingTop: "80px" }}>
         <Navbar />
+
 
         {/* HERO SECTION */}
         <section style={{ position: "relative", height: "70vh", minHeight: "500px", overflow: "hidden" }}>
-          <img src={record.img} alt={record.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img src={record.img} alt={record.title} style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", top: 0, left: 0 }} />
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(10,10,10,0.4) 0%, #0A0A0A 100%)" }} />
           
           <div style={{ position: "absolute", bottom: "60px", left: "5%", right: "5%", maxWidth: "1400px", margin: "0 auto" }}>
-            <Link to="/explore" style={{ display: "flex", alignItems: "center", gap: "8px", color: "#FF6A00", textDecoration: "none", fontSize: "14px", fontWeight: "800", marginBottom: "32px", textTransform: "uppercase" }}>
-              <ArrowLeft size={16} /> BACK TO ARCHIVE
-            </Link>
             
             <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
               <span style={{ background: "#FF6A00", color: "white", padding: "4px 12px", borderRadius: "6px", fontSize: "10px", fontWeight: "900", textTransform: "uppercase" }}>{record.cat}</span>
@@ -231,7 +196,7 @@ const RecordDetail = () => {
         </section>
 
         {/* CONTENT GRID */}
-        <section style={{ padding: "80px 5%", maxWidth: "1400px", margin: "0 auto", display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "60px" }}>
+        <section style={{ padding: "120px 5% 80px 5%", maxWidth: "1400px", margin: "0 auto", display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "60px" }}>
           
           {/* LEFT: DETAILS & VIDEO */}
           <div style={{ minWidth: 0 }}>
@@ -260,7 +225,7 @@ const RecordDetail = () => {
             </div>
 
             {/* VIDEO PLAYER */}
-            <div style={{ position: "relative", borderRadius: "32px", overflow: "hidden", aspectRatio: "16/9", background: "#111", border: "1px solid rgba(255,255,255,0.05)" }}>
+            <div ref={videoPlayerRef} style={{ position: "relative", borderRadius: "32px", overflow: "hidden", aspectRatio: "16/9", background: "#111", border: "1px solid rgba(255,255,255,0.05)", scrollMarginTop: "200px" }}>
               {!isPlayingMain ? (
                 <>
                   <img src={record.img} alt="Video Thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.3 }} />
@@ -274,12 +239,74 @@ const RecordDetail = () => {
                   </div>
                 </>
               ) : (
-                <video 
-                  src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" 
-                  controls 
-                  autoPlay 
-                  style={{ width: "100%", height: "100%", objectFit: "contain" }} 
-                />
+                <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                  <button
+                    onClick={() => setIsPlayingMain(false)}
+                    style={{
+                      position: "absolute",
+                      top: "16px",
+                      right: "16px",
+                      zIndex: 10,
+                      background: "rgba(0,0,0,0.6)",
+                      border: "none",
+                      color: "white",
+                      borderRadius: "50%",
+                      width: "40px",
+                      height: "40px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      fontSize: "20px",
+                      fontWeight: "bold"
+                    }}
+                  >✕</button>
+                  {(() => {
+                    const url = record.evidenceUrl;
+                    if (!url || url === "pending_upload") {
+                      return <div style={{display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', color: 'rgba(255,255,255,0.5)', gap: '20px', padding: '40px'}}>
+                        <div style={{ fontSize: '18px', fontWeight: '700' }}>Video Evidence Not Available</div>
+                        <div style={{ fontSize: '14px', opacity: 0.7 }}>This record is pending video verification</div>
+                      </div>;
+                    }
+                    
+                    const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
+                    if (ytMatch) {
+                      return (
+                        <iframe
+                          width="100%"
+                          height="100%"
+                          src={`https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`}
+                          title="YouTube video player"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          style={{ border: 'none', width: '100%', height: '100%' }}
+                        ></iframe>
+                      );
+                    }
+                    
+                    // Handle local uploaded videos
+                    let videoUrl = url;
+                    if (!url.startsWith('http')) {
+                      const backendUrl = API_URL.replace('/api', '');
+                      videoUrl = `${backendUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+                    }
+                    
+                    return (
+                      <video 
+                        src={videoUrl} 
+                        controls 
+                        autoPlay 
+                        style={{ width: "100%", height: "100%", objectFit: "contain" }} 
+                        onError={(e) => {
+                          console.error('Video failed to load:', videoUrl);
+                          e.target.parentElement.innerHTML = '<div style="display: flex; height: 100%; align-items: center; justify-content: center; color: rgba(255,255,255,0.5); flex-direction: column; gap: 20px; padding: 40px;"><div style="font-size: 18px; font-weight: 700;">Video Failed to Load</div><div style="font-size: 12px; opacity: 0.7; word-break: break-all;">' + videoUrl + '</div></div>';
+                        }}
+                      />
+                    );
+                  })()}
+                </div>
               )}
             </div>
 

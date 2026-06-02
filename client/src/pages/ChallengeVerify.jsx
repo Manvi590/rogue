@@ -33,7 +33,7 @@ import {
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { apiCall } from "../utils/api";
+import { API_URL, apiCall } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 import { useEffect } from "react";
 import {
@@ -158,6 +158,43 @@ const ChallengeVerify = () => {
         }
       }
 
+      let uploadedImageUrl = "pending_upload";
+      let uploadedVideoUrl = "pending_upload";
+
+      // Upload image evidence if present
+      if (uploadedFiles.images && uploadedFiles.images.length > 0) {
+        const formDataObj = new FormData();
+        formDataObj.append('image', uploadedFiles.images[0]);
+        const imgRes = await fetch(`${API_URL}/records/upload/image`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${user.token}`
+          },
+          body: formDataObj
+        });
+        const imgData = await imgRes.json();
+        if (imgData.url) {
+          uploadedImageUrl = imgData.url;
+        }
+      }
+      
+      // Upload video evidence if present
+      if (uploadedFiles.video) {
+        const formDataObj = new FormData();
+        formDataObj.append('video', uploadedFiles.video);
+        const vidRes = await fetch(`${API_URL}/records/upload/video`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${user.token}`
+          },
+          body: formDataObj
+        });
+        const vidData = await vidRes.json();
+        if (vidData.url) {
+          uploadedVideoUrl = vidData.url;
+        }
+      }
+
       const submissionData = {
         title: formData.event,
         category: formData.category,
@@ -170,8 +207,8 @@ const ChallengeVerify = () => {
         recordType: 'challenge',
         value: formData.value,
         unit: formData.unit,
-        evidenceUrl: formData.youtubeLink || "pending_upload",
-        thumbnailUrl: "pending_upload",
+        evidenceUrl: formData.youtubeLink || uploadedVideoUrl,
+        thumbnailUrl: uploadedImageUrl !== "pending_upload" ? uploadedImageUrl : "pending_upload",
         paymentStatus: 'pending_payment'
       };
 

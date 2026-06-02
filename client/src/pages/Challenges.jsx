@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, ArrowLeft, Play, Lock, Unlock, CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
+import PageNav from "../components/PageNav";
 import Footer from "../components/Footer";
 import ScrollReveal from "../components/ScrollReveal";
 
@@ -187,10 +188,11 @@ const Challenges = () => {
 
   return (
     <PageTransition>
-      <div style={{ background: "#0A0A0A", color: "white", fontFamily: "'Inter', sans-serif", minHeight: "100vh", paddingTop: "180px", display: "flex", flexDirection: "column" }}>
+      <div style={{ background: "#0A0A0A", color: "white", fontFamily: "'Inter', sans-serif", minHeight: "100vh", paddingTop: "0", display: "flex", flexDirection: "column" }}>
         
         {/* NAVBAR */}
         <Navbar />
+        <PageNav breadcrumbs={[{ label: 'Home', path: '/' }, { label: 'Challenges' }]} />
 
         {/* TOP HEADER - ACTIVE CHALLENGES */}
         <div style={{ padding: "40px 5% 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>

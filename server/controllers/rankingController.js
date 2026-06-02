@@ -9,7 +9,7 @@ exports.getGlobalRankings = async (req, res) => {
 
     let query = supabase
       .from('user_rankings')
-      .select('*, users(username, display_name, country, state, city)', { count: 'exact' });
+      .select('*, users(username, display_name, profile_image, country, state, city)', { count: 'exact' });
 
     if (country) query = query.eq('country', country);
     if (state) query = query.eq('state', state);
@@ -41,7 +41,7 @@ exports.getLocalRankings = async (req, res) => {
   try {
     const { country, state, city, limit = 50, offset = 0, sortBy = 'total_points', order = 'desc' } = req.query;
 
-    let query = supabase.from('user_rankings').select('*, users(username, display_name, country, state, city)', { count: 'exact' });
+    let query = supabase.from('user_rankings').select('*, users(username, display_name, profile_image, country, state, city)', { count: 'exact' });
 
     if (country) query = query.eq('country', country);
     if (state) query = query.eq('state', state);

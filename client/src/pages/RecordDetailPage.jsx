@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Play, Download, Share2, Heart, Eye, Trophy, User, Calendar, MapPin, Award, CheckCircle, AlertCircle, Edit3 } from 'lucide-react';
-import { apiCall } from '../utils/api';
+import { apiCall, formatProductImage } from '../utils/api';
+import Navbar from '../components/Navbar';
+import PageNav from '../components/PageNav';
 
 export default function RecordDetailPage() {
   const { recordId } = useParams();
@@ -117,50 +119,112 @@ export default function RecordDetailPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0c0c0e 0%, #1a1a1f 100%)', paddingTop: '120px', paddingBottom: '60px' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
-        
-        {/* Back Button */}
-        <button
-          onClick={() => navigate('/explore-records')}
-          style={{
-            background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.1)',
-            color: '#FF5500',
-            padding: '10px 16px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: '700',
-            marginBottom: '24px',
-            fontSize: '12px'
-          }}
-        >
-          ← Back to Explore Records
-        </button>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0c0c0e 0%, #1a1a1f 100%)', paddingBottom: '60px' }}>
+      <Navbar />
+
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '120px 20px 0' }}>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '32px' }}>
           {/* Main Content */}
           <div>
             {/* Video Player */}
-            <div style={{ background: '#000', borderRadius: '16px', overflow: 'hidden', marginBottom: '24px', aspectRatio: '16/9', position: 'relative' }}>
-              {recordVideoUrl && !videoError ? (
-                <video
-                  controls
-                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                  onError={() => setVideoError(true)}
-                >
-                  <source src={recordVideoUrl} />
-                  Your browser does not support the video tag.
-                </video>
-              ) : (
-                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #FF5500 0%, #FFB84D 100%)', position: 'relative' }}>
-                  {videoError && <div style={{ color: 'white', textAlign: 'center' }}>
-                    <AlertCircle size={48} style={{ margin: '0 auto 16px' }} />
-                    <p>Video not available</p>
-                  </div>}
-                  {!videoError && <Play size={48} color="white" fill="white" />}
-                </div>
-              )}
+            <div style={{ background: '#000', borderRadius: '16px', overflow: 'hidden', marginBottom: '24px', padding: '20px' }}>
+              {(() => {
+                const evidenceLinks = [
+                  record.evidence_url,
+                  record.evidenceUrl,
+                  record.video_url,
+                  record.videoUrl
+                ].filter(Boolean);
+                const uniqueLinks = [...new Set(evidenceLinks)].filter(link => link !== "pending_upload");
+
+                // We only want to show videos here, no images
+                const videos = uniqueLinks.filter(src => 
+                  !src.match(/\.(jpeg|jpg|gif|png|webp|svg|heic|heif)(\?.*)?$/i) && 
+                  !src.includes('ui-avatars') && 
+                  !src.includes('unsplash')
+                );
+
+                if (videos.length === 0) {
+                  return (
+                    <div style={{ width: '100%', aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #FF5500 0%, #FFB84D 100%)', color: 'white', flexDirection: 'column' }}>
+                      <AlertCircle size={48} style={{ margin: '0 auto 16px' }} />
+                      <p>Video not available</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {videos.map((src, idx) => {
+                      const isYouTube = src.includes('youtube') || src.includes('youtu.be');
+                      if (isYouTube) {
+                        const youtubeId = src.includes('youtube.com/watch?v=') ? src.split('v=')[1]?.split('&')[0] : src.split('youtu.be/')[1]?.split('?')[0];
+                        return (
+                          <div key={`vid-${idx}`} style={{ width: "100%", aspectRatio: "16/9", background: "#111", borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" }}>
+                            <iframe
+                              width="100%"
+                              height="100%"
+                              src={`https://www.youtube.com/embed/${youtubeId}?autoplay=0`}
+                              title="Video Evidence"
+                              frameBorder="0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                              style={{ border: "none" }}
+                            />
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <div key={`vid-${idx}`} style={{ width: "100%", aspectRatio: "16/9", background: "#111", borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)", position: "relative" }}>
+                            <video
+                              controls
+                              preload="metadata"
+                              style={{ width: "100%", height: "100%", outline: "none", backgroundColor: "#000", objectFit: "contain" }}
+                            >
+                              <source src={formatProductImage(src)} type={src.endsWith('.webm') ? 'video/webm' : 'video/mp4'} />
+                              Your browser does not support the video tag.
+                            </video>
+                          </div>
+                        );
+                      }
+                    })}
+                  </div>
+                );
+              })()}
+
+              {/* Show the original URLs below the media ONLY if they are external video links */}
+              {(() => {
+                const links = [
+                  record.evidence_url,
+                  record.evidenceUrl,
+                  record.video_url,
+                  record.videoUrl
+                ].filter(Boolean).filter(link => link !== "pending_upload");
+                
+                const uniqueLinks = [...new Set(links)];
+                
+                // Only show external youtube links, hide internal /uploads/ paths
+                const externalLinks = uniqueLinks.filter(src => src.includes('youtube') || src.includes('youtu.be'));
+                
+                if (externalLinks.length > 0) {
+                  return (
+                    <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                      <h4 style={{ color: '#888', fontSize: '12px', textTransform: 'uppercase', marginBottom: '8px', fontWeight: '800' }}>External Video Links</h4>
+                      <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#ccc', wordBreak: 'break-all' }}>
+                        {externalLinks.map((link, i) => (
+                          <li key={i} style={{ marginBottom: '4px' }}>
+                            <a href={link} target="_blank" rel="noopener noreferrer" style={{ color: '#FF5500', textDecoration: 'none' }}>
+                              {link}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
 
             {/* Title and Status */}
@@ -186,6 +250,7 @@ export default function RecordDetailPage() {
                     <Heart size={20} fill={liked ? 'white' : 'none'} />
                   </button>
                   <button
+                    onClick={handleShareRecord}
                     style={{
                       background: 'rgba(255,255,255,0.05)',
                       border: 'none',
@@ -298,11 +363,15 @@ export default function RecordDetailPage() {
               </h3>
 
               <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-                <div style={{ width: '80px', height: '80px', borderRadius: '12px', background: '#FF5500', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '32px', fontWeight: '900' }}>
-                  {record.user?.display_name?.charAt(0) || 'A'}
+                <div style={{ width: '80px', height: '80px', borderRadius: '12px', background: '#FF5500', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '32px', fontWeight: '900', overflow: 'hidden' }}>
+                  {record.user?.profile_image ? (
+                    <img src={formatProductImage(record.user.profile_image)} alt="Athlete" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    record.user?.display_name?.charAt(0) || record.user?.name?.charAt(0) || 'A'
+                  )}
                 </div>
                 <h4 style={{ fontSize: '16px', fontWeight: '900', color: 'white', margin: '0 0 4px 0' }}>
-                  {record.user?.display_name || 'Unknown Athlete'}
+                  {record.user?.display_name || record.user?.name || 'Unknown Athlete'}
                 </h4>
                 <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>
                   Member #{record.user?.member_number || 'N/A'}
@@ -310,7 +379,9 @@ export default function RecordDetailPage() {
               </div>
 
               <button
-                onClick={() => navigate(`/profile/${record.user?.username}`)}
+                onClick={() => {
+                  if (record.user?.username) navigate(`/profile/${record.user.username}`);
+                }}
                 style={{
                   width: '100%',
                   background: '#FF5500',

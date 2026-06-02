@@ -9,7 +9,8 @@ const getFormattedTicket = (t) => {
       _id: t.user.id,
       id: t.user.id,
       name: t.user.name,
-      email: t.user.email
+      email: t.user.email,
+      memberNumber: t.user.member_number || null
     } : t.user_id,
     userId: t.user_id,
     event: t.event ? {
@@ -337,7 +338,7 @@ const getAllTicketsAdmin = async (req, res) => {
   try {
     const { data: tickets, error } = await supabase
       .from('tickets')
-      .select('*, user:users(id, name, email), event:events(id, title)')
+      .select('*, user:users(id, name, email, member_number), event:events(id, title)')
       .order('created_at', { ascending: false });
 
     if (error) throw error;

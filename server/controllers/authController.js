@@ -223,7 +223,7 @@ const getUserProfile = async (req, res) => {
       memberNumber: finalUser.member_number || '',
     });
   } else {
-    return res.status(404).json({ message: 'User not found' });
+    return res.status(404).json({ message: 'User not found', error: error });
   }
 };
 
@@ -252,7 +252,7 @@ const updateUserProfile = async (req, res) => {
       username: username !== undefined ? username : user.username,
       phone: phone !== undefined ? phone : user.phone,
       gender: gender !== undefined ? gender : user.gender,
-      dob: dob !== undefined ? dob : user.dob,
+      dob: dob === '' ? null : dob !== undefined ? dob : user.dob,
       weight: weight !== undefined ? weight : user.weight,
       weight_unit: weightUnit !== undefined ? weightUnit : user.weight_unit,
       height: height !== undefined ? height : user.height,
@@ -307,8 +307,54 @@ const updateUserProfile = async (req, res) => {
       token: generateToken(updatedUser.id)
     });
   } else {
-    return res.status(404).json({ message: 'User not found' });
+    return res.status(404).json({ message: 'User not found', error: error });
   }
 };
 
-module.exports = { authUser, registerUser, getUserProfile, updateUserProfile };
+// @desc    Get public user profile
+// @route   GET /api/auth/profile/:username
+// @access  Public
+const getPublicUserProfile = async (req, res) => {
+  const { username } = req.params;
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('username', username)
+    .single();
+
+  if (error || !user) {
+    return res.status(404).json({ message: 'User not found', error: error });
+  }
+
+  // Get some public ranking/stats for this user
+  let ranking = {
+    global_rank: 0,
+    total_points: 0,
+    verified_records_count: 0,
+    world_records_count: 0,
+    tier_badge: 'Challenger'
+  };
+
+  try {
+    const { data: records } = await supabase
+      .from('records')
+      .select('id, status, is_world_record, value')
+      .eq('user_id', user.id);
+      
+    if (records) {
+      ranking.verified_records_count = records.filter(r => r.status === 'verified').length;
+      ranking.world_records_count = records.filter(r => r.is_world_record).length;
+      ranking.total_points = ranking.verified_records_count * 100 + ranking.world_records_count * 500;
+      
+      if (ranking.total_points > 5000) ranking.tier_badge = 'Grand Champion';
+      else if (ranking.total_points > 2500) ranking.tier_badge = 'Elite Master';
+      else if (ranking.total_points > 1000) ranking.tier_badge = 'Pro Competitor';
+    }
+  } catch (err) {
+    console.error('Error fetching public ranking data', err);
+  }
+
+  res.json({ profile: user, ranking });
+};
+
+module.exports = { authUser, registerUser, getUserProfile, updateUserProfile, getPublicUserProfile };

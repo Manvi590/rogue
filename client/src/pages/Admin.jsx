@@ -77,10 +77,12 @@ const Admin = () => {
   const [dashboardStats, setDashboardStats] = useState(null);
   const [memberships, setMemberships] = useState([]);
   const [membershipStats, setMembershipStats] = useState(null);
-  const [revenueSubTab, setRevenueSubTab] = useState("ledger"); // "ledger" | "coupons"
+  const [revenueSubTab, setRevenueSubTab] = useState("ledger"); // "ledger" | "coupons" | "tickets"
   const [coupons, setCoupons] = useState([]);
   const [couponStats, setCouponStats] = useState(null);
   const [couponSearchQuery, setCouponSearchQuery] = useState("");
+  const [tickets, setTickets] = useState([]);
+  const [ticketSearchQuery, setTicketSearchQuery] = useState("");
   const [ledgerPayments, setLedgerPayments] = useState([]);
   
   // New State variables for Phase 5 additions
@@ -92,12 +94,13 @@ const Admin = () => {
     unassigned: []
   });
   const [videos, setVideos] = useState([]);
-  const [videoManagementSubTab, setVideoManagementSubTab] = useState("featured"); // "featured" | "newest" | "highlights"
+  const [videoManagementSubTab, setVideoManagementSubTab] = useState("newest"); // "newest" | "featured" | "highlights"
   const [videoForm, setVideoForm] = useState({
-    title: "", description: "", category: "Strength", isFeatured: false, isNewlyUploaded: false, videoUrl: "", thumbnailUrl: ""
+    title: "", description: "", category: "Strength", isFeatured: false, isNewlyUploaded: false, videoUrl: ""
   });
   const [videoFile, setVideoFile] = useState(null);
   const [thumbnailFile, setThumbnailFile] = useState(null);
+  const [selectedVideoForViewing, setSelectedVideoForViewing] = useState(null);
 
   const [isStreamModalOpen, setIsStreamModalOpen] = useState(false);
   const [streamTarget, setStreamTarget] = useState(null);
@@ -226,6 +229,112 @@ const Admin = () => {
   const [productForm, setProductForm] = useState({ name: "", description: "", price: "", imageUrl: "", category: "Accessories", stockCount: "", sizes: [], imageUrls: [], imageFile: null, imagePreview: "" });
   const [adminProductDragActive, setAdminProductDragActive] = useState(false);
   const adminProductFileInputRef = React.useRef(null);
+
+  // ===== CERTIFICATE & AWARD CONTROL SUITE STATE =====
+  const [adminSubTab, setAdminSubTab] = useState("generator");
+  const [certName, setCertName] = useState("JOHNATHAN TITAN");
+  const [certRecord, setCertRecord] = useState("HEAVYWEIGHT BENCH PRESS WORLD RECORD");
+  const [certValue, setCertValue] = useState("502.5 KG");
+  const [certAdjudicator, setCertAdjudicator] = useState("CHIEF MARSHAL O'NEILL");
+  const [certDate, setCertDate] = useState(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase());
+  const [certTheme, setCertTheme] = useState("onyx");
+  const [awardName, setAwardName] = useState("");
+  const [awardPrice, setAwardPrice] = useState("");
+  const [awardDesc, setAwardDesc] = useState("");
+  const [awardStock, setAwardStock] = useState("10");
+  const [awardCategory, setAwardCategory] = useState("CERTIFICATE");
+  const [awardImageFile, setAwardImageFile] = useState(null);
+  const [awardImagePreview, setAwardImagePreview] = useState("");
+  const [awardDragActive, setAwardDragActive] = useState(false);
+  const awardFileInputRef = React.useRef(null);
+  const [awardOrders, setAwardOrders] = useState([
+    { id: "ord-1", name: "Johnathan Titan", product: "Embossed Obsidian Framed Certificate", date: "2026-05-12", frameType: "Obsidian Frame", customDetails: "Recipient: Johnathan Titan - 502.5kg Bench Press", status: "processing" },
+    { id: "ord-2", name: "Michael Jordan", product: "Titan Gold Medal & Premium Ribbon", date: "2026-05-18", frameType: "Gold Leaf Border", customDetails: "Recipient: Michael Jordan - Retro Basketball Max Score", status: "completed" },
+    { id: "ord-3", name: "Serena Williams", product: "Archival Brushed Steel Plaque", date: "2026-05-24", frameType: "Brushed Steel Frame", customDetails: "Recipient: Serena Williams - Glacial Endurance Ice Swim", status: "pending" }
+  ]);
+
+  const handleCreateAwardProduct = async (e) => {
+    e.preventDefault();
+    if (!awardName || !awardPrice) { showToast("Please provide award name and price.", "error"); return; }
+    const payload = { name: awardName, description: awardDesc, price: parseFloat(awardPrice), imageUrl: awardImagePreview || "", category: awardCategory, stockCount: parseInt(awardStock) || 10, sizes: [], imageUrls: [] };
+    try {
+      if (user && user.token) {
+        let newProd = await apiCall("/admin/products", "POST", payload, user.token);
+
+        // ✅ IMMEDIATELY set the preview image so local state always shows correct image
+        if (awardImagePreview) {
+          newProd = { ...newProd, image_url: awardImagePreview };
+        }
+
+        // Add to local products list RIGHT NOW with preview image
+        setProducts(prev => [newProd, ...prev]);
+        showToast("🎖️ Award product created successfully!", "success");
+
+        // Then try to upload image to server in background
+        if (awardImageFile) {
+          try {
+            const formData = new FormData();
+            formData.append("productImage", awardImageFile);
+            const res = await fetch(API_URL + `/admin/products/${newProd.id}/image`, { method: "POST", headers: { Authorization: `Bearer ${user.token}` }, body: formData });
+            if (res.ok) {
+              const uploadData = await res.json();
+              const serverImageUrl = uploadData.product?.image_url || uploadData.imageUrl;
+              if (serverImageUrl) {
+                // Update the product in local state with the real server URL
+                setProducts(prev => prev.map(p => p.id === newProd.id ? { ...p, image_url: serverImageUrl } : p));
+              }
+            }
+          } catch (uploadErr) {
+            // Preview URL is already set above — no action needed
+            console.warn("Image upload to server failed, using local preview:", uploadErr);
+          }
+        }
+      }
+    } catch (err) {
+      // If backend fails, create locally with the preview image
+      const mockProd = {
+        id: Date.now(),
+        name: awardName,
+        description: awardDesc,
+        price: parseFloat(awardPrice),
+        image_url: awardImagePreview || "",
+        category: awardCategory,
+        stock_count: parseInt(awardStock) || 10
+      };
+      setProducts(prev => [mockProd, ...prev]);
+      showToast("🎖️ Award product created locally (offline mode)!", "success");
+    }
+    setAwardName(""); setAwardPrice(""); setAwardDesc(""); setAwardStock("10"); setAwardImageFile(null); setAwardImagePreview("");
+  };
+
+
+  const handleToggleAwardShipping = (orderId) => {
+    setAwardOrders(prev => prev.map(o => {
+      if (o.id === orderId) {
+        const nextStatus = o.status === "shipped" ? "processing" : "shipped";
+        showToast(`📦 Order ${orderId} marked as ${nextStatus.toUpperCase()}!`, "success");
+        return { ...o, status: nextStatus };
+      }
+      return o;
+    }));
+  };
+
+  const handleCompleteAwardOrder = (orderId) => {
+    setAwardOrders(prev => prev.map(o => {
+      if (o.id === orderId) {
+        showToast(`✅ Order marked as COMPLETED!`, "success");
+        return { ...o, status: "completed" };
+      }
+      return o;
+    }));
+  };
+
+  const handlePrintAwardSheet = (order) => {
+    showToast(`🖨️ Customization Sheet Dispatched for: ${order.name}`, "success");
+  };
+  // ===== END CERTIFICATE & AWARD CONTROL SUITE STATE =====
+
+
   const [membershipForm, setMembershipForm] = useState({ userId: "", tier: "bronze", autoRenew: false, paymentAmount: 0 });
   const [revenueForm, setRevenueForm] = useState({
     title: "",
@@ -584,7 +693,7 @@ const Admin = () => {
         setCoupons(couponsData || []);
         setCouponStats(couponStatsData);
       } else if (activeTab === "dashboard" || activeTab === "revenue") {
-        const [membData, statsData, dashData, eventsData, couponsData, couponStatsData, productsData, paymentsData, messagesData, allVerifiedData] = await Promise.all([
+        const [membData, statsData, dashData, eventsData, couponsData, couponStatsData, productsData, paymentsData, messagesData, allVerifiedData, ticketsData] = await Promise.all([
           apiCall("/memberships?page=1&limit=100", "GET", null, user.token).catch(() => ({ memberships: [] })),
           apiCall("/memberships/stats/overview", "GET", null, user.token).catch(() => null),
           apiCall("/dashboard/dashboard", "GET", null, user.token).catch(() => null),
@@ -594,7 +703,8 @@ const Admin = () => {
           apiCall("/admin/products", "GET", null, user.token).catch(() => []),
           apiCall("/admin/payments", "GET", null, user.token).catch(() => ({ payments: [], metrics: null })),
           apiCall("/contact/success-messages", "GET").catch(() => null),
-          apiCall("/records/admin/submissions", "GET", null, user.token).catch(() => [])
+          apiCall("/records/admin/submissions", "GET", null, user.token).catch(() => []),
+          apiCall("/tickets/admin/list", "GET", null, user.token).catch(() => [])
         ]);
 
         let finalPayments = paymentsData?.payments || [];
@@ -633,6 +743,7 @@ const Admin = () => {
         setProducts(productsData || []);
         setLedgerPayments(finalPayments);
         setLedgerMetrics(finalMetrics);
+        setTickets(ticketsData || []);
         if (messagesData) setSuccessMessagesForm(messagesData);
         if (activeTab === "dashboard") setEvents(eventsData || []);
       }
@@ -1116,9 +1227,35 @@ const Admin = () => {
           throw new Error('Please enter a video title.');
         }
         const safeVideoUrl = (videoForm.videoUrl || '').trim();
-        const safeThumbnailUrl = (videoForm.thumbnailUrl || '').trim();
-        if (!safeVideoUrl) {
-          throw new Error('Please enter a Video URL (YouTube link or direct MP4/WebM URL).');
+        
+        if (!safeVideoUrl && !videoFile) {
+          throw new Error('Please enter a Video URL or upload a video file.');
+        }
+        
+        if (!thumbnailFile) {
+          throw new Error('Please upload a thumbnail image.');
+        }
+
+        let uploadedThumbnailUrl = null;
+        
+        // Upload thumbnail file if provided
+        if (thumbnailFile) {
+          const formData = new FormData();
+          formData.append('image', thumbnailFile);
+          try {
+            const uploadResponse = await fetch(`${API_URL}/records/upload/image`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${user.token}`
+              },
+              body: formData
+            });
+            const uploadData = await uploadResponse.json();
+            uploadedThumbnailUrl = uploadData.url;
+          } catch (uploadErr) {
+            console.error('Thumbnail upload error:', uploadErr);
+            throw new Error('Failed to upload thumbnail image. Please try again.');
+          }
         }
 
         let targetRoute = "/admin/videos/featured";
@@ -1128,15 +1265,16 @@ const Admin = () => {
           title: videoForm.title,
           description: videoForm.description,
           videoUrl: safeVideoUrl,
-          thumbnailUrl: safeThumbnailUrl || null,
+          thumbnailUrl: uploadedThumbnailUrl,
           source: safeVideoUrl.includes('youtube') || safeVideoUrl.includes('youtu.be') ? 'youtube' : 'external_url',
           youtubeVideoId: (safeVideoUrl.includes('youtube.com/watch?v=') ? safeVideoUrl.split('v=')[1]?.split('&')[0] : (safeVideoUrl.includes('youtu.be/') ? safeVideoUrl.split('youtu.be/')[1]?.split('?')[0] : null)),
         }, user.token);
 
-        alert("✅ Video saved successfully!");
-        setVideoForm({ title: "", description: "", category: "Strength", isFeatured: false, isNewlyUploaded: false, videoUrl: "", thumbnailUrl: "" });
+        showToast("✅ Video saved successfully with thumbnail!", "success");
+        setVideoForm({ title: "", description: "", category: "Strength", isFeatured: false, isNewlyUploaded: false, videoUrl: "" });
         setVideoFile(null);
         setThumbnailFile(null);
+        setIsModalOpen(false);
         fetchData();
       } else if (activeTab === "products") {
         const endpoint = modalType === "edit" ? `/admin/products/${modalTarget.id}` : "/admin/products";
@@ -1959,24 +2097,24 @@ const Admin = () => {
               {/* Stats Cards */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px", marginBottom: "32px" }}>
                 {[
-                  { label: "Total Users", value: dashboardStats?.counts?.users?.toLocaleString() || 0, icon: <Users size={20} />, color: "#3b82f6", bg: "rgba(59,130,246,0.1)" },
-                  { label: "Total Submissions", value: dashboardStats?.counts?.records?.toLocaleString() || 0, icon: <FileText size={20} />, color: "#a855f7", bg: "rgba(168,85,247,0.1)" },
-                  { label: "Pending Reviews", value: "0", icon: <Clock size={20} />, color: "#FF6A00", bg: "rgba(255,106,0,0.1)" },
-                  { label: "Approved Records", value: dashboardStats?.counts?.records?.toLocaleString() || 0, icon: <CheckCircle size={20} />, color: "#22c55e", bg: "rgba(34,197,94,0.1)" },
-                  { label: "Denied Records", value: "0", icon: <XCircle size={20} />, color: "#ef4444", bg: "rgba(239,68,68,0.1)" },
-                  { label: "Appeals", value: "0", icon: <ShieldAlert size={20} />, color: "#eab308", bg: "rgba(234,179,8,0.1)" },
-                  { label: "Challenge Submissions", value: "0", icon: <Target size={20} />, color: "#06b6d4", bg: "rgba(6,182,212,0.1)" },
-                  { label: "Revenue Totals", value: `$${(membershipStats?.totalRevenue || (dashboardStats?.counts?.memberships * 10) || 0).toLocaleString()}`, icon: <DollarSign size={20} />, color: "#22c55e", bg: "rgba(34,197,94,0.1)" },
-                  { label: "Membership Totals", value: dashboardStats?.counts?.memberships?.toLocaleString() || 0, icon: <Sparkles size={20} />, color: "#f43f5e", bg: "rgba(244,63,94,0.1)" },
-                  { label: "Ticket Sales", value: dashboardStats?.counts?.tickets?.toLocaleString() || 0, icon: <Ticket size={20} />, color: "#f97316", bg: "rgba(249,115,22,0.1)" },
-                  { label: "Shop Orders", value: dashboardStats?.counts?.products?.toLocaleString() || 0, icon: <ShoppingBag size={20} />, color: "#8b5cf6", bg: "rgba(139,92,246,0.1)" },
-                  { label: "Live Event Activity", value: dashboardStats?.counts?.events?.toLocaleString() || 0, icon: <Radio size={20} />, color: "#ef4444", bg: "rgba(239,68,68,0.1)" },
-                  { label: "Trending Records", value: "0", icon: <TrendingUp size={20} />, color: "#14b8a6", bg: "rgba(20,184,166,0.1)" },
-                  { label: "Most Active Categories", value: dashboardStats?.counts?.categories?.toLocaleString() || 0, icon: <Activity size={20} />, color: "#FF5500", bg: "rgba(255,85,0,0.1)" }
+                  { label: "Total Users", value: dashboardStats?.counts?.users?.toLocaleString() || 0, icon: <Users size={20} />, color: "#3b82f6", bg: "rgba(59,130,246,0.1)", onClick: () => setActiveTab("users") },
+                  { label: "Total Submissions", value: dashboardStats?.counts?.records?.toLocaleString() || 0, icon: <FileText size={20} />, color: "#a855f7", bg: "rgba(168,85,247,0.1)", onClick: () => { setActiveTab("records"); setRecordsSubTab("submissions"); } },
+                  { label: "Pending Reviews", value: "0", icon: <Clock size={20} />, color: "#FF6A00", bg: "rgba(255,106,0,0.1)", onClick: () => { setActiveTab("verificationQueue"); setVqFilter("pending_review"); } },
+                  { label: "Approved Records", value: dashboardStats?.counts?.records?.toLocaleString() || 0, icon: <CheckCircle size={20} />, color: "#22c55e", bg: "rgba(34,197,94,0.1)", onClick: () => setActiveTab("records") },
+                  { label: "Denied Records", value: "0", icon: <XCircle size={20} />, color: "#ef4444", bg: "rgba(239,68,68,0.1)", onClick: () => { setActiveTab("verificationQueue"); setVqFilter("denied"); } },
+                  { label: "Appeals", value: "0", icon: <ShieldAlert size={20} />, color: "#eab308", bg: "rgba(234,179,8,0.1)", onClick: () => setActiveTab("appeals") },
+                  { label: "Challenge Submissions", value: "0", icon: <Target size={20} />, color: "#06b6d4", bg: "rgba(6,182,212,0.1)", onClick: () => setActiveTab("challenges") },
+                  { label: "Revenue Totals", value: `$${(typeof membershipStats?.totalRevenue === 'number' ? membershipStats.totalRevenue : (dashboardStats?.counts?.memberships * 10) || 0).toLocaleString()}`, icon: <DollarSign size={20} />, color: "#22c55e", bg: "rgba(34,197,94,0.1)", onClick: () => { setActiveTab("revenue"); setRevenueSubTab("ledger"); } },
+                  { label: "Membership Totals", value: dashboardStats?.counts?.memberships?.toLocaleString() || 0, icon: <Sparkles size={20} />, color: "#f43f5e", bg: "rgba(244,63,94,0.1)", onClick: () => setActiveTab("memberships") },
+                  { label: "Ticket Sales", value: dashboardStats?.counts?.tickets?.toLocaleString() || 0, icon: <Ticket size={20} />, color: "#f97316", bg: "rgba(249,115,22,0.1)", onClick: () => { setActiveTab("revenue"); setRevenueSubTab("tickets"); } },
+                  { label: "Shop Orders", value: dashboardStats?.counts?.products?.toLocaleString() || 0, icon: <ShoppingBag size={20} />, color: "#8b5cf6", bg: "rgba(139,92,246,0.1)", onClick: () => setActiveTab("orders") },
+                  { label: "Live Event Activity", value: dashboardStats?.counts?.events?.toLocaleString() || 0, icon: <Radio size={20} />, color: "#ef4444", bg: "rgba(239,68,68,0.1)", onClick: () => setActiveTab("events") },
+                  { label: "Trending Records", value: "0", icon: <TrendingUp size={20} />, color: "#14b8a6", bg: "rgba(20,184,166,0.1)", onClick: () => setActiveTab("records") },
+                  { label: "Most Active Categories", value: dashboardStats?.counts?.categories?.toLocaleString() || 0, icon: <Activity size={20} />, color: "#FF5500", bg: "rgba(255,85,0,0.1)", onClick: () => { setActiveTab("records"); setRecordsSubTab("categories"); } }
                 ].map((stat, idx) => (
-                  <div key={idx} style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px", transition: "transform 0.2s, box-shadow 0.2s", cursor: "default" }} 
-                       onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.2)"; }} 
-                       onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}>
+                  <div key={idx} onClick={stat.onClick} style={{ background: "#111", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "24px", transition: "transform 0.2s, box-shadow 0.2s, border-color 0.2s", cursor: "pointer" }} 
+                       onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.2)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; }} 
+                       onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)"; }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
                       <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: stat.bg, display: "flex", alignItems: "center", justifyContent: "center", color: stat.color }}>
                         {stat.icon}
@@ -2316,6 +2454,7 @@ const Admin = () => {
                             </td>
                             <td style={{ padding: "16px 0", textAlign: "right" }}>
                               <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", alignItems: "center" }}>
+                                <button onClick={() => setSelectedVideoForViewing(r)} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "11px", fontWeight: "800", display: "flex", alignItems: "center", gap: "4px" }}><Video size={12} /> View Media</button>
                                 {r.status === "pending" && (
                                   <>
                                     <button onClick={() => handleQuickAdjudicate(r.id, "verified")} style={{ background: "#FF5500", border: "none", color: "white", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "11px", fontWeight: "900" }}>Approve</button>
@@ -3019,7 +3158,7 @@ const Admin = () => {
                           {paginatedUsers.map((u, idx) => (
                             <tr key={u.id || idx} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                               <td style={{ padding: "16px 0", display: "flex", alignItems: "center", gap: "12px" }}>
-                                <img src={u.profile_image || `https://ui-avatars.com/api/?name=${u.name}&background=random`} alt={u.name} style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover" }} />
+                                <img src={u.profile_image ? formatProductImage(u.profile_image) : `https://ui-avatars.com/api/?name=${u.name}&background=random`} alt={u.name} style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover" }} />
                                 <div>
                                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                                     <span style={{ color: "white", fontSize: "14px", fontWeight: "700", cursor: "pointer" }} onClick={() => openModal('viewProfile', u)}>{u.name}</span>
@@ -3265,34 +3404,62 @@ const Admin = () => {
               </div>
 
               {/* Loading & Empty States */}
-              {loading ? (
-                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "120px 0", background: "rgba(255,255,255,0.02)", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.03)" }}>
-                  <Loader2 className="animate-spin" size={36} color="#FF5500" />
-                  <p style={{ color: "#666", marginTop: "16px", fontSize: "13px", letterSpacing: "1.5px", fontWeight: "800" }}>LOADING ROSTER...</p>
-                </div>
-              ) : events.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "80px 40px", background: "rgba(255,255,255,0.02)", borderRadius: "24px", border: "1px dashed rgba(255,255,255,0.06)" }}>
-                  <Trophy size={48} color="#444" style={{ marginBottom: "16px" }} />
-                  <h4 style={{ margin: "0 0 8px 0", fontSize: "18px", color: "white", fontWeight: "900" }}>NO CHALLENGES ACTIVE</h4>
-                  <p style={{ color: "#888", fontSize: "14px", margin: 0 }}>Create a new challenge to populate the roster.</p>
-                </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                  {events.map((item, index) => {
-                    const fallbackImages = [
-                      "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop",
-                      "https://images.unsplash.com/photo-1552674605-1e16977fb794?q=80&w=1472&auto=format&fit=crop",
-                      "https://images.unsplash.com/photo-1563823251-4045f09623e1?q=80&w=1470&auto=format&fit=crop"
-                    ];
-                    const bgImg = item.image_url || item.imageUrl || fallbackImages[index % fallbackImages.length];
-                    
-                    // Determine status based on index for variety if real status isn't available
-                    const isCompleted = index === 2;
-                    const isScheduled = index === 1;
-                    const isActive = !isCompleted && !isScheduled;
+              {(() => {
+                const mappedEvents = events.map((item, originalIndex) => {
+                  const fallbackImages = [
+                    "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1552674605-1e16977fb794?q=80&w=1472&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1563823251-4045f09623e1?q=80&w=1470&auto=format&fit=crop"
+                  ];
+                  const bgImg = item.image_url || item.imageUrl || fallbackImages[originalIndex % fallbackImages.length];
+                  
+                  // Determine status based on index for variety if real status isn't available
+                  const isCompleted = originalIndex === 2;
+                  const isScheduled = originalIndex === 1;
+                  const isActive = !isCompleted && !isScheduled;
 
-                    if (eventsFilter === "ACTIVE" && !isActive) return null;
-                    if (eventsFilter === "SCHEDULED" && !isScheduled) return null;
+                  return { ...item, originalIndex, bgImg, isCompleted, isScheduled, isActive };
+                });
+
+                const filteredEvents = mappedEvents.filter(item => {
+                  if (eventsFilter === "ACTIVE" && !item.isActive) return false;
+                  if (eventsFilter === "SCHEDULED" && !item.isScheduled) return false;
+                  return true;
+                });
+
+                if (loading) {
+                  return (
+                    <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "120px 0", background: "rgba(255,255,255,0.02)", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.03)" }}>
+                      <Loader2 className="animate-spin" size={36} color="#FF5500" />
+                      <p style={{ color: "#666", marginTop: "16px", fontSize: "13px", letterSpacing: "1.5px", fontWeight: "800" }}>LOADING ROSTER...</p>
+                    </div>
+                  );
+                }
+
+                if (filteredEvents.length === 0) {
+                  return (
+                    <div style={{ textAlign: "center", padding: "80px 40px", background: "rgba(255,255,255,0.02)", borderRadius: "24px", border: "1px dashed rgba(255,255,255,0.06)" }}>
+                      <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+                        <Trophy size={48} color="#444" />
+                      </div>
+                      <h4 style={{ margin: "0 0 8px 0", fontSize: "18px", color: "white", fontWeight: "900", textTransform: "uppercase" }}>
+                        {eventsFilter === "ACTIVE" ? "NO ACTIVE CHALLENGES" : 
+                         eventsFilter === "SCHEDULED" ? "NO SCHEDULED CHALLENGES" : 
+                         "NO CHALLENGES FOUND"}
+                      </h4>
+                      <p style={{ color: "#888", fontSize: "14px", margin: 0 }}>
+                        {eventsFilter === "ACTIVE" ? "There are currently no active challenges running." : 
+                         eventsFilter === "SCHEDULED" ? "There are no upcoming challenges scheduled." : 
+                         "Create a new challenge to populate the roster."}
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    {filteredEvents.map((item) => {
+                      const { originalIndex: index, bgImg, isCompleted, isScheduled, isActive } = item;
 
                     return (
                       <div key={item.id || index} style={{ 
@@ -3371,7 +3538,8 @@ const Admin = () => {
                     );
                   })}
                 </div>
-              )}
+                );
+              })()}
             </div>
           )}
 
@@ -3424,27 +3592,17 @@ const Admin = () => {
                         <p style={{ fontSize: "10px", color: "#888", margin: "6px 0 0 0" }}>Paste a YouTube link or direct MP4 URL. If provided, file upload below is skipped.</p>
                       </div>
 
-                      <div style={{ background: "rgba(255,255,255,0.02)", padding: "14px 16px", borderRadius: "8px", border: "1px dashed rgba(255,255,255,0.1)", marginTop: "12px" }}>
-                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>THUMBNAIL URL (OPTIONAL)</label>
-                        <input
-                          type="url"
-                          placeholder="https://... (image link)"
-                          value={videoForm.thumbnailUrl}
-                          onChange={(e) => setVideoForm({ ...videoForm, thumbnailUrl: e.target.value })}
-                          style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", boxSizing: "border-box" }}
-                        />
-                      </div>
-
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "16px" }}>
                         <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "8px", border: "1px dashed rgba(255,255,255,0.1)" }}>
                           <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>UPLOAD VIDEO FILE (Alternative)</label>
                           <input type="file" accept="video/mp4,video/webm" onChange={(e) => setVideoFile(e.target.files[0])} style={{ color: "white", fontSize: "12px" }} />
                           <p style={{ fontSize: "10px", color: "#666", margin: "8px 0 0 0" }}>Max 50MB. MP4 or WebM.</p>
                         </div>
-                        <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "8px", border: "1px dashed rgba(255,255,255,0.1)" }}>
-                          <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>UPLOAD THUMBNAIL (Optional)</label>
-                          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setThumbnailFile(e.target.files[0])} style={{ color: "white", fontSize: "12px" }} />
-                          <p style={{ fontSize: "10px", color: "#666", margin: "8px 0 0 0" }}>Max 5MB. JPG, PNG, WEBP.</p>
+                        <div style={{ background: "rgba(255,85,0,0.1)", padding: "16px", borderRadius: "8px", border: "2px dashed rgba(255,85,0,0.3)" }}>
+                          <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#FF5500", marginBottom: "6px" }}>📸 UPLOAD THUMBNAIL (Required)</label>
+                          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setThumbnailFile(e.target.files[0])} required style={{ color: "white", fontSize: "12px" }} />
+                          <p style={{ fontSize: "10px", color: "#FF5500", margin: "8px 0 0 0", fontWeight: "600" }}>✓ Required. Max 5MB. JPG, PNG, WEBP.</p>
+                          {thumbnailFile && <p style={{ fontSize: "9px", color: "#22c55e", margin: "4px 0 0 0" }}>✓ {thumbnailFile.name}</p>}
                         </div>
                       </div>
                     </div>
@@ -3552,7 +3710,175 @@ const Admin = () => {
             </div>
           )}
 
+          {/* ==================== 🎖️ CERTIFICATE & AWARD CONTROL SUITE ==================== */}
+          {activeTab === "products" && (
+            <div style={{ marginTop: "48px", background: "rgba(20,20,20,0.4)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,106,0,0.15)", borderRadius: "32px", padding: "40px", boxShadow: "0 30px 60px rgba(0,0,0,0.4)" }}>
+              {/* Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "24px", marginBottom: "32px" }}>
+                <div>
+                  <h3 style={{ fontSize: "20px", fontWeight: "950", color: "white", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "6px" }}>🎖️ CERTIFICATE & AWARD CONTROL SUITE</h3>
+                  <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)", margin: 0 }}>Customize live certificates, upload border templates, add physical medals to the Shop catalog, and review framed award customizations.</p>
+                </div>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  {[{ id: "generator", label: "🎨 Visual Generator" }, { id: "templates", label: "📁 Theme Templates" }, { id: "medal-creator", label: "🏅 Award Creator" }, { id: "orders", label: "📦 Framed Orders" }].map(sub => (
+                    <button key={sub.id} onClick={() => setAdminSubTab(sub.id)} style={{ background: adminSubTab === sub.id ? "#FF6A00" : "rgba(255,255,255,0.05)", color: "white", border: "none", padding: "8px 20px", borderRadius: "100px", fontSize: "11px", fontWeight: "900", cursor: "pointer", textTransform: "uppercase", transition: "all 0.2s" }}>{sub.label}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* TAB 1: VISUAL GENERATOR */}
+              {adminSubTab === "generator" && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "40px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                    <div><label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>RECIPIENT FULL NAME</label><input type="text" value={certName} onChange={e => setCertName(e.target.value.toUpperCase())} style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }} /></div>
+                    <div><label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>RECORD SCHEME / DESCRIPTION</label><input type="text" value={certRecord} onChange={e => setCertRecord(e.target.value.toUpperCase())} style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }} /></div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                      <div><label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>ACHIEVEMENT VALUE</label><input type="text" value={certValue} onChange={e => setCertValue(e.target.value.toUpperCase())} style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }} /></div>
+                      <div><label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>ACHIEVED DATE</label><input type="text" value={certDate} onChange={e => setCertDate(e.target.value.toUpperCase())} style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }} /></div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                      <div><label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>VERIFYING ADJUDICATOR</label><input type="text" value={certAdjudicator} onChange={e => setCertAdjudicator(e.target.value.toUpperCase())} style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }} /></div>
+                      <div><label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>SELECT TEMPLATE STYLE</label>
+                        <select value={certTheme} onChange={e => setCertTheme(e.target.value)} style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px", color: "white", fontSize: "13px", outline: "none", cursor: "pointer" }}>
+                          <option value="onyx">ROGUE ONYX PREMIUM (CARBON)</option>
+                          <option value="parchment">CLASSIC IVORY PARCHMENT (VINTAGE)</option>
+                          <option value="gold">TITAN GOLD ARENA (LUXURY)</option>
+                          <option value="glacial">GLACIAL SUB-ZERO ENDURANCE (ICE)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <button onClick={() => showToast("🖨️ Certificate Dispatched to Printer!", "success")} style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 36px", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", marginTop: "12px", boxShadow: "0 10px 20px rgba(255,106,0,0.2)" }}>🖨️ PRINT & SHIP CERTIFICATE</button>
+                  </div>
+                  {/* Certificate Preview */}
+                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                    <div style={{ width: "100%", maxWidth: "560px", aspectRatio: "1.414", padding: "24px", boxSizing: "border-box", borderRadius: "16px", position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between", boxShadow: "0 25px 50px rgba(0,0,0,0.6)", border: certTheme === "onyx" ? "3px double #FF6A00" : certTheme === "parchment" ? "3px double #8a6d3b" : certTheme === "gold" ? "3px double #d4af37" : "3px double #38bdf8", background: certTheme === "onyx" ? "radial-gradient(circle, #1a1a1a 0%, #0a0a0a 100%)" : certTheme === "parchment" ? "#f4edd8" : certTheme === "gold" ? "radial-gradient(circle, #2d2410 0%, #0c0903 100%)" : "radial-gradient(circle, #0e1e24 0%, #050a0c 100%)", color: certTheme === "parchment" ? "#222" : "white" }}>
+                      <div style={{ position: "absolute", inset: "8px", border: certTheme === "onyx" ? "1px solid rgba(255,106,0,0.2)" : certTheme === "parchment" ? "1px solid rgba(138,109,59,0.3)" : certTheme === "gold" ? "1px solid rgba(212,175,55,0.3)" : "1px solid rgba(56,189,248,0.2)", pointerEvents: "none" }} />
+                      <div style={{ textAlign: "center", marginTop: "12px", zIndex: 2 }}>
+                        <div style={{ fontSize: "8px", fontWeight: "900", letterSpacing: "3px", color: certTheme === "parchment" ? "#8a6d3b" : certTheme === "gold" ? "#d4af37" : certTheme === "glacial" ? "#38bdf8" : "#FF6A00", marginBottom: "4px" }}>ROGUE WORLD RECORDS ASSOCIATION</div>
+                        <h4 style={{ fontSize: "20px", fontWeight: "950", letterSpacing: "-0.5px", fontFamily: "'Playfair Display', 'Georgia', serif", margin: 0 }}>CERTIFICATE OF RECORD ACHIEVEMENT</h4>
+                      </div>
+                      <div style={{ textAlign: "center", zIndex: 2, padding: "0 20px" }}>
+                        <div style={{ fontSize: "7px", letterSpacing: "1px", fontStyle: "italic", opacity: 0.6, marginBottom: "4px" }}>THIS IS TO OFFICIALLY CERTIFY THAT</div>
+                        <div style={{ fontSize: "22px", fontWeight: "950", letterSpacing: "0.5px", fontFamily: "'Playfair Display', 'Georgia', serif", color: certTheme === "parchment" ? "#000" : certTheme === "gold" ? "#facc15" : "white", borderBottom: certTheme === "parchment" ? "1px solid rgba(0,0,0,0.1)" : "1px solid rgba(255,255,255,0.1)", display: "inline-block", paddingBottom: "2px", marginBottom: "8px", width: "80%" }}>{certName || "JOHNATHAN TITAN"}</div>
+                        <div style={{ fontSize: "7px", letterSpacing: "1px", fontStyle: "italic", opacity: 0.6, marginBottom: "6px" }}>SUCCESSFULLY BROKE THE STANDING WORLD RECORD FOR</div>
+                        <div style={{ fontSize: "12px", fontWeight: "900", letterSpacing: "0.5px", lineHeight: "1.2", width: "90%", margin: "0 auto 6px", textTransform: "uppercase" }}>{certRecord || "BENCH PRESS RECORD ATTEMPT"}</div>
+                        <div style={{ fontSize: "7px", letterSpacing: "1px", fontStyle: "italic", opacity: 0.6, marginBottom: "2px" }}>WITH AN OFFICIAL REGISTERED VALUE OF</div>
+                        <div style={{ fontSize: "24px", fontWeight: "950", color: certTheme === "parchment" ? "#8a6d3b" : certTheme === "gold" ? "#d4af37" : certTheme === "glacial" ? "#38bdf8" : "#FF6A00" }}>{certValue || "500.00 KG"}</div>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", zIndex: 2, padding: "0 16px 8px" }}>
+                        <div style={{ width: "120px", textAlign: "center" }}>
+                          <div style={{ fontSize: "11px", fontFamily: "'Brush Script MT','cursive','Georgia'", color: certTheme === "parchment" ? "#555" : "rgba(255,255,255,0.8)", lineHeight: "1", marginBottom: "2px" }}>{certAdjudicator || "Chief Marshall"}</div>
+                          <div style={{ borderTop: certTheme === "parchment" ? "1px solid #222" : "1px solid rgba(255,255,255,0.4)", width: "100%", height: "1px" }} />
+                          <div style={{ fontSize: "6px", fontWeight: "900", opacity: 0.5, marginTop: "2px", letterSpacing: "0.5px" }}>VERIFYING ADJUDICATOR</div>
+                        </div>
+                        <div style={{ position: "relative", width: "48px", height: "48px", background: "radial-gradient(circle, #ffe259 0%, #ffa751 100%)", borderRadius: "50%", boxShadow: "0 4px 10px rgba(0,0,0,0.3)", border: "1px dashed #d4af37", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ fontSize: "16px" }}>⭐</div></div>
+                        <div style={{ width: "120px", textAlign: "center" }}>
+                          <div style={{ fontSize: "8px", fontWeight: "900", marginBottom: "3px" }}>{certDate}</div>
+                          <div style={{ borderTop: certTheme === "parchment" ? "1px solid #222" : "1px solid rgba(255,255,255,0.4)", width: "100%", height: "1px" }} />
+                          <div style={{ fontSize: "6px", fontWeight: "900", opacity: 0.5, marginTop: "2px", letterSpacing: "0.5px" }}>DATE REGISTERED</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: THEME TEMPLATES */}
+              {adminSubTab === "templates" && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px" }}>
+                  {[{ id: "onyx", title: "ROGUE ONYX PREMIUM", desc: "Dark Slate with carbon fiber textures & vibrant orange border line accents.", tags: "MOST POPULAR" }, { id: "parchment", title: "CLASSIC IVORY PARCHMENT", desc: "Elegant linen ivory finish with sepia classical framing & cursive styling.", tags: "TRADITIONAL" }, { id: "gold", title: "TITAN GOLD ARENA", desc: "Solid gold foil speckled frames with deep obsidian text borders.", tags: "CHAMPION" }, { id: "glacial", title: "GLACIAL SUB-ZERO", desc: "Alpine sub-zero endurance frost-blue gradient frame styling.", tags: "ENDURANCE" }].map(style => (
+                    <div key={style.id} onClick={() => { setCertTheme(style.id); setAdminSubTab("generator"); showToast(`Theme changed to: ${style.title}`, "success"); }} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "20px", padding: "24px", cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={e => { e.currentTarget.style.borderColor = "#FF6A00"; e.currentTarget.style.transform = "translateY(-4px)"; }} onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)"; e.currentTarget.style.transform = "none"; }}>
+                      <div style={{ background: "rgba(255,255,255,0.05)", height: "80px", borderRadius: "12px", marginBottom: "16px", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: "20px" }}>{style.id === "onyx" ? "🖤" : style.id === "parchment" ? "📜" : style.id === "gold" ? "🏆" : "❄️"}</span></div>
+                      <span style={{ fontSize: "8px", fontWeight: "900", background: "rgba(255,106,0,0.15)", color: "#FF6A00", padding: "2px 8px", borderRadius: "4px" }}>{style.tags}</span>
+                      <h4 style={{ fontSize: "14px", fontWeight: "900", color: "white", marginTop: "12px", marginBottom: "6px" }}>{style.title}</h4>
+                      <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", margin: 0, lineHeight: "1.4" }}>{style.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* TAB 3: AWARD CREATOR */}
+              {adminSubTab === "medal-creator" && (
+                <form onSubmit={handleCreateAwardProduct} style={{ maxWidth: "800px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "20px" }}>
+                  <h4 style={{ fontSize: "15px", fontWeight: "950", color: "white", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>🏅 INJECT NEW MEDAL OR PLAQUE PRODUCT INTO SHOP CATALOG</h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "1.5fr 0.5fr", gap: "16px" }}>
+                    <div><label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>AWARD NAME</label><input type="text" required placeholder="e.g. SOLID PLATINUM ADJUDICATION TROPHY" value={awardName} onChange={e => setAwardName(e.target.value)} style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }} /></div>
+                    <div><label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>PRICE ($ USD)</label><input type="number" step="0.01" required placeholder="150.00" value={awardPrice} onChange={e => setAwardPrice(e.target.value)} style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }} /></div>
+                  </div>
+                  <div><label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>PRODUCT DESCRIPTION</label><textarea placeholder="Laser-etched high precision core with solid engraving specs..." value={awardDesc} onChange={e => setAwardDesc(e.target.value)} style={{ width: "100%", height: "80px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none", resize: "none" }} /></div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                    <div><label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>CATALOG STOCK COUNT</label><input type="number" value={awardStock} onChange={e => setAwardStock(e.target.value)} style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 16px", color: "white", fontSize: "13px", outline: "none" }} /></div>
+                    <div><label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>PRODUCT CATEGORY</label>
+                      <select value={awardCategory} onChange={e => setAwardCategory(e.target.value)} style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px", color: "white", fontSize: "13px", outline: "none", cursor: "pointer" }}>
+                        <option value="CERTIFICATE">CERTIFICATE</option>
+                        <option value="AWARD">AWARD</option>
+                        <option value="MEDAL">MEDAL</option>
+                        <option value="TROPHY">TROPHY</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>UPLOAD PRODUCT IMAGE</label>
+                    <input type="file" ref={awardFileInputRef} accept=".jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={(e) => { if (e.target.files && e.target.files[0]) { const file = e.target.files[0]; if (file.size > 10 * 1024 * 1024) { showToast("Image size must be less than 10MB.", "error"); return; } setAwardImageFile(file); setAwardImagePreview(URL.createObjectURL(file)); } }} />
+                    <div onDragEnter={(e) => { e.preventDefault(); setAwardDragActive(true); }} onDragOver={(e) => { e.preventDefault(); setAwardDragActive(true); }} onDragLeave={(e) => { e.preventDefault(); setAwardDragActive(false); }} onDrop={(e) => { e.preventDefault(); setAwardDragActive(false); if (e.dataTransfer.files && e.dataTransfer.files[0]) { const file = e.dataTransfer.files[0]; setAwardImageFile(file); setAwardImagePreview(URL.createObjectURL(file)); } }} onClick={() => awardFileInputRef.current?.click()} style={{ background: awardDragActive ? "rgba(255, 106, 0, 0.1)" : "rgba(255,255,255,0.02)", border: awardDragActive ? "2px dashed #FF6A00" : "1px dashed rgba(255,255,255,0.15)", borderRadius: "16px", padding: "30px 20px", textAlign: "center", cursor: "pointer", transition: "all 0.3s ease" }}>
+                      {awardImagePreview ? (
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+                          <img src={awardImagePreview} alt="Award Preview" style={{ maxWidth: "200px", maxHeight: "150px", borderRadius: "12px", objectFit: "cover", border: "1px solid rgba(255,255,255,0.1)" }} />
+                          <div style={{ fontSize: "12px", color: "white", fontWeight: "700" }}>{awardImageFile?.name}</div>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); setAwardImageFile(null); setAwardImagePreview(""); }} style={{ background: "rgba(239,68,68,0.15)", border: "none", color: "#ef4444", padding: "6px 14px", borderRadius: "100px", fontSize: "11px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer" }}>
+                            <Trash2 size={12} style={{ display: "inline", marginRight: "4px" }} /> Remove Image
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+                          <UploadCloud size={36} color="#FF6A00" />
+                          <div style={{ fontSize: "13px", fontWeight: "800", color: "white" }}>DRAG & DROP IMAGE HERE OR <span style={{ color: "#FF6A00", textDecoration: "underline" }}>BROWSE</span></div>
+                          <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)" }}>Supports JPG, JPEG, PNG, WEBP up to 10MB</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <button type="submit" style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 40px", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", alignSelf: "flex-start", marginTop: "10px", boxShadow: "0 10px 20px rgba(255,106,0,0.2)" }}>🏅 CREATE SHOP AWARD PRODUCT</button>
+                </form>
+              )}
+
+              {/* TAB 4: FRAMED ORDERS LEDGER */}
+              {adminSubTab === "orders" && (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                    <div style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "1px" }}>IN-COMMEMORATIVE FRAMING DISPATCH LOGS</div>
+                    <span style={{ fontSize: "11px", color: "#FF6A00", fontWeight: "800" }}>TOTAL COMPLETED FRAMINGS: {awardOrders.filter(o => o.status === "completed").length}</span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    {awardOrders.map((ord) => (
+                      <div key={ord.id} style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: "16px", padding: "20px 28px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <span style={{ fontSize: "15px", fontWeight: "900", color: "white" }}>{ord.name}</span>
+                            <span style={{ fontSize: "9px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)", padding: "2px 8px", borderRadius: "4px", fontWeight: "800" }}>{ord.frameType}</span>
+                          </div>
+                          <div style={{ fontSize: "12px", color: "#FF6A00", fontWeight: "700", marginTop: "4px" }}>Product: <span style={{ color: "white", fontWeight: "500" }}>{ord.product}</span></div>
+                          <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", margin: "6px 0 0 0", fontStyle: "italic" }}>{ord.customDetails}</p>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.3)", fontWeight: "700" }}>Ordered: {ord.date}</span>
+                          <span style={{ fontSize: "10px", fontWeight: "900", padding: "4px 12px", borderRadius: "100px", background: ord.status === "completed" ? "rgba(59,130,246,0.15)" : ord.status === "shipped" ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.12)", color: ord.status === "completed" ? "#3b82f6" : ord.status === "shipped" ? "#22C55E" : "#EF4444", textTransform: "uppercase" }}>
+                            {ord.status === "completed" ? "Order Completed" : ord.status === "shipped" ? "Framed & Shipped" : "Processing Frame"}
+                          </span>
+                          <button onClick={() => handlePrintAwardSheet(ord)} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "8px 16px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", cursor: "pointer" }}>🖨️ PRINT SHEET</button>
+                          <button onClick={() => handleToggleAwardShipping(ord.id)} style={{ background: ord.status === "shipped" ? "rgba(239,68,68,0.1)" : "rgba(34,197,94,0.1)", border: ord.status === "shipped" ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(34,197,94,0.3)", color: ord.status === "shipped" ? "#EF4444" : "#22C55E", padding: "8px 16px", borderRadius: "8px", fontSize: "11px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer" }}>{ord.status === "shipped" ? "Mark Processing" : "Mark Shipped"}</button>
+                          <button onClick={() => handleCompleteAwardOrder(ord.id)} style={{ background: ord.status === "completed" ? "rgba(59,130,246,0.2)" : "rgba(59,130,246,0.05)", border: "1px solid rgba(59,130,246,0.4)", color: "#3b82f6", padding: "8px 16px", borderRadius: "8px", fontSize: "11px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer" }}>{ord.status === "completed" ? "Completed" : "Order Complete"}</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ==================== 10. SHOP ORDERS & SHIPPING ==================== */}
+
           {activeTab === "orders" && (
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
@@ -3764,6 +4090,23 @@ const Admin = () => {
                                   <option value="refunded">↩️ Refunded</option>
                                 </select>
                               </div>
+
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const updated = await apiCall(`/admin/orders/${order.id}/shipping`, 'PUT', { shippingStatus: 'delivered', paymentStatus: 'paid' }, user.token);
+                                    setOrders(prev => prev.map(o => o.id === order.id ? { ...o, shipping_status: 'delivered', payment_status: 'paid' } : o));
+                                    showToast("Order marked as completed", "success");
+                                  } catch (err) {
+                                    showToast(`Failed: ${err.message}`, "error");
+                                  }
+                                }}
+                                style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", color: "#22c55e", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", marginTop: "12px", fontSize: "11px", fontWeight: "900", textTransform: "uppercase" }}
+                                onMouseEnter={e => e.currentTarget.style.background = "rgba(34,197,94,0.2)"}
+                                onMouseLeave={e => e.currentTarget.style.background = "rgba(34,197,94,0.1)"}
+                              >
+                                ✅ ORDER COMPLETE
+                              </button>
 
                               <button
                                 onClick={() => handleDelete(order.id)}
@@ -7717,13 +8060,13 @@ const Admin = () => {
                   <h1 style={{ fontSize: "28px", fontWeight: "950", margin: "0 0 8px 0" }}>VIDEO MANAGEMENT</h1>
                   <p style={{ color: "#888", margin: 0, fontSize: "14px" }}>Upload and manage Featured and Newest videos.</p>
                 </div>
-                <button onClick={() => { setModalType('add'); setModalTarget(null); setVideoForm({title: "", description: "", category: "Strength", isFeatured: false, isNewlyUploaded: false}); setVideoFile(null); setThumbnailFile(null); setIsModalOpen(true); }} style={{ background: "#FF5500", color: "white", border: "none", padding: "10px 20px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                <button onClick={() => { setModalType('add'); setModalTarget(null); setVideoForm({title: "", description: "", category: "Strength", isFeatured: false, isNewlyUploaded: false, videoUrl: ""}); setVideoFile(null); setThumbnailFile(null); setIsModalOpen(true); }} style={{ background: "#FF5500", color: "white", border: "none", padding: "10px 20px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                   <Plus size={14} /> UPLOAD NEW VIDEO
                 </button>
               </div>
 
               <div style={{ display: "flex", gap: "24px", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "0px", marginBottom: "32px" }}>
-                {["featured", "newest", "highlights"].map(sub => (
+                {["newest", "featured", "highlights"].map(sub => (
                   <button 
                     key={sub}
                     onClick={() => setVideoManagementSubTab(sub)}
@@ -7736,7 +8079,7 @@ const Admin = () => {
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px" }}>
                 {videos[videoManagementSubTab] && videos[videoManagementSubTab].length > 0 ? videos[videoManagementSubTab].map(vid => (
-                  <div key={vid.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", overflow: "hidden" }}>
+                  <div key={vid.id} onClick={() => setSelectedVideoForViewing(vid)} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", overflow: "hidden", cursor: "pointer", transition: "all 0.3s", transform: "scale(1)" }} onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.02)"; e.currentTarget.style.borderColor = "rgba(255,85,0,0.4)"; e.currentTarget.style.background = "rgba(255,255,255,0.04)"; const overlay = e.currentTarget.querySelector('.hover-play-overlay'); if(overlay) overlay.style.opacity = "1"; }} onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)"; e.currentTarget.style.background = "rgba(255,255,255,0.02)"; const overlay = e.currentTarget.querySelector('.hover-play-overlay'); if(overlay) overlay.style.opacity = "0"; }}>
                     <div style={{ height: "160px", background: "#000", position: "relative" }}>
                       {vid.thumbnail_url || vid.thumbnailUrl ? (
                         <img src={vid.thumbnail_url || vid.thumbnailUrl} alt="Thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -7745,6 +8088,11 @@ const Admin = () => {
                       )}
                       <div style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(0,0,0,0.7)", padding: "4px 8px", borderRadius: "4px", fontSize: "10px", fontWeight: "bold", color: "white" }}>
                         {vid.category}
+                      </div>
+                      <div className="hover-play-overlay" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.3)", opacity: 0, transition: "opacity 0.3s" }}>
+                        <div style={{ width: "50px", height: "50px", background: "#FF5500", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <span style={{ fontSize: "24px", marginLeft: "4px" }}>▶</span>
+                        </div>
                       </div>
                     </div>
                     <div style={{ padding: "16px" }}>
@@ -7985,7 +8333,18 @@ const Admin = () => {
                 >
                   Transaction Ledger
                 </button>
-                
+                <button 
+                  onClick={(e) => { e.preventDefault(); setRevenueSubTab("coupons"); }}
+                  style={{ background: "transparent", border: "none", color: revenueSubTab === "coupons" ? "#FF5500" : "#888", fontWeight: revenueSubTab === "coupons" ? "900" : "700", fontSize: "14px", cursor: "pointer", textTransform: "uppercase", padding: "12px 6px", borderBottom: revenueSubTab === "coupons" ? "3px solid #FF5500" : "3px solid transparent", outline: "none", transition: "all 0.2s" }}
+                >
+                  Discount Coupons
+                </button>
+                <button 
+                  onClick={(e) => { e.preventDefault(); setRevenueSubTab("tickets"); }}
+                  style={{ background: "transparent", border: "none", color: revenueSubTab === "tickets" ? "#FF5500" : "#888", fontWeight: revenueSubTab === "tickets" ? "900" : "700", fontSize: "14px", cursor: "pointer", textTransform: "uppercase", padding: "12px 6px", borderBottom: revenueSubTab === "tickets" ? "3px solid #FF5500" : "3px solid transparent", outline: "none", transition: "all 0.2s" }}
+                >
+                  Ticket Sales
+                </button>
               </div>
 
               {revenueSubTab === "ledger" && (
@@ -8538,6 +8897,89 @@ const Admin = () => {
 
               
 
+              {/* Ticket Sales Tab */}
+              {revenueSubTab === "tickets" && (
+                <>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                    <div style={{ position: "relative", width: "400px" }}>
+                      <Search size={16} color="#888" style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)" }} />
+                      <input 
+                        type="text" 
+                        placeholder="Search by Order ID, Name, Email, or Member Number..." 
+                        value={ticketSearchQuery}
+                        onChange={(e) => setTicketSearchQuery(e.target.value)}
+                        style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.1)", padding: "14px 14px 14px 44px", borderRadius: "12px", color: "white", fontSize: "12px", fontWeight: "600", outline: "none", boxSizing: "border-box" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "24px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.2)" }}>
+                          <th style={{ padding: "20px 24px", color: "#888", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase" }}>ORDER ID / ACCESS CODE</th>
+                          <th style={{ padding: "20px 24px", color: "#888", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase" }}>PURCHASER</th>
+                          <th style={{ padding: "20px 24px", color: "#888", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase" }}>EVENT</th>
+                          <th style={{ padding: "20px 24px", color: "#888", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase" }}>PRICE</th>
+                          <th style={{ padding: "20px 24px", color: "#888", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase" }}>DATE</th>
+                          <th style={{ padding: "20px 24px", color: "#888", fontSize: "10px", fontWeight: "900", letterSpacing: "1px", textTransform: "uppercase" }}>STATUS</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tickets.filter(t => {
+                          const query = ticketSearchQuery.toLowerCase();
+                          return !query || 
+                            t.accessCode?.toLowerCase().includes(query) ||
+                            t.user?.name?.toLowerCase().includes(query) ||
+                            t.user?.email?.toLowerCase().includes(query) ||
+                            t.user?.memberNumber?.toLowerCase().includes(query) ||
+                            t.event?.title?.toLowerCase().includes(query);
+                        }).map((ticket) => (
+                          <tr key={ticket.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.02)", transition: "background 0.2s" }} className="hover-bg-light">
+                            <td style={{ padding: "20px 24px", fontFamily: "monospace", color: "#888", fontSize: "11px", fontWeight: "800" }}>
+                              {ticket.accessCode}
+                            </td>
+                            <td style={{ padding: "20px 24px" }}>
+                              <div style={{ fontWeight: "900", color: "white", fontSize: "14px" }}>{ticket.user?.name || "Unknown"}</div>
+                              <div style={{ color: "#aaa", fontSize: "12px" }}>{ticket.user?.email}</div>
+                              {ticket.user?.memberNumber && (
+                                <div style={{ color: "#FF5500", fontSize: "10px", fontWeight: "900", marginTop: "4px" }}>MEMBER #: {ticket.user.memberNumber}</div>
+                              )}
+                            </td>
+                            <td style={{ padding: "20px 24px", color: "white", fontWeight: "700", fontSize: "13px" }}>
+                              {ticket.event?.title || "Unknown Event"}
+                            </td>
+                            <td style={{ padding: "20px 24px", color: "#FF5500", fontWeight: "950", fontSize: "14px" }}>
+                              ${Number(ticket.event?.ticketPrice || 0).toFixed(2)}
+                            </td>
+                            <td style={{ padding: "20px 24px", color: "#aaa", fontWeight: "700" }}>
+                              {new Date(ticket.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </td>
+                            <td style={{ padding: "20px 24px" }}>
+                              <span style={{
+                                background: ticket.status === "active" ? "rgba(34,197,94,0.1)" : ticket.status === "used" ? "rgba(255,136,0,0.1)" : "rgba(239,68,68,0.1)",
+                                color: ticket.status === "active" ? "#22c55e" : ticket.status === "used" ? "#FF8800" : "#ef4444",
+                                padding: "4px 12px", borderRadius: "100px", fontWeight: "900", fontSize: "9px", textTransform: "uppercase", letterSpacing: "1px",
+                                border: `1px solid ${ticket.status === "active" ? "rgba(34,197,94,0.2)" : ticket.status === "used" ? "rgba(255,136,0,0.2)" : "rgba(239,68,68,0.2)"}`
+                              }}>
+                                {ticket.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                        {tickets.length === 0 && (
+                          <tr>
+                            <td colSpan="6" style={{ padding: "48px", textAlign: "center", color: "#555", fontWeight: "900", fontSize: "14px" }}>
+                              NO TICKETS FOUND IN SYSTEM.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+
               {/* Floating Action Button */}
               <div style={{ position: "fixed", bottom: "40px", right: "40px", zIndex: 100 }}>
                 <button onClick={(e) => { e.preventDefault(); openModal("add"); }} style={{ width: "56px", height: "56px", borderRadius: "50%", background: "#FF5500", color: "white", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 10px 20px rgba(255,85,0,0.4)" }}>
@@ -9024,9 +9466,41 @@ const Admin = () => {
                     {recordsSubTab === "submissions" && (
                       <div style={{ background: "rgba(255,255,255,0.02)", padding: "20px", borderRadius: "12px" }}>
                         <h4 style={{ fontSize: "14px", fontWeight: "800", color: "white", margin: "0 0 16px 0" }}>Record Submission History</h4>
-                        <div style={{ textAlign: "center", padding: "40px 0", color: "#666", fontSize: "13px" }}>
-                          No submissions found for this user.
-                        </div>
+                        {(() => {
+                          const userRecords = records.filter(r => r.user_id === userActionModal.userId || r.userId === userActionModal.userId || (r.user && r.user.id === userActionModal.userId));
+                          if (userRecords.length === 0) {
+                            return (
+                              <div style={{ textAlign: "center", padding: "40px 0", color: "#666", fontSize: "13px" }}>
+                                No submissions found for this user.
+                              </div>
+                            );
+                          }
+                          return (
+                            <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxHeight: "300px", overflowY: "auto" }}>
+                              {userRecords.map(r => (
+                                <div key={r.id} style={{ background: "rgba(0,0,0,0.3)", padding: "12px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                  <div>
+                                    <div style={{ color: "white", fontSize: "14px", fontWeight: "800", marginBottom: "4px" }}>{r.title || r.category || 'Untitled Record'}</div>
+                                    <div style={{ color: "#888", fontSize: "12px" }}>{r.category} • {r.value} {r.unit}</div>
+                                  </div>
+                                  <div>
+                                    <span style={{ 
+                                      background: r.status === 'verified' || r.status === 'approved' ? "rgba(34,197,94,0.1)" : r.status === 'rejected' || r.status === 'denied' ? "rgba(239,68,68,0.1)" : "rgba(255,204,0,0.1)", 
+                                      color: r.status === 'verified' || r.status === 'approved' ? "#22c55e" : r.status === 'rejected' || r.status === 'denied' ? "#ef4444" : "#ffcc00", 
+                                      padding: "4px 8px", 
+                                      borderRadius: "100px", 
+                                      fontSize: "10px", 
+                                      fontWeight: "bold",
+                                      textTransform: "uppercase"
+                                    }}>
+                                      {r.status || 'pending'}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
 
@@ -9282,15 +9756,17 @@ const Admin = () => {
                         <p style={{ fontSize: "10px", color: "#aaa", margin: "6px 0 0 0" }}>Paste a YouTube link or a direct MP4/WebM URL. This is required to save the video.</p>
                       </div>
 
-                      <div style={{ background: "rgba(255,255,255,0.02)", padding: "16px", borderRadius: "8px", border: "1px dashed rgba(255,255,255,0.1)" }}>
-                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>THUMBNAIL URL (Optional)</label>
+                      <div style={{ background: "rgba(255,85,0,0.1)", padding: "16px", borderRadius: "8px", border: "2px dashed rgba(255,85,0,0.3)", marginTop: "12px" }}>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#FF5500", marginBottom: "6px" }}>📸 UPLOAD THUMBNAIL (Required)</label>
                         <input
-                          type="url"
-                          placeholder="https://... (paste image link)"
-                          value={videoForm.thumbnailUrl || ""}
-                          onChange={(e) => setVideoForm({ ...videoForm, thumbnailUrl: e.target.value })}
-                          style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", boxSizing: "border-box" }}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={(e) => setThumbnailFile(e.target.files[0])}
+                          required
+                          style={{ color: "white", fontSize: "12px" }}
                         />
+                        <p style={{ fontSize: "10px", color: "#FF5500", margin: "8px 0 0 0", fontWeight: "600" }}>✓ Required. Max 5MB. JPG, PNG, WEBP.</p>
+                        {thumbnailFile && <p style={{ fontSize: "9px", color: "#22c55e", margin: "4px 0 0 0" }}>✓ {thumbnailFile.name}</p>}
                       </div>
                     </div>
                   </>
@@ -10819,6 +11295,121 @@ const Admin = () => {
                 </>
               )}
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== VIDEO PLAYER MODAL ==================== */}
+      {selectedVideoForViewing && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.95)", backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5000, padding: "20px" }}>
+          <div style={{ width: "100%", maxWidth: "900px", maxHeight: "90vh", display: "flex", flexDirection: "column", background: "rgba(13,13,16,0.8)", borderRadius: "20px", border: "1px solid rgba(255,85,0,0.2)", overflow: "hidden" }}>
+            
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.3)" }}>
+              <div>
+                <h2 style={{ fontSize: "20px", fontWeight: "900", margin: "0 0 4px 0", color: "white" }}>{selectedVideoForViewing.title}</h2>
+                <p style={{ fontSize: "12px", color: "#888", margin: 0 }}>{selectedVideoForViewing.category} • {selectedVideoForViewing.description}</p>
+              </div>
+              <button onClick={() => setSelectedVideoForViewing(null)} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "#ccc", cursor: "pointer", width: "40px", height: "40px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.2)"; e.currentTarget.style.color = "#ef4444"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "#ccc"; }}>×</button>
+            </div>
+
+            <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", background: "#000", minHeight: "500px", padding: "20px" }}>
+              {(() => {
+                const evidenceLinks = [
+                  selectedVideoForViewing.thumbnailUrl,
+                  selectedVideoForViewing.thumbnail_url,
+                  selectedVideoForViewing.image_url,
+                  selectedVideoForViewing.evidence_url,
+                  selectedVideoForViewing.evidenceUrl,
+                  selectedVideoForViewing.video_url,
+                  selectedVideoForViewing.videoUrl
+                ].filter(Boolean);
+                
+                const uniqueLinks = [...new Set(evidenceLinks)].filter(link => link !== "pending_upload");
+                
+                const images = uniqueLinks.filter(src => 
+                  src.match(/\.(jpeg|jpg|gif|png|webp|svg|heic|heif)(\?.*)?$/i) || 
+                  src.includes('ui-avatars') || 
+                  src.includes('unsplash') ||
+                  src === selectedVideoForViewing.thumbnailUrl ||
+                  src === selectedVideoForViewing.thumbnail_url
+                );
+                const videos = uniqueLinks.filter(src => !images.includes(src));
+
+                return (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", flex: 1 }}>
+                    {/* First Column: Image */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                      {images.length > 0 ? images.map((src, idx) => (
+                        <div key={`img-${idx}`} style={{ width: "100%", aspectRatio: "1/1", display: "flex", justifyContent: "center", background: "#111", borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" }}>
+                          <img
+                            src={formatProductImage(src)}
+                            alt="Evidence Image"
+                            style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                          />
+                        </div>
+                      )) : (
+                        <div style={{ width: "100%", aspectRatio: "1/1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#111", borderRadius: "12px", border: "1px dashed rgba(255,255,255,0.1)", color: "#555" }}>
+                          <Image size={32} style={{ marginBottom: "12px", opacity: 0.5 }} />
+                          <span style={{ fontSize: "12px", fontWeight: "600" }}>NO IMAGE EVIDENCE</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Second Column: Video */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                      {videos.length > 0 ? videos.map((src, idx) => {
+                        const isYouTube = src.includes('youtube') || src.includes('youtu.be');
+                        if (isYouTube) {
+                          const youtubeId = src.includes('youtube.com/watch?v=') ? src.split('v=')[1]?.split('&')[0] : src.split('youtu.be/')[1]?.split('?')[0];
+                          return (
+                            <div key={`vid-${idx}`} style={{ width: "100%", aspectRatio: "16/9", background: "#111", borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" }}>
+                              <iframe
+                                width="100%"
+                                height="100%"
+                                src={`https://www.youtube.com/embed/${youtubeId}?autoplay=0`}
+                                title="Video Evidence"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                style={{ border: "none" }}
+                              />
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div key={`vid-${idx}`} style={{ width: "100%", aspectRatio: "16/9", background: "#111", borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)", position: "relative" }}>
+                              <video
+                                controls
+                                preload="metadata"
+                                style={{ width: "100%", height: "100%", outline: "none", backgroundColor: "#000", objectFit: "contain" }}
+                              >
+                                <source src={formatProductImage(src)} type={src.endsWith('.webm') ? 'video/webm' : 'video/mp4'} />
+                                Your browser does not support the video tag.
+                              </video>
+                            </div>
+                          );
+                        }
+                      }) : (
+                        <div style={{ width: "100%", aspectRatio: "16/9", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#111", borderRadius: "12px", border: "1px dashed rgba(255,255,255,0.1)", color: "#555" }}>
+                          <Video size={32} style={{ marginBottom: "12px", opacity: 0.5 }} />
+                          <span style={{ fontSize: "12px", fontWeight: "600" }}>NO VIDEO EVIDENCE</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Info Footer */}
+            <div style={{ padding: "16px 24px", borderTop: "1px solid rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.3)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                {selectedVideoForViewing.is_featured && <span style={{ background: "rgba(255,85,0,0.1)", color: "#FF5500", padding: "4px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: "bold", marginRight: "8px" }}>🔥 FEATURED</span>}
+                {selectedVideoForViewing.is_newly_uploaded && <span style={{ background: "rgba(34,197,94,0.1)", color: "#22c55e", padding: "4px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: "bold" }}>✨ NEW</span>}
+              </div>
+              <button onClick={() => setSelectedVideoForViewing(null)} style={{ background: "linear-gradient(135deg, #FF5500 0%, #ff8800 100%)", color: "white", border: "none", padding: "10px 24px", borderRadius: "100px", fontSize: "12px", fontWeight: "900", cursor: "pointer" }}>CLOSE</button>
             </div>
           </div>
         </div>

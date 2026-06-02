@@ -12,6 +12,8 @@ const {
   toggleRecordFeatured,
 } = require('../controllers/recordController');
 const { protect, admin } = require('../middleware/authMiddleware');
+const { thumbnailUpload, videoUpload } = require('../config/upload');
+const { uploadThumbnail, uploadVideoFile } = require('../controllers/videoUploadController');
 
 router.get('/', getRecords);
 router.get('/leaderboard', getLeaderboard);
@@ -21,6 +23,10 @@ router.get('/my-submissions', protect, getMySubmissions);
 router.get('/admin/submissions', protect, admin, getAllSubmissionsForAdmin);
 router.put('/admin/adjudicate/:id', protect, admin, adjudicateRecord);
 router.put('/:id/featured', protect, admin, toggleRecordFeatured);
+
+// File upload routes for regular users submitting records
+router.post('/upload/image', protect, thumbnailUpload.single('image'), uploadThumbnail);
+router.post('/upload/video', protect, videoUpload.single('video'), uploadVideoFile);
 
 router.get('/:id', getRecordById);
 router.post('/', protect, createRecord);

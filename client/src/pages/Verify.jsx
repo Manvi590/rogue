@@ -28,13 +28,15 @@ import {
   Award,
   Edit3,
   Link2,
-  ChevronDown
+  ChevronDown,
+  Play,
+  Upload
 } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
 import { Link, useNavigate } from "react-router-dom";
 import ScrollReveal from "../components/ScrollReveal";
-import { apiCall } from "../utils/api";
+import { API_URL, apiCall } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 import {
   DropdownMenu,
@@ -265,6 +267,43 @@ const Verify = () => {
     setError("");
 
     try {
+      let uploadedImageUrl = "pending_upload";
+      let uploadedVideoUrl = "pending_upload";
+
+      // Upload image evidence if present
+      if (uploadedFiles.images && uploadedFiles.images.length > 0) {
+        const formDataObj = new FormData();
+        formDataObj.append('image', uploadedFiles.images[0]);
+        const imgRes = await fetch(`${API_URL}/records/upload/image`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${user.token}`
+          },
+          body: formDataObj
+        });
+        const imgData = await imgRes.json();
+        if (imgData.url) {
+          uploadedImageUrl = imgData.url;
+        }
+      }
+      
+      // Upload video evidence if present
+      if (uploadedFiles.video) {
+        const formDataObj = new FormData();
+        formDataObj.append('video', uploadedFiles.video);
+        const vidRes = await fetch(`${API_URL}/records/upload/video`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${user.token}`
+          },
+          body: formDataObj
+        });
+        const vidData = await vidRes.json();
+        if (vidData.url) {
+          uploadedVideoUrl = vidData.url;
+        }
+      }
+
       if (updateProfile) {
         try {
           await updateProfile({
@@ -292,8 +331,8 @@ const Verify = () => {
         recordType: 'standard',
         value: formData.resultScore,
         unit: formData.unit,
-        evidenceUrl: formData.youtubeLink || "pending_upload",
-        thumbnailUrl: "pending_upload",
+        evidenceUrl: formData.youtubeLink || uploadedVideoUrl,
+        thumbnailUrl: uploadedImageUrl !== "pending_upload" ? uploadedImageUrl : "pending_upload",
         paymentStatus: 'pending_payment'
       };
 
@@ -352,13 +391,12 @@ const Verify = () => {
               formData.recordTitle.toLowerCase().includes(kw) || formData.explanation.toLowerCase().includes(kw)
             );
             
-            if (isUnrealisticScore || hasUnsignedWitness || hasSuspiciousText) {
+            if (isUnrealisticScore || hasSuspiciousText) {
               setAuditOutcome("failed");
               setAuditConfidence(38.2);
               setAuditState("complete");
               const reasons = [];
               if (isUnrealisticScore) reasons.push("Anomalous performance score detected");
-              if (hasUnsignedWitness) reasons.push("Unsigned witness verification sheet");
               if (hasSuspiciousText) reasons.push("Suspicious attempt keyword flag");
               
               setAuditLogs(prev => [

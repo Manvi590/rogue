@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Eye, Heart, Zap, Trophy, Play, User } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { apiCall } from '../utils/api';
+import { apiCall, formatProductImage } from '../utils/api';
 import Navbar from '../components/Navbar';
+import PageNav from '../components/PageNav';
 import Footer from '../components/Footer';
 
 export default function ExploreRecords() {
@@ -114,9 +115,10 @@ export default function ExploreRecords() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#000', color: '#fff', paddingTop: '100px', paddingBottom: '0' }}>
+    <div style={{ minHeight: '100vh', background: '#000', color: '#fff', paddingBottom: '0' }}>
       <Navbar />
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 40px', paddingBottom: '60px' }}>
+
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '40px 40px 60px' }}>
         <div style={{ marginBottom: '40px', textAlign: 'left' }}>
           <p style={{ color: '#FF6A00', fontWeight: '700', fontSize: '14px', letterSpacing: '1px', marginBottom: '8px' }}>GLOBAL ARCHIVE</p>
           <h1 style={{ fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', fontWeight: '900', margin: 0, letterSpacing: '-2px' }}>EXPLORE RECORDS</h1>
@@ -205,12 +207,18 @@ export default function ExploreRecords() {
                 }}
               >
                 <div style={{ position: 'relative', width: '100%', paddingBottom: '60%', background: '#111' }}>
-                  {record.thumbnail_url ? (
-                    <img src={record.thumbnail_url} alt={record.title} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(135deg, #FF5500 0%, #FFB84D 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Trophy size={48} color="white" opacity={0.3} />
-                    </div>
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(135deg, #FF5500 0%, #FFB84D 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Trophy size={48} color="white" opacity={0.3} />
+                  </div>
+                  {record.thumbnail_url && record.thumbnail_url !== "pending_upload" && (
+                    <img 
+                      src={formatProductImage(record.thumbnail_url)} 
+                      alt={record.title} 
+                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
                   )}
 
                   <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(0,0,0,0.6)', padding: '6px 10px', borderRadius: 8, fontSize: 11, fontWeight: 700 }}>

@@ -17,7 +17,7 @@ import {
   Clock,
   AlertTriangle,
 } from "lucide-react";
-import { apiCall } from "../utils/api";
+import { apiCall, formatProductImage } from "../utils/api";
 
 const VideoManagement = () => {
   const [activeTab, setActiveTab] = useState("record-videos");
@@ -338,12 +338,14 @@ const VideoManagement = () => {
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          {video.thumbnail_url && (
-                            <img
-                              src={video.thumbnail_url}
-                              alt={video.title}
-                              className="w-12 h-12 rounded object-cover"
-                            />
+                          {video.thumbnail_url && video.thumbnail_url !== "pending_upload" && (
+                            <div style={{ width: '40px', height: '40px', borderRadius: '4px', overflow: 'hidden', flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)' }}>
+                              <img 
+                                src={formatProductImage(video.thumbnail_url)} 
+                                alt={video.title}
+                                className="w-12 h-12 rounded object-cover"
+                              />
+                            </div>
                           )}
                           <div>
                             <div className="text-white font-medium">{video.title}</div>

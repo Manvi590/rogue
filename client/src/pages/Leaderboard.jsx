@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
+import PageNav from "../components/PageNav";
 import Footer from "../components/Footer";
 import ScrollReveal from "../components/ScrollReveal";
 import { motion } from "framer-motion";
@@ -51,6 +52,7 @@ const Leaderboard = () => {
     <PageTransition>
       <div style={{ background: "#050505", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
         <Navbar />
+
 
         {/* HERO SECTION */}
         <section style={{ padding: "180px 5% 80px", position: "relative", overflow: "hidden", textAlign: "center" }}>

@@ -5,12 +5,12 @@ import {
   CheckCircle2, Share2, User, Mail, LogOut, Plus, ShieldCheck, 
   Flame, Loader2, AlertCircle, Eye, RefreshCw, BarChart2, Shield,
   Award, TrendingUp, Compass, ChevronRight, HardDrive, Bell, Settings,
-  Scale, Ruler, Heart, Phone, Sparkles, X, Edit3, Image
+  Scale, Ruler, Heart, Phone, Sparkles, X, Edit3, Image, Search
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
-import { apiCall } from "../utils/api";
+import { apiCall, apiUpload, formatProductImage } from "../utils/api";
 
 const ATHLETES = {
   "leo-vance": {
@@ -87,11 +87,13 @@ const Profile = () => {
   const [loadingRecords, setLoadingRecords] = useState(false);
   const [errorRecords, setErrorRecords] = useState(null);
   const [activeTab, setActiveTab] = useState("submissions"); // submissions, biometrics
+  const [searchQuery, setSearchQuery] = useState("");
   
   // Edit profile state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editError, setEditError] = useState("");
   const [editLoading, setEditLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [editForm, setEditForm] = useState({
     name: "",
     username: "",
@@ -269,34 +271,61 @@ const Profile = () => {
             {isOwnProfile ? (
               user.profileImage ? (
                 <img
-                  src={user.profileImage}
+                  src={formatProductImage(user.profileImage)}
                   alt="User Avatar"
-                  style={{ width: "160px", height: "160px", borderRadius: "24px", border: "4px solid #030303", objectFit: "cover" }}
+                  style={{ width: "160px", height: "160px", borderRadius: "24px", border: "4px solid #030303", objectFit: "cover", background: "#111" }}
                 />
               ) : (
-                <div style={{ 
-                  width: "160px", 
-                  height: "160px", 
-                  borderRadius: "24px", 
-                  border: "4px solid #030303", 
-                  background: "linear-gradient(135deg, #FF5500 0%, #7000ff 100%)",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  fontSize: "48px",
-                  fontWeight: "900",
-                  color: "white",
-                  textShadow: "0 4px 10px rgba(0,0,0,0.3)"
-                }}>
-                  {getInitials(user.name)}
+                <div style={{ position: "relative" }}>
+                  <div style={{ 
+                    width: "160px", 
+                    height: "160px", 
+                    borderRadius: "24px", 
+                    border: "4px solid #030303", 
+                    background: "linear-gradient(135deg, #FF5500 0%, #7000ff 100%)",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    fontSize: "48px",
+                    fontWeight: "900",
+                    color: "white",
+                    textShadow: "0 4px 10px rgba(0,0,0,0.3)"
+                  }}>
+                    {getInitials(user.name)}
+                  </div>
+                  <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    style={{
+                      position: "absolute",
+                      bottom: "-10px",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      background: "#FF5500",
+                      color: "white",
+                      border: "2px solid #030303",
+                      borderRadius: "12px",
+                      padding: "6px 12px",
+                      fontSize: "10px",
+                      fontWeight: "900",
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                      boxShadow: "0 4px 10px rgba(255,85,0,0.4)"
+                    }}
+                  >
+                    ADD PHOTO
+                  </button>
                 </div>
               )
             ) : (
-              <img
-                src={athlete.img}
-                alt="Athlete Avatar"
-                style={{ width: "160px", height: "160px", borderRadius: "24px", border: "4px solid #030303", objectFit: "cover" }}
-              />
+              athlete.img ? (
+                <img
+                  src={formatProductImage(athlete.img)}
+                  alt="Athlete Avatar"
+                  style={{ width: "160px", height: "160px", borderRadius: "24px", border: "4px solid #030303", objectFit: "cover", background: "#111" }}
+                />
+              ) : (
+                <div style={{ width: "160px", height: "160px", borderRadius: "24px", border: "4px solid #030303", background: "#111" }} />
+              )
             )}
             
             {/* Dynamic online ping badge */}
@@ -490,25 +519,37 @@ const Profile = () => {
                       <p style={{ color: "#666", fontSize: "13px", margin: "4px 0 0 0" }}>Chronological record of athletic verifications</p>
                     </div>
                     
-                    <Link to="/verify" style={{ textDecoration: "none" }}>
-                      <button style={{ 
-                        background: "rgba(255, 85, 0, 0.1)", 
-                        color: "#FF5500", 
-                        border: "1px solid rgba(255, 85, 0, 0.3)", 
-                        padding: "10px 20px", 
-                        borderRadius: "100px", 
-                        fontSize: "12px", 
-                        fontWeight: "900", 
-                        display: "flex", 
-                        alignItems: "center", 
-                        gap: "6px", 
-                        cursor: "pointer",
-                        letterSpacing: "0.5px",
-                        transition: "all 0.25s"
-                      }} className="btn-glow-neon">
-                        <Plus size={15} /> NEW ATTEMPT
-                      </button>
-                    </Link>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <div style={{ position: "relative" }}>
+                        <Search size={14} color="#666" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
+                        <input 
+                          type="text" 
+                          placeholder="Search records..." 
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "8px 12px 8px 32px", borderRadius: "100px", fontSize: "12px", outline: "none", width: "200px" }}
+                        />
+                      </div>
+                      <Link to="/verify" style={{ textDecoration: "none" }}>
+                        <button style={{ 
+                          background: "rgba(255, 85, 0, 0.1)", 
+                          color: "#FF5500", 
+                          border: "1px solid rgba(255, 85, 0, 0.3)", 
+                          padding: "10px 20px", 
+                          borderRadius: "100px", 
+                          fontSize: "12px", 
+                          fontWeight: "900", 
+                          display: "flex", 
+                          alignItems: "center", 
+                          gap: "6px", 
+                          cursor: "pointer",
+                          letterSpacing: "0.5px",
+                          transition: "all 0.25s"
+                        }} className="btn-glow-neon">
+                          <Plus size={15} /> NEW ATTEMPT
+                        </button>
+                      </Link>
+                    </div>
                   </div>
 
                   {loadingRecords ? (
@@ -587,7 +628,7 @@ const Profile = () => {
                   ) : (
                     /* Timeline style Submissions Feed */
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                      {myRecords.map((record) => {
+                      {myRecords.filter(r => !searchQuery || r.title?.toLowerCase().includes(searchQuery.toLowerCase()) || r.category?.toLowerCase().includes(searchQuery.toLowerCase())).map((record) => {
                         const statusColors = {
                           pending: { bg: "rgba(255, 204, 0, 0.04)", text: "#ffcc00", border: "rgba(255, 204, 0, 0.12)", iconColor: "#ffcc00" },
                           verified: { bg: "rgba(34, 197, 94, 0.04)", text: "#22c55e", border: "rgba(34, 197, 94, 0.12)", iconColor: "#22c55e" },
@@ -599,6 +640,7 @@ const Profile = () => {
                         return (
                           <div 
                             key={record.id} 
+                            onClick={() => navigate(`/record/${record.id}`)}
                             style={{ 
                               background: "rgba(13, 13, 16, 0.5)", 
                               padding: "24px", 
@@ -610,7 +652,8 @@ const Profile = () => {
                               alignItems: "center",
                               position: "relative",
                               overflow: "hidden",
-                              transition: "all 0.25s"
+                              transition: "all 0.25s",
+                              cursor: "pointer"
                             }}
                             className="quest-card"
                           >
@@ -1206,35 +1249,66 @@ const Profile = () => {
                   <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>PROFILE IMAGE (UPLOAD)</label>
                   <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                     <div style={{ background: "rgba(255,255,255,0.02)", width: "48px", height: "48px", borderRadius: "8px", display: "flex", justifyContent: "center", alignItems: "center", border: "1px solid rgba(255,255,255,0.05)", overflow: "hidden", flexShrink: 0 }}>
-                      {editForm.profileImage ? (
-                        <img src={editForm.profileImage} alt="Avatar Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.display = 'none'; }} />
+                      {isUploading ? (
+                        <Loader2 size={20} className="animate-spin" color="#FF5500" />
+                      ) : editForm.profileImage ? (
+                        <img src={formatProductImage(editForm.profileImage)} alt="Avatar Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.display = 'none'; }} />
                       ) : (
                         <Image size={20} color="#555" />
                       )}
                     </div>
-                    <label style={{ flex: 1, background: "rgba(0,0,0,0.4)", border: "1px dashed rgba(255,255,255,0.2)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "0.3s" }} className="hover-white">
-                      <span>{editForm.profileImage && editForm.profileImage.startsWith('data:image') ? "CHANGE UPLOADED IMAGE" : "UPLOAD NEW PICTURE"}</span>
+                    <label style={{ flex: 1, background: "rgba(0,0,0,0.4)", border: "1px dashed rgba(255,255,255,0.2)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px", cursor: isUploading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "0.3s", opacity: isUploading ? 0.5 : 1 }} className={!isUploading ? "hover-white" : ""}>
+                      <span>{isUploading ? "UPLOADING..." : editForm.profileImage ? "CHANGE UPLOADED IMAGE" : "UPLOAD NEW PICTURE"}</span>
                       <input 
                         type="file" 
                         accept="image/png, image/jpeg, image/webp"
                         style={{ display: "none" }}
-                        onChange={(e) => {
+                        disabled={isUploading}
+                        onChange={async (e) => {
                           const file = e.target.files[0];
                           if (file) {
                             if (file.size > 2 * 1024 * 1024) {
                               setEditError("Image size must be less than 2MB.");
                               return;
                             }
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              setEditForm({ ...editForm, profileImage: reader.result });
-                              setEditError("");
-                            };
-                            reader.readAsDataURL(file);
+                            setIsUploading(true);
+                            setEditError("");
+                            try {
+                              const formData = new FormData();
+                              formData.append('image', file);
+                              const data = await apiUpload('/records/upload/image', formData, user.token);
+                              setEditForm({ ...editForm, profileImage: data.url });
+                              setEditError("Profile picture uploaded successfully (will save when you submit form).");
+                            } catch (err) {
+                              setEditError("Profile picture upload failed. Please try again.");
+                              console.error(err);
+                            } finally {
+                              setIsUploading(false);
+                            }
                           }
                         }}
                       />
                     </label>
+                    {editForm.profileImage && (
+                      <button
+                        type="button"
+                        onClick={() => setEditForm({ ...editForm, profileImage: "" })}
+                        disabled={isUploading}
+                        style={{
+                          background: "rgba(239, 68, 68, 0.1)",
+                          color: "#ef4444",
+                          border: "1px solid rgba(239, 68, 68, 0.2)",
+                          borderRadius: "10px",
+                          padding: "12px 16px",
+                          fontSize: "11px",
+                          fontWeight: "900",
+                          cursor: isUploading ? "not-allowed" : "pointer",
+                          opacity: isUploading ? 0.5 : 1
+                        }}
+                      >
+                        REMOVE PHOTO
+                      </button>
+                    )}
                   </div>
                 </div>
 

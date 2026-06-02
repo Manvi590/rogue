@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Play, Check, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Menu, X, Dumbbell, Zap, Timer, Gamepad2, Target, Infinity, Trophy, LayoutGrid, Activity, Waves, Settings, Brain, Gamepad, Search, Eye, Volume2, Maximize, Bike, Star, Palette, Baby, Globe } from "lucide-react";
-import { apiCall } from "../utils/api";
+import { apiCall, formatProductImage } from "../utils/api";
 import InfiniteSlider from "../components/InfiniteSlider";
 import FlowingMenu from "../components/FlowingMenu";
 import StackingSteps from "../components/StackingSteps";
@@ -72,7 +72,7 @@ const RecCard = ({ img, cat, title, by }) => (
   </div>
 );
 
-const HolderCard = ({ img, badge, name, records, rank, slug }) => {
+const HolderCard = ({ img, badge, name, records, rank, slug, username }) => {
   const recordSlug = slug || "stair-climbing";
   return (
     <div className="holder-card" style={{ position: "relative" }}>
@@ -147,7 +147,7 @@ const HolderCard = ({ img, badge, name, records, rank, slug }) => {
         <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.78)", marginBottom: "10px", fontWeight: "600" }}>{records} World Records</div>
 
         <div style={{ display: "flex", gap: "12px", alignItems: "center", justifyContent: "space-between" }}>
-          <Link to={`/profile/${name.toLowerCase().replace(/\s+/g, '-')}`} style={{ textDecoration: "none" }}>
+          <Link to={`/profile/${username || name.toLowerCase().replace(/\s+/g, '-')}`} style={{ textDecoration: "none" }}>
             <div
               style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", fontWeight: "800", color: "#FF6A00", textTransform: "uppercase", letterSpacing: "0.08em", transition: "color 0.2s" }}
               onMouseEnter={(e) => e.currentTarget.style.color = "#ffffff"}
@@ -286,11 +286,12 @@ const Home = () => {
             .slice(0, 10);
           if (combinedNewest.length > 0) {
             setNewestRecords(combinedNewest.map((r, i) => ({
-              img: r.thumbnail_url || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80",
+              img: r.thumbnail_url !== "pending_upload" ? formatProductImage(r.thumbnail_url) : "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80",
               cat: (r.category || "RECORD").toUpperCase(),
               title: r.title,
-              avatar: "https://ui-avatars.com/api/?name=" + encodeURIComponent(r.title) + "&background=FF6A00&color=fff",
-              name: "Verified Athlete",
+              avatar: r.user?.profile_image ? (r.user.profile_image.includes('http') ? r.user.profile_image : `http://localhost:5001/uploads/${r.user.profile_image}`) : "https://ui-avatars.com/api/?name=" + encodeURIComponent(r.user?.name || "Athlete") + "&background=FF6A00&color=fff",
+              name: r.user?.display_name || r.user?.name || "Verified Athlete",
+              username: r.user?.username || r.user?.name,
               value: `${r.value} ${r.unit}`,
               slug: r.id
             })));
@@ -331,10 +332,11 @@ const Home = () => {
 
           if (finalFeaturedRecords.length > 0) {
             setFeaturedHolders(finalFeaturedRecords.map((r, i) => ({
-              img: r.thumbnail_url || STATIC_FEATURED[i % STATIC_FEATURED.length]?.img || "https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=700&q=80",
+              img: r.thumbnail_url !== "pending_upload" ? formatProductImage(r.thumbnail_url) : (STATIC_FEATURED[i % STATIC_FEATURED.length]?.img || "https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=700&q=80"),
               badge: r.category || "Record",
-              name: r.title,
-              records: r.value + " " + r.unit,
+              name: r.user?.display_name || r.user?.name || "Athlete",
+              username: r.user?.username || r.user?.name,
+              records: r.title, // Use title instead of value for display
               rank: i + 1,
               slug: r.id
             })));
@@ -353,7 +355,7 @@ const Home = () => {
         if (videos && videos.length > 0) {
           setSidebarVideos(videos.slice(0, 6).map(v => ({
             time: v.duration ? `${Math.floor(v.duration / 60)}:${String(v.duration % 60).padStart(2, '0')}` : "0:30",
-            img: v.thumbnail_url || "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=400&q=80",
+            img: v.thumbnail_url !== "pending_upload" ? formatProductImage(v.thumbnail_url) : "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=400&q=80",
             videoUrl: v.video_url,
             title: v.title
           })));

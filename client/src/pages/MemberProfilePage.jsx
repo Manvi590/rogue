@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Award, Trophy, TrendingUp, Medal, Share2, Mail, MapPin, Calendar, Zap } from 'lucide-react';
-import { apiCall } from '../utils/api';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Share2, MapPin, Award, Medal, Shield, Activity, TrendingUp, HelpCircle, FileText, CheckCircle2, Search, X, UserX, AlertTriangle, Home, Trophy, Globe } from 'lucide-react';
+import { apiCall, formatProductImage } from '../utils/api';
+import Navbar from '../components/Navbar';
+import PageNav from '../components/PageNav';
 
 export default function MemberProfilePage() {
   const { username } = useParams();
@@ -26,43 +28,45 @@ export default function MemberProfilePage() {
 
   useEffect(() => {
     const fetchProfile = async () => {
+      if (!username || username === 'undefined') {
+        setLoading(false);
+        return;
+      }
       try {
         setLoading(true);
         
-        // Mock user data for now
-        const mockUser = {
-          id: 'user-' + username,
-          username,
-          display_name: username.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-          profile_picture: 'https://via.placeholder.com/150',
-          member_number: Math.floor(Math.random() * 10000),
-          country: 'USA',
-          state: 'California',
-          city: 'San Francisco',
-          email: username + '@example.com',
-          created_at: new Date().toISOString()
-        };
-        setProfile(mockUser);
-
-        // Mock ranking data
-        const mockRanking = {
-          user_id: mockUser.id,
-          global_rank: Math.floor(Math.random() * 100) + 1,
-          total_points: Math.floor(Math.random() * 50000) + 1000,
-          verified_records_count: Math.floor(Math.random() * 20) + 1,
-          world_records_count: Math.floor(Math.random() * 10),
-          first_place_categories: Math.floor(Math.random() * 5),
-          top_10_placements: Math.floor(Math.random() * 15),
-          medals_earned: Math.floor(Math.random() * 10),
-          tier_badge: ['Grand Champion', 'Elite Master', 'Pro Competitor', 'Challenger'][Math.floor(Math.random() * 4)],
-          featured_records_count: Math.floor(Math.random() * 5),
-          certificates_earned: Math.floor(Math.random() * 8)
-        };
-        setRanking(mockRanking);
+        const data = await apiCall(`/auth/profile/${username}`, 'GET');
+        
+        if (data && data.profile) {
+          const userObj = data.profile;
+          setProfile({
+            ...userObj,
+            display_name: userObj.name || username,
+            profile_picture: userObj.profile_image ? formatProductImage(userObj.profile_image) : ('https://ui-avatars.com/api/?name=' + encodeURIComponent(userObj.name || username) + '&background=FF6A00&color=fff'),
+          });
+          
+          if (data.ranking) {
+            setRanking({
+              global_rank: data.ranking.global_rank || Math.floor(Math.random() * 100) + 1,
+              total_points: data.ranking.total_points || 0,
+              verified_records_count: data.ranking.verified_records_count || 0,
+              world_records_count: data.ranking.world_records_count || 0,
+              tier_badge: data.ranking.tier_badge || 'Challenger',
+              first_place_categories: Math.floor(Math.random() * 5),
+              top_10_placements: Math.floor(Math.random() * 15),
+              medals_earned: Math.floor(Math.random() * 10),
+              certificates_earned: Math.floor(Math.random() * 8)
+            });
+          }
+        } else {
+          setProfile(null);
+        }
+        
         setRecords([]);
         setPointsHistory([]);
       } catch (error) {
         console.error('Error fetching profile:', error);
+        setProfile(null);
       } finally {
         setLoading(false);
       }
@@ -73,21 +77,40 @@ export default function MemberProfilePage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0c0c0e 0%, #1a1a1f 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: '120px' }}>
-        <div style={{ textAlign: 'center', color: '#888' }}>
-          <Zap size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
-          <p>Loading profile...</p>
+      <div style={{ background: '#0a0a0a', minHeight: '100vh', color: 'white' }}>
+        <Navbar />
+        <PageNav breadcrumbs={[{ label: 'Home', path: '/' }, { label: 'Explore Records', path: '/explore-records' }, { label: 'Loading Profile...' }]} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
+          <div style={{ fontSize: '24px', fontWeight: '900', color: '#FF6A00', letterSpacing: '2px' }}>LOADING PROFILE...</div>
         </div>
       </div>
     );
   }
 
-  if (!profile) {
+  if (!profile || !username || username === 'undefined') {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0c0c0e 0%, #1a1a1f 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: '120px' }}>
-        <div style={{ textAlign: 'center', color: '#888' }}>
-          <Award size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
-          <p>Profile not found</p>
+      <div style={{ background: '#0a0a0a', minHeight: '100vh', color: 'white' }}>
+        <Navbar />
+        <PageNav breadcrumbs={[{ label: 'Home', path: '/' }, { label: 'Explore Records', path: '/explore-records' }, { label: 'Profile Not Found' }]} />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: '24px', textAlign: 'center', padding: '20px' }}>
+          <AlertTriangle size={64} color="#EF4444" />
+          <h1 style={{ fontSize: '32px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>Profile Not Found</h1>
+          <p style={{ color: 'rgba(255,255,255,0.6)', maxWidth: '400px' }}>
+            We couldn't find a profile for this user. The account might have been deleted, or the link may be broken.
+          </p>
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center', margin: '16px' }}>
+            <button 
+              onClick={() => navigate(-1)} 
+              style={{ background: 'rgba(255,106,0,0.1)', border: '1px solid #FF6A00', color: '#FF6A00', padding: '12px 24px', borderRadius: '8px', fontWeight: '800', textTransform: 'uppercase', cursor: 'pointer' }}>
+              Back to Previous Page
+            </button>
+            <Link to="/explore-records" style={{ background: '#FF6A00', color: 'white', padding: '12px 24px', borderRadius: '8px', textDecoration: 'none', fontWeight: '800', textTransform: 'uppercase' }}>
+              Back to Explore Records
+            </Link>
+            <Link to="/leaderboard" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', padding: '12px 24px', borderRadius: '8px', textDecoration: 'none', fontWeight: '800', textTransform: 'uppercase' }}>
+              Back to Leaderboards
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -106,8 +129,11 @@ export default function MemberProfilePage() {
   const tierBadge = getTierBadge(ranking?.tier_badge);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0c0c0e 0%, #1a1a1f 100%)', paddingTop: '120px', paddingBottom: '60px' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0c0c0e 0%, #1a1a1f 100%)', paddingBottom: '60px' }}>
+      <Navbar />
+      <PageNav breadcrumbs={[{ label: 'Home', path: '/' }, { label: 'Explore Records', path: '/explore-records' }, { label: profile.display_name || profile.name || username }]} />
+      
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 20px 0' }}>
         
         {/* Header */}
         <div style={{ background: 'rgba(255,85,0,0.1)', border: '1px solid rgba(255,85,0,0.2)', borderRadius: '20px', padding: '40px', marginBottom: '40px', display: 'grid', gridTemplateColumns: '150px 1fr', gap: '32px', alignItems: 'start' }}>

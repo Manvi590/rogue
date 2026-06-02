@@ -49,6 +49,10 @@ const EliteMembership = () => {
   const [cvv, setCvv] = useState("");
   const [billingZip, setBillingZip] = useState("");
   const [formError, setFormError] = useState("");
+  const [fullName, setFullName] = useState(user?.name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
 
   const formatAmex = (digits) => {
     let formatted = "";
@@ -735,9 +739,9 @@ const EliteMembership = () => {
                   }}>
                     <CheckCircle2 size={48} color="#FF6A00" />
                   </div>
-                  <h3 style={{ fontSize: "28px", fontWeight: "950", textTransform: "uppercase", marginBottom: "16px" }}>PAYMENT SUCCESSFUL</h3>
+                  <h3 style={{ fontSize: "28px", fontWeight: "950", textTransform: "uppercase", marginBottom: "16px" }}>Membership Application Submitted Successfully.</h3>
                   <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "15px", lineHeight: "1.6", marginBottom: "32px" }}>
-                    Thank you! Your purchase of <strong style={{ color: "#FF6A00" }}>{checkoutItem.name}</strong> was processed securely. Your slots have been credited.
+                    Thank you! Your purchase of <strong style={{ color: "#FF6A00" }}>{checkoutItem.name}</strong> was processed securely. Your application is now saved.
                   </p>
                   <button 
                     type="button"
@@ -773,15 +777,20 @@ const EliteMembership = () => {
                     margin: "0 auto 24px",
                     animation: "spin 1s linear infinite"
                   }} />
-                  <h3 style={{ fontSize: "20px", fontWeight: "900", textTransform: "uppercase", marginBottom: "12px" }}>PROCESSING SECURE PAYMENT</h3>
-                  <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px" }}>Verifying card details with payment gateway...</p>
+                  <h3 style={{ fontSize: "20px", fontWeight: "900", textTransform: "uppercase", marginBottom: "12px" }}>Processing Membership Application...</h3>
+                  <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px" }}>Verifying application details and securely saving to system...</p>
                 </div>
               ) : (
                 /* CHECKOUT CARD FORM FLOW */
                 <form 
-                  onSubmit={(e) => {
+                  onSubmit={async (e) => {
                     e.preventDefault();
                     setFormError("");
+
+                    if (!fullName.trim() || !email.trim() || !phone.trim() || !address.trim()) {
+                      setFormError("Full Name, Email, Phone, and Address are required.");
+                      return;
+                    }
 
                     const validationErr = validateCardDetails();
                     if (validationErr) {
@@ -790,10 +799,35 @@ const EliteMembership = () => {
                     }
 
                     setIsProcessing(true);
-                    setTimeout(() => {
+                    
+                    try {
+                      const originalPrice = parseFloat(checkoutItem.price.replace("$", "")) || 0;
+                      const finalPrice = Math.max(0, originalPrice - discount);
+
+                      const applicationData = {
+                        fullName,
+                        email,
+                        phone,
+                        address,
+                        memberNumber: user?.member_number || "PENDING",
+                        cardholderName,
+                        billingZip
+                      };
+
+                      await apiCall("/memberships", "POST", {
+                        userId: user?.id,
+                        tier: checkoutItem.name.toLowerCase().replace(" membership", "").trim(),
+                        autoRenew: true,
+                        paymentAmount: finalPrice,
+                        applicationData: applicationData
+                      });
+
                       setIsProcessing(false);
                       setIsSuccess(true);
-                    }, 2000);
+                    } catch (err) {
+                      setIsProcessing(false);
+                      setFormError(err.message || "There was a problem submitting your application. Please try again.");
+                    }
                   }}
                   style={{ display: "flex", flexDirection: "column", gap: "24px" }}
                 >
@@ -804,7 +838,7 @@ const EliteMembership = () => {
 
                   {formError && (
                     <div style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid #EF4444", color: "#EF4444", padding: "12px", borderRadius: "12px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "8px", textAlign: "left" }}>
-                      <AlertCircle size={16} /> {formError}
+                      <AlertCircle size={16} style={{ flexShrink: 0 }} /> <span>{formError}</span>
                     </div>
                   )}
 
@@ -880,6 +914,30 @@ const EliteMembership = () => {
                       </>
                     );
                   })()}
+
+                  {/* APPLICATION DETAILS FORM */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                      <div style={{ textAlign: "left" }}>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>FULL NAME</label>
+                        <input type="text" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                      </div>
+                      <div style={{ textAlign: "left" }}>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>EMAIL ADDRESS</label>
+                        <input type="email" placeholder="john@example.com" value={email} onChange={(e) => setEmail(e.target.value)} style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                      </div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                      <div style={{ textAlign: "left" }}>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>PHONE NUMBER</label>
+                        <input type="tel" placeholder="+1 (555) 000-0000" value={phone} onChange={(e) => setPhone(e.target.value)} style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                      </div>
+                      <div style={{ textAlign: "left" }}>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>FULL ADDRESS</label>
+                        <input type="text" placeholder="123 Rogue St, City, ST" value={address} onChange={(e) => setAddress(e.target.value)} style={{ width: "100%", background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "14px 18px", color: "white", outline: "none", fontSize: "13px" }} />
+                      </div>
+                    </div>
+                  </div>
 
                   {/* CARD DETAILS FORM */}
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>

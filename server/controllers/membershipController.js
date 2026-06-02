@@ -162,7 +162,7 @@ const getUserMembership = async (req, res) => {
 };
 
 const createMembership = async (req, res) => {
-  const { userId, tier, autoRenew = false, paymentAmount = 0 } = req.body;
+  const { userId, tier, autoRenew = false, paymentAmount = 0, applicationData = null } = req.body;
 
   try {
     if (!['free', 'bronze', 'silver', 'gold'].includes(tier)) {
@@ -199,7 +199,8 @@ const createMembership = async (req, res) => {
       amount: parseFloat(paymentAmount),
       type: 'purchase',
       transactionId: `TXN-${Date.now()}`,
-      status: 'completed'
+      status: 'completed',
+      applicationData: applicationData
     }] : [];
 
     const { data: membership, error } = await supabase
@@ -215,7 +216,8 @@ const createMembership = async (req, res) => {
         features: tierConfig.features,
         price: tierConfig.price,
         renewal_price: tierConfig.renewalPrice,
-        payment_history: newPaymentHistory
+        payment_history: newPaymentHistory,
+        notes: applicationData ? JSON.stringify(applicationData) : null
       }])
       .select('*, user:users(id, name, email)')
       .single();

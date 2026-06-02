@@ -9,7 +9,7 @@ const getRecords = async (req, res) => {
     
     let query = supabase
       .from('records')
-      .select('*, user:users!records_user_id_fkey(name), ai_scan:ai_verification_scans(*)')
+      .select('*, user:users!records_user_id_fkey(name, username, profile_image), ai_scan:ai_verification_scans(*)')
       .eq('status', 'verified');
 
     // Filter by featured status if provided
@@ -48,7 +48,7 @@ const getRecords = async (req, res) => {
 const getRecordById = async (req, res) => {
   const { data: record, error } = await supabase
     .from('records')
-    .select('*, user:users!records_user_id_fkey(name), ai_scan:ai_verification_scans(*)')
+    .select('*, user:users!user_id(name, username, profile_image), ai_scan:ai_verification_scans(*)')
     .eq('id', req.params.id)
     .single();
 
@@ -239,7 +239,7 @@ const processCheckout = async (req, res) => {
 const getLeaderboard = async (req, res) => {
   const { data: leaderboard, error } = await supabase
     .from('records')
-    .select('*, user:users!records_user_id_fkey(name, profile_image)')
+    .select('*, user:users!records_user_id_fkey(name, username, profile_image)')
     .eq('status', 'verified')
     .order('created_at', { ascending: false })
     .limit(10);
@@ -275,7 +275,7 @@ const getAllSubmissionsForAdmin = async (req, res) => {
   try {
     const { data: records, error } = await supabase
       .from('records')
-      .select('*, user:users!records_user_id_fkey(name, email), record_meta(*), ai_scan:ai_verification_scans(*)')
+      .select('*, user:users!records_user_id_fkey(name, email, username, profile_image), record_meta(*), ai_scan:ai_verification_scans(*)')
       .order('created_at', { ascending: false });
 
     if (error) throw error;

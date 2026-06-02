@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ReactLenis } from 'lenis/react'
 import Home from './pages/Home'
 import Login from './pages/Login'
@@ -65,7 +65,11 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/leaderboards" element={<Navigate to="/leaderboard" replace />} />
             <Route path="/local-leaderboards" element={<LocalLeaderboards />} />
+            <Route path="/local-rankings" element={<Navigate to="/local-leaderboards" replace />} />
+            <Route path="/records" element={<Navigate to="/explore-records" replace />} />
+            <Route path="/home" element={<Navigate to="/" replace />} />
             <Route path="/global-rankings" element={<GlobalRankingsPage />} />
             <Route path="/profile/:username" element={<MemberProfilePage />} />
         <Route path="/explore-records" element={<ExploreRecords />} />

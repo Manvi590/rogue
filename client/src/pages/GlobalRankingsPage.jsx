@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, TrendingUp, Award, Zap, Heart, Share2, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiCall } from '../utils/api';
+import Navbar from '../components/Navbar';
+import PageNav from '../components/PageNav';
+import Footer from '../components/Footer';
 
 export default function GlobalRankingsPage() {
   const navigate = useNavigate();
@@ -58,8 +61,11 @@ export default function GlobalRankingsPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0c0c0e 0%, #1a1a1f 100%)', paddingTop: '120px', paddingBottom: '60px' }}>
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 20px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0c0c0e 0%, #1a1a1f 100%)', paddingBottom: '60px' }}>
+      <Navbar />
+      <PageNav breadcrumbs={[{ label: 'Home', path: '/' }, { label: 'Leaderboards', path: '/leaderboard' }, { label: 'Global Rankings' }]} />
+      
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '40px 20px 0' }}>
         {/* Header */}
         <div style={{ marginBottom: '60px', textAlign: 'center' }}>
           <div style={{ color: '#FF5500', fontSize: '14px', fontWeight: '900', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '16px' }}>
@@ -132,7 +138,9 @@ export default function GlobalRankingsPage() {
               return (
                 <div
                   key={ranking.id}
-                  onClick={() => navigate(`/profile/${member.username}`)}
+                onClick={() => {
+                  if (member.username) navigate(`/profile/${member.username}`);
+                }}
                   style={{
                     background: 'rgba(255,255,255,0.02)',
                     border: '1px solid rgba(255,255,255,0.05)',
@@ -156,7 +164,7 @@ export default function GlobalRankingsPage() {
                   {/* Profile */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '200px' }}>
                     <img
-                      src={member.profile_picture || 'https://via.placeholder.com/48'}
+                      src={member.profile_image ? (member.profile_image.includes('http') ? member.profile_image : `http://localhost:5001/uploads/${member.profile_image}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(member.display_name)}&background=FF6A00&color=fff`}
                       alt={member.display_name}
                       style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }}
                     />
@@ -194,7 +202,9 @@ export default function GlobalRankingsPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                        if (member.username) {
                           navigate(`/profile/${member.username}`);
+                        }
                         }}
                         style={{ background: '#FF5500', border: 'none', color: 'white', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }}
                       >
@@ -231,6 +241,7 @@ export default function GlobalRankingsPage() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

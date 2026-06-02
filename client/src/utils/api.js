@@ -1,5 +1,5 @@
 export const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:5001/api'
+  ? 'http://localhost:5002/api'
   : 'https://rogue-7rnu.onrender.com/api';
 
 export const apiCall = async (endpoint, method = 'GET', body = null, token = null) => {
@@ -47,10 +47,48 @@ export const apiCall = async (endpoint, method = 'GET', body = null, token = nul
   }
 };
 
+export const apiUpload = async (endpoint, formData, token = null) => {
+  const headers = {};
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const config = {
+    method: 'POST',
+    headers,
+    body: formData,
+  };
+
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, config);
+    
+    let data;
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      data = await response.json();
+    } else {
+      if (!response.ok) {
+        throw new Error(`API upload error (${response.status})`);
+      }
+      data = {};
+    }
+
+    if (!response.ok) {
+      throw new Error(data.message || 'File upload failed');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('API upload error:', error);
+    throw error;
+  }
+};
+
 // Dynamic Product Image Formatter
 export const formatProductImage = (url) => {
-  if (!url) return "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=600&q=80";
-  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
+  if (!url) return "https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?auto=format&fit=crop&w=600&q=80";
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:") || url.startsWith("blob:")) {
     const backendBase = API_URL.replace("/api", "");
     if (url.includes("localhost:5000")) {
       return url.replace("http://localhost:5000", backendBase);

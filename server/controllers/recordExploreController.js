@@ -5,7 +5,7 @@ exports.getHomepageSections = async (req, res) => {
   try {
     const { data: allVerified, error } = await supabase
       .from('records')
-      .select('id, title, category, value, unit, thumbnail_url, evidence_url, created_at, date_set')
+      .select('id, title, category, value, unit, thumbnail_url, evidence_url, created_at, date_set, user:users!records_user_id_fkey(username, name, profile_image)')
       .eq('status', 'verified')
       .order('created_at', { ascending: false })
       .limit(50);
@@ -45,7 +45,7 @@ exports.getNewRecords = async (req, res) => {
 
     let query = supabase
       .from('records')
-      .select('*, user:users!user_id(username, display_name:name)', { count: 'exact' })
+      .select('*, user:users!user_id(username, display_name:name, profile_image)', { count: 'exact' })
       .eq('status', 'verified')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -72,7 +72,7 @@ exports.getFeaturedRecords = async (req, res) => {
 
     const { data, count, error } = await supabase
       .from('records')
-      .select('*, user:users!user_id(username, display_name:name)', { count: 'exact' })
+      .select('*, user:users!user_id(username, display_name:name, profile_image)', { count: 'exact' })
       .eq('status', 'verified')
       .eq('is_featured', true)
       .order('created_at', { ascending: false })
@@ -93,7 +93,7 @@ exports.getMostViewedRecords = async (req, res) => {
 
     const { data, count, error } = await supabase
       .from('records')
-      .select('*, user:users!user_id(username, display_name:name)', { count: 'exact' })
+      .select('*, user:users!user_id(username, display_name:name, profile_image)', { count: 'exact' })
       .eq('status', 'verified')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -113,7 +113,7 @@ exports.getTopRankedRecords = async (req, res) => {
 
     const { data, count, error } = await supabase
       .from('records')
-      .select('*, user:users!user_id(username, display_name:name)', { count: 'exact' })
+      .select('*, user:users!user_id(username, display_name:name, profile_image)', { count: 'exact' })
       .eq('status', 'verified')
       .eq('is_world_record', true)
       .order('created_at', { ascending: false })
@@ -135,7 +135,7 @@ exports.getRecordsByCategory = async (req, res) => {
 
     const { data, count, error } = await supabase
       .from('records')
-      .select('*, user:users!user_id(username, display_name:name)', { count: 'exact' })
+      .select('*, user:users!user_id(username, display_name:name, profile_image)', { count: 'exact' })
       .eq('status', 'verified')
       .eq('category_id', categoryId)
       .order('created_at', { ascending: false })
@@ -156,7 +156,7 @@ exports.getLocalRecords = async (req, res) => {
 
     let query = supabase
       .from('records')
-      .select('*, user:users!user_id(username, display_name:name)', { count: 'exact' })
+      .select('*, user:users!user_id(username, display_name:name, profile_image)', { count: 'exact' })
       .eq('status', 'verified');
 
     if (country) query = query.eq('country', country);
@@ -314,7 +314,7 @@ exports.getAllRecords = async (req, res) => {
 
     let query = supabase
       .from('records')
-      .select('*, user:users!user_id(username, display_name:name)', { count: 'exact' })
+      .select('*, user:users!user_id(username, display_name:name, profile_image)', { count: 'exact' })
       .eq('status', status);
 
     if (category) query = query.eq('category_id', category);

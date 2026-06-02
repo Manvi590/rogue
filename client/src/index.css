@@ -2372,3 +2372,21 @@ a:hover svg {
   color: white !important;
 }
 
+
+/* ── GLOBAL DROPDOWN STYLING ── */
+select {
+  background-color: #0A0A0A !important;
+  color: #FFFFFF !important;
+  color-scheme: dark;
+}
+
+select option {
+  background-color: #0A0A0A !important;
+  color: #FFFFFF !important;
+}
+
+select option:checked, select option:hover, select option:focus {
+  background-color: #FF6A00 !important;
+  color: #FFFFFF !important;
+}
+

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import PageTransition from "../components/PageTransition";
 import Navbar from "../components/Navbar";
+import PageNav from "../components/PageNav";
 import Footer from "../components/Footer";
 import ScrollReveal from "../components/ScrollReveal";
 import { motion, AnimatePresence } from "framer-motion";
@@ -133,8 +134,9 @@ const LocalLeaderboards = () => {
 
   return (
     <PageTransition>
-      <div style={{ background: "#060606", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ background: "#050505", color: "white", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
         <Navbar />
+
 
         {/* HERO SECTION */}
         <section style={{ padding: "180px 5% 60px", position: "relative", overflow: "hidden" }}>
@@ -318,12 +320,13 @@ const LocalLeaderboards = () => {
                           #{r.rank}
                         </div>
                         
-                        <div 
+                        <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/profile/${r.profileId}`);
+                            if (r.profileId) navigate(`/profile/${r.profileId}`);
                           }}
-                          style={{ display: "flex", alignItems: "center", gap: "16px", cursor: "pointer" }}
+                          style={{
+                            background: "transparent", border: "none", display: "flex", alignItems: "center", gap: "16px", cursor: "pointer", padding: 0 }}
                           onMouseEnter={(e) => {
                             const nameEl = e.currentTarget.querySelector(".athlete-hover-name");
                             if (nameEl) nameEl.style.color = "#FF6A00";
@@ -340,7 +343,7 @@ const LocalLeaderboards = () => {
                               <MapPin size={10} color="#FF6A00" /> {r.state}
                             </div>
                           </div>
-                        </div>
+                        </button>
  
                         <div>
                           <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.3)", fontWeight: "800", textTransform: "uppercase", marginBottom: "4px" }}>{r.event}</div>

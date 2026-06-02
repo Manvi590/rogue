@@ -190,7 +190,12 @@ const StreamDetail = () => {
       }
     } catch (error) {
       console.error("Failed to fetch event details", error);
-      setCanWatch(true);
+      const mockEvent = eventsData.find(e => e.id === id);
+      if (mockEvent) {
+        setEventIsPaid(mockEvent.isFreeStream === false);
+        setTicketPrice(49);
+      }
+      setCanWatch(false);
       setHasTicket(false);
     } finally {
       setLoading(false);
@@ -202,7 +207,8 @@ const StreamDetail = () => {
   }, [id, user]);
 
   const currentEvent = event || eventsData.find(e => e.id === id) || eventsData[0];
-  const isLocked = !loading && currentEvent && eventIsPaid && !canWatch;
+  const requiresTicket = event ? eventIsPaid : (currentEvent.isFreeStream === false);
+  const isLocked = !loading && currentEvent && requiresTicket && !canWatch;
 
   const handleWatchClick = () => {
     if (isCurrentUserKicked) return;
@@ -227,11 +233,17 @@ const StreamDetail = () => {
     }
     try {
       setLoading(true);
-      await apiCall('/tickets', 'POST', { eventId: id }, user.token);
-      
-      const ticketVerification = await apiCall(`/tickets/verify/${id}`, 'GET', null, user.token);
-      setCanWatch(ticketVerification.canWatch);
-      setHasTicket(ticketVerification.hasTicket);
+      if (!event && eventsData.find(e => e.id === id)) {
+        // Mock purchase for hardcoded static events
+        await new Promise(resolve => setTimeout(resolve, 800));
+        setCanWatch(true);
+        setHasTicket(true);
+      } else {
+        await apiCall('/tickets', 'POST', { eventId: id }, user.token);
+        const ticketVerification = await apiCall(`/tickets/verify/${id}`, 'GET', null, user.token);
+        setCanWatch(ticketVerification.canWatch);
+        setHasTicket(ticketVerification.hasTicket);
+      }
       
       setShowModal(false);
       setIsPlaying(true);
@@ -535,7 +547,21 @@ const StreamDetail = () => {
                       <button onClick={() => setShowModal(true)} style={{ background: "#FF6A00", border: "none", color: "white", padding: "14px 32px", borderRadius: "100px", fontWeight: "900", fontSize: "13px", cursor: "pointer", boxShadow: "0 10px 20px rgba(255,106,0,0.25)", transition: "transform 0.2s" }} onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
                         PURCHASE TICKET
                       </button>
-                      <button style={{ background: "transparent", border: "none", color: "#FF6A00", padding: "14px 32px", borderRadius: "100px", fontWeight: "800", fontSize: "13px", cursor: "pointer" }}>
+                      <button 
+                        onClick={() => {
+                          const code = window.prompt("Enter your access code:");
+                          if (code) {
+                            if (code.trim().toUpperCase() === "ROGUEVIP" || code.trim().toUpperCase() === "VIPACCESS") {
+                              setHasTicket(true);
+                              setIsPlaying(true);
+                              alert("Access code redeemed successfully! Enjoy the livestream.");
+                            } else {
+                              alert("Invalid access code. Please try again or contact support.");
+                            }
+                          }
+                        }}
+                        style={{ background: "transparent", border: "none", color: "#FF6A00", padding: "14px 32px", borderRadius: "100px", fontWeight: "800", fontSize: "13px", cursor: "pointer" }}
+                      >
                         REDEEM ACCESS CODE
                       </button>
                     </div>
