@@ -720,7 +720,7 @@ const Home = () => {
           <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "150px", background: "linear-gradient(to right, rgba(255,255,255,0.9) 0%, transparent 100%)", zIndex: 5, pointerEvents: "none" }} />
           <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "150px", background: "linear-gradient(to left, rgba(255,255,255,0.9) 0%, transparent 100%)", zIndex: 5, pointerEvents: "none" }} />
 
-          <InfiniteSlider speed={32} gap={24} cardWidth="300px">
+          <InfiniteSlider speed={32} gap={24} cardWidth="300px" reverse={true}>
             {newestRecords.map((rec, idx) => (
               <NewestCard key={idx} {...rec} />
             ))}
