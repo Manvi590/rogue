@@ -1264,7 +1264,7 @@ const uploadProductImage = async (req, res) => {
 
     const productId = req.params.id;
     const baseUrl = process.env.API_BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-    const imageUrl = req.file.url || `${baseUrl}/uploads/images/${req.file.filename}`;
+    const imageUrl = req.file.path || req.file.url || `${baseUrl}/uploads/images/${req.file.filename}`;
 
     // Update the product's image_url in the database
     const { data: updatedProduct, error } = await supabase
