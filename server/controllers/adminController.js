@@ -1271,7 +1271,6 @@ const uploadProductImage = async (req, res) => {
       .from('products')
       .update({
         image_url: imageUrl,
-        image_path: req.file.path,
         updated_at: new Date()
       })
       .eq('id', productId)
