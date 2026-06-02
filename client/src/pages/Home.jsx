@@ -720,7 +720,7 @@ const Home = () => {
           <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "150px", background: "linear-gradient(to right, rgba(255,255,255,0.9) 0%, transparent 100%)", zIndex: 5, pointerEvents: "none" }} />
           <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "150px", background: "linear-gradient(to left, rgba(255,255,255,0.9) 0%, transparent 100%)", zIndex: 5, pointerEvents: "none" }} />
 
-          <InfiniteSlider speed={32} gap={24} cardWidth="300px" reverse={true}>
+          <InfiniteSlider speed={32} gap={24} cardWidth="300px">
             {newestRecords.map((rec, idx) => (
               <NewestCard key={idx} {...rec} />
             ))}
@@ -822,7 +822,7 @@ const Home = () => {
           </div>
         </div>
         <div className="slider-wrapper holders-slider-wrapper">
-          <InfiniteSlider gap={12} speed={8} reverse={true} cardWidth="260px">
+          <InfiniteSlider gap={12} speed={5} reverse={true} cardWidth="260px">
             {featuredHolders.map((holder, idx) => (
               <HolderCard key={idx} {...holder} />
             ))}
