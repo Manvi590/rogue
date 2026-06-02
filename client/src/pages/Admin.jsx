@@ -256,7 +256,7 @@ const Admin = () => {
   const handleCreateAwardProduct = async (e) => {
     e.preventDefault();
     if (!awardName || !awardPrice) { showToast("Please provide award name and price.", "error"); return; }
-    const payload = { name: awardName, description: awardDesc, price: parseFloat(awardPrice), imageUrl: awardImagePreview || "", category: awardCategory, stockCount: parseInt(awardStock) || 10, sizes: [], imageUrls: [] };
+    const payload = { name: awardName, description: awardDesc, price: parseFloat(awardPrice), imageUrl: "", category: awardCategory, stockCount: parseInt(awardStock) || 10, sizes: [], imageUrls: [] };
     try {
       if (user && user.token) {
         let newProd = await apiCall("/admin/products", "POST", payload, user.token);
