@@ -96,6 +96,9 @@ export const formatProductImage = (url) => {
     if (url.includes("localhost:5001")) {
       return url.replace("http://localhost:5001", backendBase);
     }
+    if (url.includes("localhost:5002")) {
+      return url.replace("http://localhost:5002", backendBase);
+    }
     return url;
   }
   const backendBase = API_URL.replace("/api", "");

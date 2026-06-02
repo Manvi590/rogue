@@ -260,7 +260,6 @@ const updateUserProfile = async (req, res) => {
       country: country !== undefined ? country : user.country,
       city: city !== undefined ? city : user.city,
       street_address: streetAddress !== undefined ? streetAddress : user.street_address,
-      state: state !== undefined ? state : user.state,
       zip_code: zipCode !== undefined ? zipCode : user.zip_code,
       updated_at: new Date()
     };
