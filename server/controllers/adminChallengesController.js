@@ -36,11 +36,11 @@ const createChallenge = async (req, res) => {
     if (videoType === 'youtube') {
       finalVideoUrl = youtubeUrl;
     } else if (req.files && req.files.videoFile && req.files.videoFile[0]) {
-      finalVideoUrl = `${baseUrl}/uploads/videos/${req.files.videoFile[0].filename}`;
+      finalVideoUrl = req.files.videoFile[0].url || `${baseUrl}/uploads/videos/${req.files.videoFile[0].filename}`;
     }
 
     if (req.files && req.files.thumbnailImage && req.files.thumbnailImage[0]) {
-      finalThumbnailUrl = `${baseUrl}/uploads/thumbnails/${req.files.thumbnailImage[0].filename}`;
+      finalThumbnailUrl = req.files.thumbnailImage[0].url || `${baseUrl}/uploads/thumbnails/${req.files.thumbnailImage[0].filename}`;
     }
 
     if (!title || !description) {
@@ -100,13 +100,13 @@ const updateChallenge = async (req, res) => {
       updateData.video_url = youtubeUrl;
       updateData.evidence_url = youtubeUrl;
     } else if (req.files && req.files.videoFile && req.files.videoFile[0]) {
-      const url = `${baseUrl}/uploads/videos/${req.files.videoFile[0].filename}`;
+      const url = req.files.videoFile[0].url || `${baseUrl}/uploads/videos/${req.files.videoFile[0].filename}`;
       updateData.video_url = url;
       updateData.evidence_url = url;
     }
 
     if (req.files && req.files.thumbnailImage && req.files.thumbnailImage[0]) {
-      updateData.thumbnail_url = `${baseUrl}/uploads/thumbnails/${req.files.thumbnailImage[0].filename}`;
+      updateData.thumbnail_url = req.files.thumbnailImage[0].url || `${baseUrl}/uploads/thumbnails/${req.files.thumbnailImage[0].filename}`;
     }
 
     const { data: updatedChallenge, error } = await supabase

@@ -36,13 +36,13 @@ const createSponsor = async (req, res) => {
     // Handle file uploads (req.files from multer fields)
     if (req.files) {
       if (req.files.bannerImage && req.files.bannerImage[0]) {
-        finalBannerUrl = `${baseUrl}/uploads/images/${req.files.bannerImage[0].filename}`;
+        finalBannerUrl = req.files.bannerImage[0].url || `${baseUrl}/uploads/images/${req.files.bannerImage[0].filename}`;
       }
       if (req.files.logoImage && req.files.logoImage[0]) {
-        finalLogoUrl = `${baseUrl}/uploads/images/${req.files.logoImage[0].filename}`;
+        finalLogoUrl = req.files.logoImage[0].url || `${baseUrl}/uploads/images/${req.files.logoImage[0].filename}`;
       }
     } else if (req.file) {
-      finalBannerUrl = `${baseUrl}/uploads/images/${req.file.filename}`;
+      finalBannerUrl = req.file.url || `${baseUrl}/uploads/images/${req.file.filename}`;
     }
 
     if (!companyName) {
@@ -104,13 +104,13 @@ const updateSponsor = async (req, res) => {
 
     if (req.files) {
       if (req.files.bannerImage && req.files.bannerImage[0]) {
-        updateData.banner_url = `${baseUrl}/uploads/images/${req.files.bannerImage[0].filename}`;
+        updateData.banner_url = req.files.bannerImage[0].url || `${baseUrl}/uploads/images/${req.files.bannerImage[0].filename}`;
       }
       if (req.files.logoImage && req.files.logoImage[0]) {
-        updateData.logo_url = `${baseUrl}/uploads/images/${req.files.logoImage[0].filename}`;
+        updateData.logo_url = req.files.logoImage[0].url || `${baseUrl}/uploads/images/${req.files.logoImage[0].filename}`;
       }
     } else if (req.file) {
-      updateData.banner_url = `${baseUrl}/uploads/images/${req.file.filename}`;
+      updateData.banner_url = req.file.url || `${baseUrl}/uploads/images/${req.file.filename}`;
     } else {
       if (bannerUrl !== undefined) updateData.banner_url = bannerUrl || null;
       if (logoUrl !== undefined)   updateData.logo_url = logoUrl || null;

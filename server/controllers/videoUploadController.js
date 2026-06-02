@@ -23,7 +23,7 @@ const uploadVideoFile = async (req, res) => {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const fileUrl = `/uploads/videos/${req.file.filename}`;
+    const fileUrl = req.file.url || `/uploads/videos/${req.file.filename}`;
     const fileInfo = {
       filename: req.file.filename,
       size: req.file.size,
@@ -49,7 +49,7 @@ const uploadThumbnail = async (req, res) => {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const fileUrl = `/uploads/thumbnails/${req.file.filename}`;
+    const fileUrl = req.file.url || `/uploads/thumbnails/${req.file.filename}`;
     const fileInfo = {
       filename: req.file.filename,
       size: req.file.size,
@@ -75,7 +75,7 @@ const uploadEvidence = async (req, res) => {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const fileUrl = `/uploads/evidence/${req.file.filename}`;
+    const fileUrl = req.file.url || `/uploads/evidence/${req.file.filename}`;
     const fileInfo = {
       filename: req.file.filename,
       size: req.file.size,
