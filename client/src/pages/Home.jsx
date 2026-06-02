@@ -822,7 +822,7 @@ const Home = () => {
           </div>
         </div>
         <div className="slider-wrapper holders-slider-wrapper">
-          <InfiniteSlider gap={12} speed={5} reverse={true} cardWidth="260px">
+          <InfiniteSlider gap={12} speed={5} reverse={false} cardWidth="260px">
             {featuredHolders.map((holder, idx) => (
               <HolderCard key={idx} {...holder} />
             ))}
