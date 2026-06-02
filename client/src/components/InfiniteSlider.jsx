@@ -1,8 +1,16 @@
 import React from 'react';
 
 export default function InfiniteSlider({ children, gap = 32, speed = 40, reverse = false, cardWidth = "300px" }) {
-  // Duplicate children to create a seamless loop
-  const duplicatedChildren = [...React.Children.toArray(children), ...React.Children.toArray(children)];
+  const originalChildren = React.Children.toArray(children);
+  const originalCount = originalChildren.length;
+  
+  if (originalCount === 0) return null;
+
+  const cardWidthNum = parseInt(cardWidth) || 300;
+  const loopWidth = originalCount * (cardWidthNum + gap);
+  
+  // Duplicate 12 times to ensure it fully fills even ultra-wide screens across multiple loops
+  const duplicatedChildren = Array(12).fill(originalChildren).flat();
 
   return (
     <div className="infinite-slider-container" style={{ overflow: 'hidden', width: '100%' }}>
@@ -12,7 +20,7 @@ export default function InfiniteSlider({ children, gap = 32, speed = 40, reverse
           display: 'flex', 
           gap: `${gap}px`,
           width: 'max-content',
-          animation: `scroll ${speed}s linear infinite`,
+          animation: `scroll-${loopWidth} ${speed}s linear infinite`,
           animationDirection: reverse ? 'reverse' : 'normal'
         }}
       >
@@ -24,9 +32,9 @@ export default function InfiniteSlider({ children, gap = 32, speed = 40, reverse
       </div>
 
       <style>{`
-        @keyframes scroll {
+        @keyframes scroll-${loopWidth} {
           0% { transform: translateX(0); }
-          100% { transform: translateX(calc(-50% - ${gap / 2}px)); }
+          100% { transform: translateX(-${loopWidth}px); }
         }
         .infinite-slider-track:hover {
           animation-play-state: paused;
