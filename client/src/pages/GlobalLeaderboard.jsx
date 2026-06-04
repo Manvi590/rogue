@@ -65,20 +65,56 @@ const GlobalLeaderboard = () => {
   const [activeCountry, setActiveCountry] = useState("All Countries");
   const [activeAgeGroup, setActiveAgeGroup] = useState("All Ages");
   const [activeSort, setActiveSort] = useState("Highest Score");
+  const [globalData, setGlobalData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const mockGlobalData = [
-    { rank: "#01", name: "Leo Vance", points: 24850, country: "USA", records: 12, trend: "+2", avatar: "https://randomuser.me/api/portraits/men/32.jpg", category: "Strength", ageGroup: "Adult Division (18–49)", score: "355 KG", date: "2026-05-18", recordId: "bench-press", profileId: "leo-vance" },
-    { rank: "#02", name: "Elena Petrov", points: 22410, country: "RUS", records: 10, trend: "-1", avatar: "https://randomuser.me/api/portraits/women/44.jpg", category: "Endurance", ageGroup: "Adult Division (18–49)", score: "19h 12m", date: "2026-05-15", recordId: "plank-holds", profileId: "leo-vance" },
-    { rank: "#03", name: "Jamal Carter", points: 21900, country: "GBR", records: 15, trend: "STABLE", avatar: "https://randomuser.me/api/portraits/men/85.jpg", category: "Athletics", ageGroup: "Adult Division (18–49)", score: "9.76 Sec", date: "2026-05-10", recordId: "sprinting", profileId: "jamal-carter" },
-    { rank: "#04", name: "Sarah Kim", points: 19540, country: "KOR", records: 8, trend: "+5", avatar: "https://randomuser.me/api/portraits/women/15.jpg", category: "Gaming", ageGroup: "Teen Legends Division (13–17)", score: "3.13 Sec", date: "2026-05-17", recordId: "rubik-s-cube", profileId: "jamal-carter" },
-    { rank: "#05", name: "Marcus Rossi", points: 18210, country: "ITA", records: 9, trend: "STABLE", avatar: "https://randomuser.me/api/portraits/men/12.jpg", category: "Balance", ageGroup: "Masters Division (50+)", score: "2h 15m", date: "2026-05-01", recordId: "stair-climbing", profileId: "leo-vance" },
-    { rank: "#06", name: "Chen Wei", points: 17800, country: "CHN", records: 11, trend: "-2", avatar: "https://randomuser.me/api/portraits/men/45.jpg", category: "Reaction", ageGroup: "Junior Champions Division (5–12)", score: "0.15 Sec", date: "2026-04-20", recordId: "stair-climbing", profileId: "jamal-carter" },
-    { rank: "#07", name: "Mina Chen", points: 16950, country: "JPN", records: 7, trend: "+1", avatar: "https://randomuser.me/api/portraits/women/22.jpg", category: "Skills", ageGroup: "Teen Legends Division (13–17)", score: "10,500 Pts", date: "2026-05-19", recordId: "stair-climbing", profileId: "jamal-carter" },
-    { rank: "#08", name: "David Lu", points: 15400, country: "CAN", records: 6, trend: "STABLE", avatar: "https://randomuser.me/api/portraits/men/76.jpg", category: "Mind & Memory", ageGroup: "Adult Division (18–49)", score: "52 Cards / 14s", date: "2026-03-15", recordId: "stair-climbing", profileId: "jamal-carter" }
-  ];
+  React.useEffect(() => {
+    const fetchRankings = async () => {
+      try {
+        setLoading(true);
+        // Using apiCall from utils/api.js (must import it at the top)
+        const data = await window.apiCall("/rankings/global", "GET");
+        if (data && data.rankings) {
+          const mapped = data.rankings.map(r => ({
+            rank: r.global_rank ? `#${String(r.global_rank).padStart(2, '0')}` : "-",
+            name: r.users?.name || "Unknown Athlete",
+            points: r.total_points || 0,
+            country: r.country || "N/A",
+            records: r.verified_records_count || 0,
+            avatar: r.users?.profile_image 
+              ? (r.users.profile_image.includes('http') ? r.users.profile_image : `http://localhost:5002/uploads/${r.users.profile_image}`)
+              : `https://ui-avatars.com/api/?name=${encodeURIComponent(r.users?.name || "Athlete")}&background=FF6A00&color=fff`,
+            category: r.category_id ? "Ranked" : "Global",
+            ageGroup: "All Ages", // Add age groups if stored in users later
+            score: `${r.total_points || 0} Pts`, // Temporary score mapping
+            date: new Date(r.updated_at || r.created_at).toLocaleDateString(),
+            recordId: r.id, // Fallback, not real record ID
+            profileId: r.user_id
+          }));
+          setGlobalData(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to fetch global rankings:", err);
+        setError("Failed to load rankings. Ensure ranking tables exist in Supabase.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    // Quick hack since we don't have apiCall imported in this file directly
+    if (!window.apiCall) {
+      import('../utils/api.js').then(module => {
+        window.apiCall = module.apiCall;
+        fetchRankings();
+      });
+    } else {
+      fetchRankings();
+    }
+  }, []);
 
   const getFilteredData = () => {
-    let data = [...mockGlobalData];
+    let data = [...globalData];
     
     if (activeCategory !== "All Categories") data = data.filter(d => d.category === activeCategory);
     if (activeCountry !== "All Countries") data = data.filter(d => d.country === activeCountry);
@@ -223,14 +259,22 @@ const GlobalLeaderboard = () => {
                 <div style={{ textAlign: "right" }}>Points</div>
               </div>
 
-              {filteredData.length > 0 ? (
+              {loading ? (
+                <div style={{ padding: "80px 40px", textAlign: "center", color: "rgba(255,255,255,0.5)" }}>
+                  <p>Loading real rankings from database...</p>
+                </div>
+              ) : error ? (
+                <div style={{ padding: "80px 40px", textAlign: "center", color: "#FF6A00" }}>
+                  <p>{error}</p>
+                </div>
+              ) : filteredData.length > 0 ? (
                 filteredData.map((r, i) => (
                   <motion.div 
                     key={i} 
                     initial={{ opacity: 0, x: -20 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    onClick={() => navigate(`/record/${r.recordId}`)}
+                    onClick={() => navigate(`/profile/${r.profileId}`)}
                     style={{ 
                       display: "grid", 
                       gridTemplateColumns: "80px 1.5fr 150px 200px 150px 150px 120px", 

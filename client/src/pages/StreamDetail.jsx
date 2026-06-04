@@ -151,6 +151,10 @@ const StreamDetail = () => {
   ]);
   const [chatInput, setChatInput] = React.useState("");
   const [blockedUsers, setBlockedUsers] = React.useState([]);
+  const [purchaseCode, setPurchaseCode] = React.useState("");
+  const [showRedeemModal, setShowRedeemModal] = React.useState(false);
+  const [redeemCodeInput, setRedeemCodeInput] = React.useState("");
+
 
   const isCurrentUserKicked = user && blockedUsers.includes(user.id || user._id);
 
@@ -233,21 +237,13 @@ const StreamDetail = () => {
     }
     try {
       setLoading(true);
-      if (!event && eventsData.find(e => e.id === id)) {
-        // Mock purchase for hardcoded static events
-        await new Promise(resolve => setTimeout(resolve, 800));
-        setCanWatch(true);
-        setHasTicket(true);
-      } else {
-        await apiCall('/tickets', 'POST', { eventId: id }, user.token);
-        const ticketVerification = await apiCall(`/tickets/verify/${id}`, 'GET', null, user.token);
-        setCanWatch(ticketVerification.canWatch);
-        setHasTicket(ticketVerification.hasTicket);
-      }
+      // Simulate payment processing
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      setShowModal(false);
-      setIsPlaying(true);
-      showToast("🎟️ Pass Activated! Premium Stream Unlocked.");
+      // Generate code instead of auto unlocking
+      const code = "ROGUEVIP";
+      setPurchaseCode(code);
+      showToast("✅ Payment Successful! Your access code is generated.");
     } catch (error) {
       showToast("Ticket purchase failed. Please try again.");
       console.error("Ticket purchase error:", error);
@@ -448,41 +444,88 @@ const StreamDetail = () => {
                 This exclusive live world record attempt requires a Spectator Pass. Secure your premium ticket now to unlock full live coverage, high-definition playbacks, and live chat features!
               </p>
 
-              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "20px", marginBottom: "36px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: "12px", fontWeight: "800", color: "rgba(255,255,255,0.4)" }}>SINGLE PASS PRICE</span>
-                <span style={{ fontSize: "24px", fontWeight: "950", color: "#FF6A00" }}>${ticketPrice.toFixed(2)} USD</span>
-              </div>
+              {purchaseCode ? (
+                <div style={{ background: "rgba(34, 197, 94, 0.1)", border: "1px solid rgba(34, 197, 94, 0.3)", borderRadius: "16px", padding: "32px", marginBottom: "24px" }}>
+                  <h4 style={{ fontSize: "14px", fontWeight: "900", color: "#22c55e", textTransform: "uppercase", marginBottom: "16px", letterSpacing: "0.1em" }}>YOUR ACCESS CODE</h4>
+                  <div style={{ fontSize: "36px", fontWeight: "950", color: "white", letterSpacing: "0.1em", marginBottom: "20px", background: "rgba(0,0,0,0.4)", padding: "12px", borderRadius: "12px" }}>
+                    {purchaseCode}
+                  </div>
+                  <p style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "13px", lineHeight: "1.5" }}>
+                    Please copy this code and use the <strong>REDEEM ACCESS CODE</strong> button on the stream player to unlock the event.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "20px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "12px", fontWeight: "800", color: "rgba(255,255,255,0.4)" }}>SINGLE PASS PRICE</span>
+                    <span style={{ fontSize: "24px", fontWeight: "950", color: "#FF6A00" }}>${ticketPrice.toFixed(2)} USD</span>
+                  </div>
+
+                  <div style={{ textAlign: "left", marginBottom: "24px" }}>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>Card Details</label>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      <input type="text" placeholder="Cardholder Name" style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px 16px", color: "white", fontSize: "14px", outline: "none" }} />
+                      <input type="text" placeholder="Card Number" maxLength="19" style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px 16px", color: "white", fontSize: "14px", outline: "none", letterSpacing: "2px" }} />
+                      <div style={{ display: "flex", gap: "10px" }}>
+                        <input type="text" placeholder="MM/YY" maxLength="5" style={{ flex: 1, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px 16px", color: "white", fontSize: "14px", outline: "none" }} />
+                        <input type="text" placeholder="CVC" maxLength="4" style={{ flex: 1, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px 16px", color: "white", fontSize: "14px", outline: "none" }} />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <button 
-                  onClick={purchaseTicket}
-                  style={{
-                    background: "#FF6A00",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "100px",
-                    padding: "18px 36px",
-                    fontSize: "13px",
-                    fontWeight: "900",
-                    textTransform: "uppercase",
-                    cursor: "pointer",
-                    boxShadow: "0 10px 20px rgba(255,106,0,0.2)",
-                    transition: "all 0.2s"
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = "#e55e00";
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = "#FF6A00";
-                    e.currentTarget.style.transform = "translateY(0)";
-                  }}
-                >
-                  ⚡ INSTANT ACCESS PASS
-                </button>
+                {!purchaseCode ? (
+                  <button 
+                    onClick={purchaseTicket}
+                    disabled={loading}
+                    style={{
+                      background: loading ? "rgba(255,106,0,0.5)" : "#FF6A00",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "100px",
+                      padding: "18px 36px",
+                      fontSize: "13px",
+                      fontWeight: "900",
+                      textTransform: "uppercase",
+                      cursor: loading ? "not-allowed" : "pointer",
+                      boxShadow: "0 10px 20px rgba(255,106,0,0.2)",
+                      transition: "all 0.2s"
+                    }}
+                    onMouseEnter={e => { if (!loading) { e.currentTarget.style.background = "#e55e00"; e.currentTarget.style.transform = "translateY(-2px)"; } }}
+                    onMouseLeave={e => { if (!loading) { e.currentTarget.style.background = "#FF6A00"; e.currentTarget.style.transform = "translateY(0)"; } }}
+                  >
+                    {loading ? "PROCESSING..." : "PAY NOW"}
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(purchaseCode);
+                      showToast("Code copied to clipboard!");
+                    }}
+                    style={{
+                      background: "#22c55e",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "100px",
+                      padding: "18px 36px",
+                      fontSize: "13px",
+                      fontWeight: "900",
+                      textTransform: "uppercase",
+                      cursor: "pointer",
+                      boxShadow: "0 10px 20px rgba(34, 197, 94, 0.2)",
+                      transition: "all 0.2s"
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "#16a34a"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "#22c55e"; e.currentTarget.style.transform = "translateY(0)"; }}
+                  >
+                    COPY CODE
+                  </button>
+                )}
 
                 <button 
-                  onClick={() => setShowModal(false)}
+                  onClick={() => { setShowModal(false); setPurchaseCode(""); }}
                   style={{
                     background: "rgba(255, 255, 255, 0.05)",
                     color: "rgba(255, 255, 255, 0.6)",
@@ -497,6 +540,62 @@ const StreamDetail = () => {
                   }}
                   onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
                   onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                >
+                  CANCEL
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* REDEEM ACCESS CODE MODAL */}
+        {showRedeemModal && (
+          <div style={{
+            position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center",
+            background: "rgba(0, 0, 0, 0.85)", backdropFilter: "blur(15px)", animation: "fadeIn 0.25s ease-out"
+          }}>
+            <div style={{
+              background: "linear-gradient(135deg, #161616 0%, #0c0c0c 100%)", border: "1px solid rgba(255, 106, 0, 0.25)",
+              borderRadius: "32px", padding: "48px", maxWidth: "480px", width: "90%", boxShadow: "0 30px 60px rgba(255, 106, 0, 0.15)",
+              textAlign: "center", position: "relative", overflow: "hidden"
+            }}>
+              <h3 style={{ fontSize: "24px", fontWeight: "950", textTransform: "uppercase", marginBottom: "16px", letterSpacing: "-0.02em" }}>
+                REDEEM <span style={{ color: "#FF6A00" }}>ACCESS CODE</span>
+              </h3>
+              <p style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "14px", lineHeight: "1.6", marginBottom: "24px" }}>
+                Enter the access code from your spectator pass to unlock the live stream.
+              </p>
+              
+              <input 
+                type="text" 
+                value={redeemCodeInput}
+                onChange={e => setRedeemCodeInput(e.target.value.toUpperCase())}
+                placeholder="e.g. ROGUEVIP"
+                style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "16px 20px", color: "white", fontSize: "18px", fontWeight: "900", letterSpacing: "0.1em", outline: "none", textAlign: "center", textTransform: "uppercase", marginBottom: "24px" }}
+              />
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <button 
+                  onClick={() => {
+                    if (redeemCodeInput.trim() === "ROGUEVIP" || redeemCodeInput.trim() === "VIPACCESS") {
+                      setHasTicket(true);
+                      setIsPlaying(true);
+                      setShowRedeemModal(false);
+                      setRedeemCodeInput("");
+                      showToast("✅ Access code redeemed successfully! Enjoy the livestream.");
+                    } else {
+                      showToast("❌ Invalid access code. Please try again.");
+                    }
+                  }}
+                  style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 36px", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", transition: "all 0.2s" }}
+                  onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+                  onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+                >
+                  UNLOCK STREAM
+                </button>
+                <button 
+                  onClick={() => { setShowRedeemModal(false); setRedeemCodeInput(""); }}
+                  style={{ background: "rgba(255, 255, 255, 0.05)", color: "rgba(255, 255, 255, 0.6)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "100px", padding: "16px 36px", fontSize: "13px", fontWeight: "800", textTransform: "uppercase", cursor: "pointer", transition: "all 0.2s" }}
                 >
                   CANCEL
                 </button>
@@ -544,22 +643,11 @@ const StreamDetail = () => {
                           </button>
                         </Link>
                       )}
-                      <button onClick={() => setShowModal(true)} style={{ background: "#FF6A00", border: "none", color: "white", padding: "14px 32px", borderRadius: "100px", fontWeight: "900", fontSize: "13px", cursor: "pointer", boxShadow: "0 10px 20px rgba(255,106,0,0.25)", transition: "transform 0.2s" }} onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
+                      <button onClick={() => { if (!user) { window.location.href = '/login'; return; } setShowModal(true); }} style={{ background: "#FF6A00", border: "none", color: "white", padding: "14px 32px", borderRadius: "100px", fontWeight: "900", fontSize: "13px", cursor: "pointer", boxShadow: "0 10px 20px rgba(255,106,0,0.25)", transition: "transform 0.2s" }} onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
                         PURCHASE TICKET
                       </button>
                       <button 
-                        onClick={() => {
-                          const code = window.prompt("Enter your access code:");
-                          if (code) {
-                            if (code.trim().toUpperCase() === "ROGUEVIP" || code.trim().toUpperCase() === "VIPACCESS") {
-                              setHasTicket(true);
-                              setIsPlaying(true);
-                              alert("Access code redeemed successfully! Enjoy the livestream.");
-                            } else {
-                              alert("Invalid access code. Please try again or contact support.");
-                            }
-                          }
-                        }}
+                        onClick={() => setShowRedeemModal(true)}
                         style={{ background: "transparent", border: "none", color: "#FF6A00", padding: "14px 32px", borderRadius: "100px", fontWeight: "800", fontSize: "13px", cursor: "pointer" }}
                       >
                         REDEEM ACCESS CODE
@@ -970,26 +1058,24 @@ const StreamDetail = () => {
                   </div>
                 </div>
                 
-                <Link to="/shop?category=tickets" style={{ textDecoration: "none" }}>
-                  <button style={{ 
-                    background: "#FF6A00", 
-                    color: "white", 
-                    border: "none", 
-                    borderRadius: "100px", 
-                    padding: "20px 48px", 
-                    fontSize: "14px", 
-                    fontWeight: "900", 
-                    textTransform: "uppercase", 
-                    cursor: "pointer", 
-                    display: "flex", 
-                    alignItems: "center", 
-                    gap: "12px", 
-                    boxShadow: "0 20px 40px rgba(255, 106, 0, 0.3)",
-                    transition: "transform 0.3s"
-                  }} onMouseEnter={e => e.currentTarget.style.transform = "translateY(-5px)"} onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
-                    GET YOUR PASSES <ArrowRight size={18} />
-                  </button>
-                </Link>
+                <button onClick={() => { if (!user) { window.location.href = '/login'; return; } setShowModal(true); }} style={{ 
+                  background: "#FF6A00", 
+                  color: "white", 
+                  border: "none", 
+                  borderRadius: "100px", 
+                  padding: "20px 48px", 
+                  fontSize: "14px", 
+                  fontWeight: "900", 
+                  textTransform: "uppercase", 
+                  cursor: "pointer", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "12px", 
+                  boxShadow: "0 20px 40px rgba(255, 106, 0, 0.3)",
+                  transition: "transform 0.3s"
+                }} onMouseEnter={e => e.currentTarget.style.transform = "translateY(-5px)"} onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
+                  GET YOUR PASSES <ArrowRight size={18} />
+                </button>
               </div>
             </div>
           </section>

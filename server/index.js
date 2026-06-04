@@ -46,6 +46,8 @@ app.use('/api/records/meta', require('./routes/recordMetaRoutes'));
 app.use('/api/admin/videos', require('./routes/videoRoutes'));
 app.use('/api/coupons', require('./routes/couponRoutes'));
 app.use('/api/rankings', require('./routes/rankingRoutes'));
+app.use('/api/countries', require('./routes/countryRoutes'));
+app.use('/api/social', require('./routes/socialRoutes'));
 
 app.get('/', (req, res) => {
   res.send('ROGUE API is running...');

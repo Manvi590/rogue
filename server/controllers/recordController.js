@@ -1,4 +1,5 @@
 const supabase = require('../config/supabase');
+const socialController = require('./socialController');
 
 // @desc    Get all verified records
 // @route   GET /api/records
@@ -289,7 +290,7 @@ const getAllSubmissionsForAdmin = async (req, res) => {
 // @route   PUT /api/records/admin/adjudicate/:id
 // @access  Private/Admin
 const adjudicateRecord = async (req, res) => {
-  const { status } = req.body;
+  const { status, points } = req.body;
   
   if (!['verified', 'rejected', 'pending'].includes(status)) {
     return res.status(400).json({ message: 'Invalid adjudication status' });
@@ -302,12 +303,6 @@ const adjudicateRecord = async (req, res) => {
       updated_at: new Date()
     };
 
-    // Auto-assign to "newly_verified" section if record is being verified
-    // (Removed homepage_order logic as the columns do not exist in schema cache and are not used by the new frontend logic)
-    if (status === 'verified') {
-       // Just marking it as verified is enough
-    }
-
     const { data: updatedRecord, error } = await supabase
       .from('records')
       .update(updateData)
@@ -316,6 +311,47 @@ const adjudicateRecord = async (req, res) => {
       .single();
 
     if (error) throw error;
+
+    // Award points if provided and record is verified
+    if (status === 'verified' && points > 0) {
+      try {
+        const userId = updatedRecord.user_id;
+        
+        // Fetch current rankings
+        const { data: existingRanking } = await supabase
+          .from('user_rankings')
+          .select('id, total_points, verified_records_count')
+          .eq('user_id', userId)
+          .single();
+
+        let newPoints = points;
+        let newCount = 1;
+        
+        if (existingRanking) {
+          newPoints += existingRanking.total_points || 0;
+          newCount += existingRanking.verified_records_count || 0;
+        }
+        
+        let tier = 'Challenger';
+        if (newPoints >= 15000) tier = 'Grand Champion';
+        else if (newPoints >= 10000) tier = 'Elite Master';
+        else if (newPoints >= 5000) tier = 'Pro Competitor';
+
+        // Upsert ranking
+        await supabase.from('user_rankings').upsert([{
+          id: existingRanking ? existingRanking.id : undefined,
+          user_id: userId,
+          total_points: newPoints,
+          verified_records_count: newCount,
+          tier_badge: tier,
+          updated_at: new Date()
+        }], { onConflict: 'id' });
+
+      } catch (pointsErr) {
+        console.warn("[Rankings Warning] Could not award points. Are ranking tables created?", pointsErr.message);
+      }
+    }
+
     res.json(updatedRecord);
   } catch (error) {
     res.status(400).json({ message: error.message });

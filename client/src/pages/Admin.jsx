@@ -94,7 +94,7 @@ const Admin = () => {
     unassigned: []
   });
   const [videos, setVideos] = useState([]);
-  const [videoManagementSubTab, setVideoManagementSubTab] = useState("newest"); // "newest" | "featured" | "highlights"
+  const [videoManagementSubTab, setVideoManagementSubTab] = useState("all_submissions"); // "newest" | "featured" | "highlights"
   const [videoForm, setVideoForm] = useState({
     title: "", description: "", category: "Strength", isFeatured: false, isNewlyUploaded: false, videoUrl: ""
   });
@@ -143,6 +143,7 @@ const Admin = () => {
   const [selectedVqRecord, setSelectedVqRecord] = useState(null);
   const [isVqDetailOpen, setIsVqDetailOpen] = useState(false);
   const [vqAdminNote, setVqAdminNote] = useState("");
+  const [vqPointsAwarded, setVqPointsAwarded] = useState(0);
   const [vqStatusOverrides, setVqStatusOverrides] = useState({}); // { [recordId]: verificationStatus }
   const [vqUpdating, setVqUpdating] = useState(null); // id being updated
 
@@ -679,12 +680,45 @@ const Admin = () => {
         setHomepageRecords(homepageData);
         setRecords(syncRecordsWithLocalFeatures(allVerifiedData.filter(r => r.status === 'verified') || []));
       } else if (activeTab === "videoManagement") {
-        const [featuredVids, newestVids, highlightVids] = await Promise.all([
+        const [featuredVids, newestVids, highlightVids, allSubmissionsData] = await Promise.all([
           apiCall("/admin/videos/featured", "GET", null, user.token).catch(() => []),
           apiCall("/admin/videos/newest", "GET", null, user.token).catch(() => []),
-          apiCall("/admin/videos/record", "GET", null, user.token).catch(() => [])
+          apiCall("/admin/videos/record", "GET", null, user.token).catch(() => []),
+          apiCall("/records/admin/submissions", "GET", null, user.token).catch(() => [])
         ]);
-        setVideos({ featured: featuredVids, newest: newestVids, highlights: highlightVids });
+        
+        const syncedSubmissions = syncRecordsWithLocalFeatures(allSubmissionsData || []);
+        const allSubmissionVids = [];
+        const additionalFeaturedVids = [];
+        
+        if (Array.isArray(syncedSubmissions)) {
+          syncedSubmissions.forEach(sub => {
+            const vidUrl = sub.evidence_url || sub.evidenceUrl || sub.youtube_link || sub.youtubeLink || sub.video_url || sub.videoUrl;
+            if (vidUrl) {
+              const videoObj = {
+                id: `sub-${sub.id}`,
+                title: sub.title || 'Untitled Record Video',
+                description: `Submitted by: ${sub.user?.name || 'Unknown'} - Status: ${sub.status}`,
+                category: sub.category || 'Uncategorized',
+                videoUrl: vidUrl,
+                thumbnailUrl: sub.thumbnail_url || sub.thumbnailUrl || null,
+                is_newly_uploaded: false,
+                is_featured: sub.is_featured || false,
+                record_id: sub.id,
+                status: sub.status
+              };
+              allSubmissionVids.push(videoObj);
+              
+              if (sub.is_featured) {
+                additionalFeaturedVids.push(videoObj);
+              }
+            }
+          });
+        }
+        
+        const combinedFeatured = [...featuredVids, ...additionalFeaturedVids];
+        
+        setVideos({ featured: combinedFeatured, newest: newestVids, highlights: highlightVids, all_submissions: allSubmissionVids });
       } else if (activeTab === "coupons") {
         const [couponsData, couponStatsData] = await Promise.all([
           apiCall("/coupons", "GET", null, user.token).catch(() => []),
@@ -6073,7 +6107,8 @@ const Admin = () => {
               try {
                 await apiCall(`/records/admin/adjudicate/${recordId}`, "PUT", {
                   status: newStatus === "approved" ? "verified" : newStatus === "denied" ? "rejected" : "pending",
-                  verification_status: newStatus
+                  verification_status: newStatus,
+                  points: parseInt(vqPointsAwarded) || 0
                 }, user.token);
                 showToast(`Status updated to "${VQ_STATUSES.find(s=>s.key===newStatus)?.label || newStatus}"`, "success");
               } catch (err) {
@@ -6201,7 +6236,7 @@ const Admin = () => {
                                 <Video size={10} />{r.evidence_url ? "Video attached" : "No video"}
                               </div>
                             </td>
-                            <td style={{ padding: "16px 20px" }} onClick={() => { setSelectedVqRecord(r); setVqAdminNote(""); setIsVqDetailOpen(true); }}>
+                            <td style={{ padding: "16px 20px" }} onClick={() => { setSelectedVqRecord(r); setVqAdminNote(""); setVqPointsAwarded(0); setIsVqDetailOpen(true); }}>
                               <span style={{ background: "rgba(255,255,255,0.05)", color: "#aaa", padding: "4px 10px", borderRadius: "100px", fontSize: "10px", fontWeight: "900", textTransform: "uppercase" }}>{r.category || "General"}</span>
                             </td>
                             <td style={{ padding: "16px 20px", color: "#666", fontSize: "12px", fontWeight: "600" }} onClick={() => { setSelectedVqRecord(r); setVqAdminNote(""); setIsVqDetailOpen(true); }}>
@@ -6257,7 +6292,7 @@ const Admin = () => {
                                   style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", width: "30px", height: "30px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                                 ><XCircle size={14} /></button>
                                 <button
-                                  onClick={() => { setSelectedVqRecord(r); setVqAdminNote(""); setIsVqDetailOpen(true); }}
+                                  onClick={() => { setSelectedVqRecord(r); setVqAdminNote(""); setVqPointsAwarded(0); setIsVqDetailOpen(true); }}
                                   style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.08)", color: "#888", width: "30px", height: "30px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                                 ><FileText size={14} /></button>
                               </div>
@@ -6372,15 +6407,30 @@ const Admin = () => {
                         </div>
                       </div>
 
-                      {/* Admin Note */}
+                      {/* Admin Note & Points */}
                       <div style={{ marginBottom: "24px" }}>
                         <div style={{ fontSize: "10px", color: "#555", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>Admin Note / Feedback to Athlete</div>
                         <textarea
                           value={vqAdminNote}
                           onChange={e => setVqAdminNote(e.target.value)}
                           placeholder="Leave an internal note or message to the athlete explaining the decision..."
-                          style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "14px", color: "white", fontSize: "13px", outline: "none", resize: "vertical", minHeight: "90px", fontFamily: "inherit" }}
+                          style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "14px", color: "white", fontSize: "13px", outline: "none", resize: "vertical", minHeight: "90px", fontFamily: "inherit", marginBottom: "16px" }}
                         />
+
+                        {getVqStatus(selectedVqRecord) === 'approved' && (
+                          <div>
+                            <div style={{ fontSize: "10px", color: "#22c55e", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>Points to Award (For Rankings)</div>
+                            <input
+                              type="number"
+                              min="0"
+                              value={vqPointsAwarded}
+                              onChange={e => setVqPointsAwarded(e.target.value)}
+                              placeholder="e.g. 5000"
+                              style={{ width: "200px", background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: "8px", padding: "12px 14px", color: "#22c55e", fontSize: "14px", fontWeight: "900", outline: "none" }}
+                            />
+                            <div style={{ fontSize: "11px", color: "#666", marginTop: "6px" }}>Award points to this athlete upon approval to boost their rank.</div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Modal Actions */}
@@ -7225,6 +7275,7 @@ const Admin = () => {
                       { id: "pages",    label: "📄 STATIC PAGES" },
                       { id: "faqs",     label: "❓ FAQ MANAGER" },
                       { id: "homepage", label: "🏠 HOMEPAGE CONFIG" },
+                      { id: "countries",label: "🌍 COUNTRIES MGR" },
                     ].map(tab => (
                       <button key={tab.id} onClick={() => setContentSubTab(tab.id)}
                         style={{ background: contentSubTab === tab.id ? "rgba(255,85,0,0.1)" : "transparent", border: contentSubTab === tab.id ? "1px solid rgba(255,85,0,0.2)" : "1px solid transparent", color: contentSubTab === tab.id ? "#FF5500" : "#888", padding: "10px 24px", borderRadius: "100px", fontSize: "13px", fontWeight: "900", cursor: "pointer" }}>
@@ -7446,6 +7497,39 @@ const Admin = () => {
                     </div>
                   );
                 })()}
+
+                {/* ===== COUNTRIES MANAGER ===== */}
+                {contentSubTab === "countries" && (
+                  <div style={{ background: "rgba(255,255,255,0.02)", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <h3 style={{ fontSize: "18px", fontWeight: "900", color: "white", marginBottom: "16px" }}>Add New Country to Leaderboard</h3>
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      const fd = new FormData(e.target);
+                      const name = fd.get('name');
+                      const code = fd.get('code');
+                      const flag = fd.get('flag');
+                      try {
+                        const token = JSON.parse(localStorage.getItem('userInfo'))?.token;
+                        const res = await fetch('http://localhost:5002/api/countries', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                          body: JSON.stringify({ name, code, flag })
+                        });
+                        if (res.ok) {
+                          alert('Country added successfully!');
+                          e.target.reset();
+                        } else {
+                          alert('Failed to add country');
+                        }
+                      } catch (err) { alert(err.message); }
+                    }} style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "400px" }}>
+                      <input name="name" placeholder="Country Name (e.g. India)" required style={{ padding: "12px", borderRadius: "8px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white" }} />
+                      <input name="code" placeholder="Country Code (e.g. IND)" required style={{ padding: "12px", borderRadius: "8px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white" }} />
+                      <input name="flag" placeholder="Emoji Flag (e.g. 🇮🇳)" required style={{ padding: "12px", borderRadius: "8px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white" }} />
+                      <button type="submit" style={{ background: "#FF5500", color: "white", padding: "12px", borderRadius: "8px", fontWeight: "900", cursor: "pointer", border: "none" }}>Add Country</button>
+                    </form>
+                  </div>
+                )}
               </div>
             );
           })()}
@@ -7736,11 +7820,11 @@ const Admin = () => {
                       </div>
                       <div>
                         <label style={labelStyle}>Start Date</label>
-                        <input type="date" value={sponsorForm.start_date || ""} onChange={e => setSponsorForm(p => ({ ...p, start_date: e.target.value }))} style={{ ...inputStyle, colorScheme: "dark" }} />
+                        <input type="date" max={new Date().toISOString().split('T')[0]} value={sponsorForm.start_date || ""} onChange={e => setSponsorForm(p => ({ ...p, start_date: e.target.value }))} style={{ ...inputStyle, colorScheme: "dark" }} />
                       </div>
                       <div>
                         <label style={labelStyle}>End Date</label>
-                        <input type="date" value={sponsorForm.end_date || ""} onChange={e => setSponsorForm(p => ({ ...p, end_date: e.target.value }))} style={{ ...inputStyle, colorScheme: "dark" }} />
+                        <input type="date" max={new Date().toISOString().split('T')[0]} value={sponsorForm.end_date || ""} onChange={e => setSponsorForm(p => ({ ...p, end_date: e.target.value }))} style={{ ...inputStyle, colorScheme: "dark" }} />
                       </div>
                       <div>
                         <label style={labelStyle}>Upload Banner (JPG/PNG/WEBP)</label>
@@ -8066,13 +8150,13 @@ const Admin = () => {
               </div>
 
               <div style={{ display: "flex", gap: "24px", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "0px", marginBottom: "32px" }}>
-                {["newest", "featured", "highlights"].map(sub => (
+                {["all_submissions", "newest", "featured", "highlights"].map(sub => (
                   <button 
                     key={sub}
                     onClick={() => setVideoManagementSubTab(sub)}
                     style={{ background: "transparent", border: "none", color: videoManagementSubTab === sub ? "#FF5500" : "#888", fontWeight: videoManagementSubTab === sub ? "900" : "700", fontSize: "14px", cursor: "pointer", textTransform: "uppercase", padding: "12px 6px", borderBottom: videoManagementSubTab === sub ? "3px solid #FF5500" : "3px solid transparent", outline: "none", transition: "all 0.2s" }}
                   >
-                    {sub} Videos
+                    {sub === "all_submissions" ? "ALL SUBMISSIONS" : `${sub} Videos`}
                   </button>
                 ))}
               </div>
@@ -9331,7 +9415,7 @@ const Admin = () => {
                       </div>
                       <div>
                         <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>DATE OF BIRTH</label>
-                        <input type="date" value={userForm.dob} onChange={(e) => setUserForm({ ...userForm, dob: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }} />
+                        <input type="date" max={new Date().toISOString().split('T')[0]} value={userForm.dob} onChange={(e) => setUserForm({ ...userForm, dob: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }} />
                       </div>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
@@ -10057,7 +10141,7 @@ const Admin = () => {
                     </div>
                     <div>
                       <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>EXPIRATION DATE</label>
-                      <input type="date" value={couponForm.expirationDate} onChange={(e) => setCouponForm({ ...couponForm, expirationDate: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }} />
+                      <input type="date" max={new Date().toISOString().split('T')[0]} value={couponForm.expirationDate} onChange={(e) => setCouponForm({ ...couponForm, expirationDate: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white" }} />
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "16px" }}>
                       <input type="checkbox" checked={couponForm.active} onChange={(e) => setCouponForm({ ...couponForm, active: e.target.checked })} />
@@ -10177,7 +10261,7 @@ const Admin = () => {
                         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px" }}>
                           <div>
                             <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "6px" }}>EXPIRATION DATE</label>
-                            <input type="date" value={couponForm.expirationDate} onChange={(e) => setCouponForm({ ...couponForm, expirationDate: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", colorScheme: "dark" }} />
+                            <input type="date" max={new Date().toISOString().split('T')[0]} value={couponForm.expirationDate} onChange={(e) => setCouponForm({ ...couponForm, expirationDate: e.target.value })} style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 14px", color: "white", colorScheme: "dark" }} />
                           </div>
                           <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: "10px" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -10290,7 +10374,7 @@ const Admin = () => {
                               <div>
                                 <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#888", marginBottom: "6px", textTransform: "uppercase" }}>Date Received <span style={{ color: "#FF5500" }}>*</span></label>
                                 <input 
-                                  type="date" 
+                                  type="date" max={new Date().toISOString().split('T')[0]} 
                                   value={revenueForm.dateReceived} 
                                   onChange={(e) => setRevenueForm({ ...revenueForm, dateReceived: e.target.value })} 
                                   required 
@@ -11314,7 +11398,7 @@ const Admin = () => {
               <button onClick={() => setSelectedVideoForViewing(null)} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "#ccc", cursor: "pointer", width: "40px", height: "40px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.2)"; e.currentTarget.style.color = "#ef4444"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "#ccc"; }}>×</button>
             </div>
 
-            <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", background: "#000", minHeight: "500px", padding: "20px" }}>
+            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", background: "#000", minHeight: 0, padding: "20px" }} className="custom-scrollbar">
               {(() => {
                 const evidenceLinks = [
                   selectedVideoForViewing.thumbnailUrl,

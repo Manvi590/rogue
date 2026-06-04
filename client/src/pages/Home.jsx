@@ -143,8 +143,8 @@ const HolderCard = ({ img, badge, name, records, rank, slug, username }) => {
           boxSizing: "border-box"
         }}
       >
-        <div style={{ fontSize: "17px", fontWeight: "900", color: "#ffffff", marginBottom: "3px", textShadow: "0 1px 8px rgba(0,0,0,0.9)", letterSpacing: "-0.01em" }}>{name}</div>
-        <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.78)", marginBottom: "10px", fontWeight: "600" }}>{records} World Records</div>
+        <div style={{ fontSize: "17px", fontWeight: "900", color: "#ffffff", marginBottom: "3px", textShadow: "0 1px 8px rgba(0,0,0,0.9)", letterSpacing: "-0.01em", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{records}</div>
+        <div style={{ fontSize: "13px", color: "#FF6A00", marginBottom: "10px", fontWeight: "700" }}>By {name}</div>
 
         <div style={{ display: "flex", gap: "12px", alignItems: "center", justifyContent: "space-between" }}>
           <Link to={`/profile/${username || name.toLowerCase().replace(/\s+/g, '-')}`} style={{ textDecoration: "none" }}>
@@ -263,14 +263,7 @@ const Home = () => {
   // Live homepage data from admin controls
   const [newestRecords, setNewestRecords] = useState(STATIC_NEWEST);
   const [featuredHolders, setFeaturedHolders] = useState(STATIC_FEATURED);
-  const [sidebarVideos, setSidebarVideos] = useState([
-    { time: "0:53", img: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=400&q=80" },
-    { time: "0:48", img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=400&q=80" },
-    { time: "0:47", img: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=400&q=80" },
-    { time: "0:46", img: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=400&q=80" },
-    { time: "0:45", img: "https://images.unsplash.com/photo-1591123720164-de1348028a82?auto=format&fit=crop&w=400&q=80" },
-    { time: "0:44", img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=400&q=80" }
-  ]);
+  const [sidebarVideos, setSidebarVideos] = useState([]);
 
   useEffect(() => {
     // Fetch live homepage records from admin controls
@@ -340,6 +333,14 @@ const Home = () => {
               rank: i + 1,
               slug: r.id
             })));
+            
+            // Populate sidebar videos with real records
+            setSidebarVideos(finalFeaturedRecords.slice(0, 6).map(r => ({
+              time: "1:00", // Default time
+              img: r.thumbnail_url !== "pending_upload" ? formatProductImage(r.thumbnail_url) : "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=400&q=80",
+              title: r.title || r.name,
+              slug: r.id || r.slug
+            })));
           }
         }
       } catch (error) {
@@ -357,7 +358,8 @@ const Home = () => {
             time: v.duration ? `${Math.floor(v.duration / 60)}:${String(v.duration % 60).padStart(2, '0')}` : "0:30",
             img: v.thumbnail_url !== "pending_upload" ? formatProductImage(v.thumbnail_url) : "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=400&q=80",
             videoUrl: v.video_url,
-            title: v.title
+            title: v.title,
+            slug: v.id
           })));
         }
       } catch (error) {
@@ -389,6 +391,81 @@ const Home = () => {
     e.preventDefault();
     if (homeSearchQuery.trim()) {
       navigate(`/explore?q=${encodeURIComponent(homeSearchQuery.trim())}`);
+    }
+  };
+
+  const videoRef = React.useRef(null);
+  const videoContainerRef = React.useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState("00:00");
+  const [duration, setDuration] = useState("00:00");
+  const [isMuted, setIsMuted] = useState(true);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted;
+      setIsMuted(videoRef.current.muted);
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (videoContainerRef.current) {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else if (videoContainerRef.current.requestFullscreen) {
+        videoContainerRef.current.requestFullscreen();
+      } else if (videoContainerRef.current.webkitRequestFullscreen) {
+        videoContainerRef.current.webkitRequestFullscreen();
+      }
+    }
+  };
+
+  const toggleSpeed = () => {
+    if (videoRef.current) {
+      const newSpeed = playbackSpeed >= 2 ? 0.5 : playbackSpeed + 0.5;
+      videoRef.current.playbackRate = newSpeed;
+      setPlaybackSpeed(newSpeed);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      const current = videoRef.current.currentTime;
+      const total = videoRef.current.duration;
+      setProgress((current / total) * 100);
+      
+      const formatTime = (time) => {
+        if (isNaN(time)) return "00:00";
+        const mins = Math.floor(time / 60);
+        const secs = Math.floor(time % 60);
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      };
+      
+      setCurrentTime(formatTime(current));
+      setDuration(formatTime(total));
+    }
+  };
+
+  const handleProgressClick = (e) => {
+    if (videoRef.current) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const newProgress = clickX / rect.width;
+      videoRef.current.currentTime = newProgress * videoRef.current.duration;
+      setProgress(newProgress * 100);
     }
   };
 
@@ -507,20 +584,33 @@ const Home = () => {
             </div>
 
             {/* Middle: Video Frame */}
-            <article style={{ width: "100%", height: "550px", marginBottom: "32px", position: "relative", borderRadius: "20px", overflow: "hidden", boxShadow: "0 32px 80px rgba(0,0,0,0.5)", background: "#000" }}>
-              <img
-                src={featuredStream ? (featuredStream.imageUrl || featuredStream.image || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1600&q=80") : "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1600&q=80"}
-                alt="Featured Livestream"
-                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+            <article ref={videoContainerRef} style={{ width: "100%", height: "550px", marginBottom: "32px", position: "relative", borderRadius: "20px", overflow: "hidden", boxShadow: "0 32px 80px rgba(0,0,0,0.5)", background: "#000" }}>
+              <video
+                ref={videoRef}
+                src="https://www.w3schools.com/html/mov_bbb.mp4"
+                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", cursor: "pointer", opacity: isPlaying ? 1 : 0, transition: "opacity 0.3s ease" }}
+                onTimeUpdate={handleTimeUpdate}
+                onClick={togglePlay}
+                loop
+                playsInline
               />
+              
+              {!isPlaying && (
+                <img
+                  src={featuredStream ? (featuredStream.imageUrl || featuredStream.image || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1600&q=80") : "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1600&q=80"}
+                  alt="Video Thumbnail"
+                  onClick={togglePlay}
+                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", cursor: "pointer", zIndex: 1 }}
+                />
+              )}
 
               {/* Left gradient for text readability */}
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.45) 50%, transparent 100%)", pointerEvents: "none" }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.45) 50%, transparent 100%)", pointerEvents: "none", zIndex: 2 }} />
               {/* Bottom gradient for controls */}
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "30%", background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)", pointerEvents: "none" }} />
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "30%", background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)", pointerEvents: "none", zIndex: 2 }} />
 
               {/* LIVE badge + viewers — top left */}
-              <div style={{ position: "absolute", top: 20, left: 20, display: "flex", gap: 12, alignItems: "center" }}>
+              <div style={{ position: "absolute", top: 20, left: 20, display: "flex", gap: 12, alignItems: "center", zIndex: 3 }}>
                 <div style={{ background: featuredStream && featuredStream.isLive ? "#ef4444" : "#FF6A00", color: "white", padding: "5px 12px", borderRadius: "6px", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", gap: 6, letterSpacing: "0.08em", boxShadow: "0 2px 12px rgba(239,68,68,0.5)" }}>
                   <Play size={10} fill="white" /> {featuredStream && featuredStream.isLive ? "LIVE NOW" : "FEATURED EVENT"}
                 </div>
@@ -530,7 +620,7 @@ const Home = () => {
               </div>
 
               {/* Text + Buttons overlay — left center */}
-              <div style={{ position: "absolute", left: 48, top: "50%", transform: "translateY(-50%)", maxWidth: 500, textAlign: "left" }}>
+              <div style={{ position: "absolute", left: 48, top: "50%", transform: "translateY(-50%)", maxWidth: 500, textAlign: "left", zIndex: 3 }}>
                 <h2 style={{ fontSize: "clamp(30px, 4.5vw, 64px)", fontWeight: 900, lineHeight: 0.95, letterSpacing: "-0.03em", color: "white", marginBottom: 20, textTransform: "uppercase" }}>
                   {featuredStream ? featuredStream.title : (
                     <>
@@ -577,20 +667,38 @@ const Home = () => {
               </div>
 
               {/* Bottom Video Controls Bar */}
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "18px 28px", display: "flex", alignItems: "center", gap: 20, color: "white" }}>
-                <Play size={22} fill="white" style={{ cursor: "pointer", flexShrink: 0 }} />
-                <Volume2 size={20} style={{ cursor: "pointer", flexShrink: 0 }} />
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "18px 28px", display: "flex", alignItems: "center", gap: 20, color: "white", zIndex: 10 }}>
+                <div onClick={togglePlay} style={{ cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center" }}>
+                  {isPlaying ? (
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                  ) : (
+                    <Play size={22} fill="white" />
+                  )}
+                </div>
+                
+                <div onClick={toggleMute} style={{ cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center" }}>
+                  {isMuted ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+                  ) : (
+                    <Volume2 size={20} />
+                  )}
+                </div>
+
                 {/* Progress Bar */}
                 <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, opacity: 0.9, whiteSpace: "nowrap" }}>01:12</span>
-                  <div style={{ flex: 1, height: 3, background: "rgba(255,255,255,0.25)", borderRadius: 2, position: "relative", cursor: "pointer" }}>
-                    <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "45%", background: "#FF6A00", borderRadius: 2 }} />
-                    <div style={{ position: "absolute", left: "45%", top: "50%", transform: "translate(-50%, -50%)", width: 11, height: 11, background: "#FF6A00", borderRadius: "50%", boxShadow: "0 0 8px rgba(255,106,0,0.7)" }} />
+                  <span style={{ fontSize: 12, fontWeight: 600, opacity: 0.9, whiteSpace: "nowrap", width: "40px", textAlign: "right" }}>{currentTime}</span>
+                  <div onClick={handleProgressClick} style={{ flex: 1, height: 6, background: "rgba(255,255,255,0.25)", borderRadius: 3, position: "relative", cursor: "pointer" }}>
+                    <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${progress}%`, background: "#FF6A00", borderRadius: 3, transition: "width 0.1s linear" }} />
+                    <div style={{ position: "absolute", left: `${progress}%`, top: "50%", transform: "translate(-50%, -50%)", width: 14, height: 14, background: "#fff", borderRadius: "50%", boxShadow: "0 0 8px rgba(0,0,0,0.5)", transition: "left 0.1s linear" }} />
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 600, opacity: 0.5, whiteSpace: "nowrap" }}>02:45</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, opacity: 0.5, whiteSpace: "nowrap", width: "40px" }}>{duration}</span>
                 </div>
-                <Settings size={18} style={{ cursor: "pointer", opacity: 0.8, flexShrink: 0 }} />
-                <Maximize size={18} style={{ cursor: "pointer", opacity: 0.8, flexShrink: 0 }} />
+                
+                <div onClick={toggleSpeed} style={{ cursor: "pointer", opacity: 0.9, flexShrink: 0, display: "flex", alignItems: "center", fontSize: "14px", fontWeight: "700" }}>
+                  {playbackSpeed}x
+                </div>
+                
+                <Maximize onClick={toggleFullscreen} size={18} style={{ cursor: "pointer", opacity: 0.9, flexShrink: 0 }} />
               </div>
             </article>
 
@@ -604,14 +712,19 @@ const Home = () => {
               </Link>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "15px", flex: 1 }}>
-              {sidebarVideos.map((video, idx) => (
-                <div key={idx} style={{ position: "relative", borderRadius: "12px", overflow: "hidden", height: "78px", boxShadow: "0 4px 12px rgba(0,0,0,0.15)", cursor: "pointer", flexShrink: 0 }}>
-                  <img src={video.img} alt={video.title || "Live Stream"} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                  <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)" }} />
-                  <div style={{ position: "absolute", bottom: "8px", left: "12px", color: "white", fontSize: "12px", fontWeight: "700" }}>{video.time}</div>
-                  <Play style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", color: "#FF6A00", fill: "#FF6A00", width: 40, height: 40, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.4))" }} />
-                </div>
-              ))}
+              {sidebarVideos.map((video, idx) => {
+                const recordSlug = video.slug || "deadlifts";
+                return (
+                  <Link to={`/record/${recordSlug}`} key={idx} style={{ textDecoration: "none" }}>
+                    <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden", height: "78px", boxShadow: "0 4px 12px rgba(0,0,0,0.15)", cursor: "pointer", flexShrink: 0 }}>
+                      <img src={video.img} alt={video.title || "Live Stream"} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)" }} />
+                      <div style={{ position: "absolute", bottom: "8px", left: "12px", color: "white", fontSize: "12px", fontWeight: "700" }}>{video.time}</div>
+                      <Play style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", color: "#FF6A00", fill: "#FF6A00", width: 40, height: 40, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.4))" }} />
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </aside>
 
@@ -779,7 +892,7 @@ const Home = () => {
                 className="cat-cell" 
                 role="button" 
                 tabIndex={0}
-                onClick={() => navigate(`/explore?category=${cat.n}`)}
+                onClick={() => navigate('/categories', { state: { activeTab: i } })}
                 style={{ cursor: "pointer" }}
               >
                 <div className="cat-cell-top">

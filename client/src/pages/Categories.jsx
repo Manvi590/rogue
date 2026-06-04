@@ -371,10 +371,9 @@ const Categories = () => {
                           </h4>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                             {sub.items.map((item, iIdx) => {
-                              const slug = item.toLowerCase().replace(/[^a-z0-9]+/g, "-");
                               return (
                                 <Link 
-                                  to={`/record/${slug}`} 
+                                  to={`/explore?category=${encodeURIComponent(currentCat.name)}&q=${encodeURIComponent(item)}`} 
                                   key={iIdx} 
                                   style={{ textDecoration: "none" }}
                                 >

@@ -1,0 +1,7 @@
+[
+  { "name": "United States", "code": "USA", "flag": "🇺🇸" },
+  { "name": "Canada", "code": "CAN", "flag": "🇨🇦" },
+  { "name": "United Kingdom", "code": "GBR", "flag": "🇬🇧" },
+  { "name": "Australia", "code": "AUS", "flag": "🇦🇺" },
+  { "name": "Germany", "code": "GER", "flag": "🇩🇪" }
+]

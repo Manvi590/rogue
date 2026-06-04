@@ -134,11 +134,11 @@ const Signup = () => {
             <div style={{ display: "flex", gap: "40px" }}>
               <div>
                 <div style={{ fontSize: "28px", fontWeight: "950", color: "white" }}>12.4K+</div>
-                <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", textTransform: "uppercase", letterSpacing: "0.1em", marginTop: "4px" }}>VERIFIED ATHLETES</div>
+                <div style={{ fontSize: "10px", fontWeight: "900", color: "white", textTransform: "uppercase", letterSpacing: "0.1em", marginTop: "4px" }}>VERIFIED ATHLETES</div>
               </div>
               <div>
                 <div style={{ fontSize: "28px", fontWeight: "950", color: "white" }}>850+</div>
-                <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", textTransform: "uppercase", letterSpacing: "0.1em", marginTop: "4px" }}>WORLD RECORDS</div>
+                <div style={{ fontSize: "10px", fontWeight: "900", color: "white", textTransform: "uppercase", letterSpacing: "0.1em", marginTop: "4px" }}>WORLD RECORDS</div>
               </div>
             </div>
           </div>
@@ -159,7 +159,7 @@ const Signup = () => {
               {/* Row 1: Name & Username */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>FULL NAME</label>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "6px", textTransform: "uppercase" }}>FULL NAME</label>
                   <input 
                     type="text" 
                     placeholder="John Doe" 
@@ -170,7 +170,7 @@ const Signup = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>USERNAME</label>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "6px", textTransform: "uppercase" }}>USERNAME</label>
                   <input 
                     type="text" 
                     placeholder="elite_athlete_01" 
@@ -185,7 +185,7 @@ const Signup = () => {
               {/* Row 2: Email & Phone */}
               <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "16px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>EMAIL ADDRESS</label>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "6px", textTransform: "uppercase" }}>EMAIL ADDRESS</label>
                   <input 
                     type="email" 
                     placeholder="champion@rogue.com" 
@@ -196,7 +196,7 @@ const Signup = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>PHONE NUMBER</label>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "6px", textTransform: "uppercase" }}>PHONE NUMBER</label>
                   <input 
                     type="tel" 
                     placeholder="+1 (555) 000-0000" 
@@ -209,7 +209,7 @@ const Signup = () => {
 
               {/* Row 3: Password */}
               <div>
-                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>PASSWORD</label>
+                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "6px", textTransform: "uppercase" }}>PASSWORD</label>
                 <input 
                   type="password" 
                   placeholder="********" 
@@ -223,7 +223,7 @@ const Signup = () => {
               {/* Row 4: Gender & DOB */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>GENDER</label>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "6px", textTransform: "uppercase" }}>GENDER</label>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button type="button" style={{
@@ -286,9 +286,10 @@ const Signup = () => {
                   </DropdownMenu>
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>DATE OF BIRTH</label>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "6px", textTransform: "uppercase" }}>DATE OF BIRTH</label>
                   <input 
                     type="date" 
+                    max={new Date().toISOString().split('T')[0]}
                     value={dob}
                     onChange={(e) => setDob(e.target.value)}
                     style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px", colorScheme: "dark" }} 
@@ -300,7 +301,7 @@ const Signup = () => {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                    <label style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", textTransform: "uppercase" }}>
+                    <label style={{ fontSize: "10px", fontWeight: "900", color: "white", textTransform: "uppercase" }}>
                       WEIGHT ({weightUnit.toUpperCase()})
                     </label>
                     <DropdownMenu>
@@ -374,7 +375,7 @@ const Signup = () => {
                 </div>
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                    <label style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", textTransform: "uppercase" }}>
+                    <label style={{ fontSize: "10px", fontWeight: "900", color: "white", textTransform: "uppercase" }}>
                       HEIGHT ({heightUnit === "cm" ? "CM" : "FT/IN"})
                     </label>
                     <DropdownMenu>
@@ -476,7 +477,7 @@ const Signup = () => {
               {/* Row 6: Country & City */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>COUNTRY</label>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "6px", textTransform: "uppercase" }}>COUNTRY</label>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button type="button" style={{
@@ -555,7 +556,7 @@ const Signup = () => {
                   </DropdownMenu>
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "6px", textTransform: "uppercase" }}>CITY / STATE</label>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "6px", textTransform: "uppercase" }}>CITY / STATE</label>
                   <input 
                     type="text" 
                     placeholder="Los Angeles, CA" 
@@ -599,7 +600,7 @@ const Signup = () => {
                 {loading ? <Loader2 className="animate-spin" size={18} /> : <ArrowRight size={18} />}
               </button>
 
-              <div style={{ textAlign: "center", marginTop: "12px", fontSize: "11px", color: "rgba(255, 255, 255, 0.4)" }}>
+              <div style={{ textAlign: "center", marginTop: "12px", fontSize: "11px", color: "white" }}>
                 Already have an account? <Link to="/login" style={{ color: "#FF6A00", textDecoration: "none", fontWeight: "800" }}>LOGIN</Link>
               </div>
             </form>

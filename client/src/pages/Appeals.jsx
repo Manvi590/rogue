@@ -57,7 +57,7 @@ const labelStyle = {
   fontSize: "11px",
   fontWeight: "900",
   textTransform: "uppercase",
-  color: "rgba(255,255,255,0.4)",
+  color: "white",
   marginBottom: "12px",
   letterSpacing: "0.05em"
 };
@@ -436,7 +436,7 @@ const Appeals = () => {
                         </div>
                       ))}
                     </div>
-                    <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)" }}>SECTION {step} OF 5</div>
+                    <div style={{ fontSize: "12px", fontWeight: "900", color: "white" }}>SECTION {step} OF 5</div>
                   </div>
 
                   <form onSubmit={handleSubmit} style={{ padding: "60px 80px" }}>
@@ -455,7 +455,7 @@ const Appeals = () => {
                             </div>
                             <div className="form-group">
                               <label style={labelStyle}>Date of Birth</label>
-                              <input type="date" name="dob" style={inputStyle} value={formData.dob} onChange={handleChange} required />
+                              <input type="date" max={new Date().toISOString().split('T')[0]} name="dob" style={inputStyle} value={formData.dob} onChange={handleChange} required />
                             </div>
                             <div className="form-group">
                               <label style={labelStyle}>Email Address</label>
@@ -518,11 +518,11 @@ const Appeals = () => {
                             )}
                             <div className="form-group">
                               <label style={labelStyle}>Submission Date</label>
-                              <input type="date" name="submissionDate" style={inputStyle} value={formData.submissionDate} onChange={handleChange} required />
+                              <input type="date" max={new Date().toISOString().split('T')[0]} name="submissionDate" style={inputStyle} value={formData.submissionDate} onChange={handleChange} required />
                             </div>
                             <div className="form-group" style={{ gridColumn: "span 2" }}>
                               <label style={labelStyle}>Date of Decision or Denial</label>
-                              <input type="date" name="denialDate" style={inputStyle} value={formData.denialDate} onChange={handleChange} required />
+                              <input type="date" max={new Date().toISOString().split('T')[0]} name="denialDate" style={inputStyle} value={formData.denialDate} onChange={handleChange} required />
                             </div>
                           </div>
                         </motion.div>
@@ -596,13 +596,13 @@ const Appeals = () => {
                             <p style={{ fontWeight: "800", color: "#FF6A00", textTransform: "uppercase" }}>
                               {dragActive ? "DROP YOUR FILES HERE" : "DRAG & DROP FILES OR BROWSE"}
                             </p>
-                            <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", marginTop: "8px" }}>Supports MP4, MOV, JPG, PNG, PDF up to 500MB</p>
+                            <p style={{ fontSize: "12px", color: "white", marginTop: "8px" }}>Supports MP4, MOV, JPG, PNG, PDF up to 500MB</p>
                           </div>
 
                           {/* Visual Confirmation list */}
                           {evidenceFiles.length > 0 && (
                             <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "20px", padding: "24px", marginBottom: "32px" }}>
-                              <div style={{ fontSize: "11px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "16px", letterSpacing: "0.1em" }}>
+                              <div style={{ fontSize: "11px", fontWeight: "900", color: "white", textTransform: "uppercase", marginBottom: "16px", letterSpacing: "0.1em" }}>
                                 ATTACHED FILES ({evidenceFiles.length})
                               </div>
                               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -616,7 +616,7 @@ const Appeals = () => {
                                         <div style={{ fontSize: "14px", fontWeight: "700", color: "white", maxWidth: "250px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                           {file.name}
                                         </div>
-                                        <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "8px", marginTop: "2px" }}>
+                                        <div style={{ fontSize: "11px", color: "white", display: "flex", alignItems: "center", gap: "8px", marginTop: "2px" }}>
                                           <span>{(file.size / (1024 * 1024)).toFixed(2)} MB</span>
                                           <span style={{ color: "#22c55e", fontWeight: "800" }}>✓ READY TO UPLOAD</span>
                                         </div>
@@ -676,7 +676,7 @@ const Appeals = () => {
                             </div>
                             <div className="form-group">
                               <label style={labelStyle}>Date of Signature</label>
-                              <input type="date" style={inputStyle} value={formData.date} readOnly />
+                              <input type="date" max={new Date().toISOString().split('T')[0]} style={inputStyle} value={formData.date} readOnly />
                             </div>
                           </div>
                         </motion.div>

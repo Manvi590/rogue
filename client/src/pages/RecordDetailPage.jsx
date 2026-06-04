@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Play, Download, Share2, Heart, Eye, Trophy, User, Calendar, MapPin, Award, CheckCircle, AlertCircle, Edit3 } from 'lucide-react';
 import { apiCall, formatProductImage } from '../utils/api';
@@ -13,8 +13,20 @@ export default function RecordDetailPage() {
   const [liked, setLiked] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const [shareMessage, setShareMessage] = useState('');
+  const [socialStats, setSocialStats] = useState({ views: 0, likes: 0, isLiked: false, comments: [] });
+  const [commentText, setCommentText] = useState('');
+  const [authMessage, setAuthMessage] = useState('');
+  const [localRank, setLocalRank] = useState('N/A');
+  const [athleteProfile, setAthleteProfile] = useState(null);
+
+  const showAuthMessage = (msg) => {
+    setAuthMessage(msg);
+    setTimeout(() => setAuthMessage(''), 3000);
+  };
 
   const recordVideoUrl = record?.evidence_url || record?.video_url || record?.videoUrl || '';
+
+  const viewIncremented = useRef(false);
 
   useEffect(() => {
     fetchRecord();
@@ -26,10 +38,78 @@ export default function RecordDetailPage() {
       setVideoError(false);
       const data = await apiCall(`/records/${recordId}`, 'GET');
       setRecord(data);
+      
+      // Fetch social stats
+      const stats = await apiCall(`/social/${recordId}`, 'GET');
+      setSocialStats(stats);
+      
+      // Increment view only once
+      if (!viewIncremented.current) {
+        viewIncremented.current = true;
+        const viewRes = await apiCall(`/social/${recordId}/view`, 'POST');
+        setSocialStats(prev => ({ ...prev, views: viewRes.views }));
+      }
+      
+      // Fetch Global Rank for Athlete
+      if (data.user_id) {
+        try {
+          const res = await apiCall(`/rankings/global`, 'GET');
+          if (res && res.rankings && res.rankings.length > 0) {
+            const athleteRank = res.rankings.findIndex(r => r.user_id === data.user_id) + 1;
+            if (athleteRank > 0) setLocalRank(athleteRank);
+          }
+        } catch (e) {
+          console.error("Failed to fetch global rank", e);
+        }
+      }
+      
+      // Fetch Athlete Profile stats
+      if (data.user?.username) {
+        try {
+          const profileData = await apiCall(`/auth/profile/${data.user.username}`, 'GET');
+          setAthleteProfile(profileData);
+        } catch (e) {
+          console.error("Failed to fetch athlete profile", e);
+        }
+      }
+      
     } catch (error) {
       console.error('Error fetching record:', error);
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const handleToggleLike = async () => {
+    try {
+      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      if (!userInfo || !userInfo.token) {
+        showAuthMessage('Please login to like this record.');
+        return;
+      }
+      const res = await apiCall(`/social/${recordId}/like`, 'POST', null, userInfo.token);
+      setSocialStats(prev => ({ ...prev, likes: res.likes, isLiked: res.isLiked }));
+    } catch (error) {
+      if (error.message.includes('Not authorized')) showAuthMessage('Please login to like this record.');
+      else showAuthMessage('Failed to like record.');
+    }
+  };
+  
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+    try {
+      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      if (!userInfo || !userInfo.token) {
+        showAuthMessage('Please login to comment.');
+        return;
+      }
+      const res = await apiCall(`/social/${recordId}/comment`, 'POST', { text: commentText }, userInfo.token);
+      setSocialStats(prev => ({ ...prev, comments: [...prev.comments, res.comment] }));
+      setCommentText('');
+    } catch (error) {
+      if (error.message.includes('Not authorized')) showAuthMessage('Please login to comment.');
+      else showAuthMessage('Failed to add comment.');
     }
   };
 
@@ -121,6 +201,31 @@ export default function RecordDetailPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0c0c0e 0%, #1a1a1f 100%)', paddingBottom: '60px' }}>
       <Navbar />
+
+      {/* Custom Auth Toast Message */}
+      {authMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: '30px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#FF5500',
+          color: 'white',
+          padding: '12px 24px',
+          borderRadius: '50px',
+          fontWeight: '700',
+          fontSize: '14px',
+          boxShadow: '0 8px 32px rgba(255,85,0,0.3)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          animation: 'fadeInUp 0.3s ease forwards'
+        }}>
+          <AlertCircle size={18} />
+          {authMessage}
+        </div>
+      )}
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '120px 20px 0' }}>
 
@@ -235,21 +340,6 @@ export default function RecordDetailPage() {
                 </h1>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button
-                    onClick={() => setLiked(!liked)}
-                    style={{
-                      background: liked ? '#FF5500' : 'rgba(255,255,255,0.05)',
-                      border: 'none',
-                      color: liked ? 'white' : '#888',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center'
-                    }}
-                  >
-                    <Heart size={20} fill={liked ? 'white' : 'none'} />
-                  </button>
-                  <button
                     onClick={handleShareRecord}
                     style={{
                       background: 'rgba(255,255,255,0.05)',
@@ -295,15 +385,15 @@ export default function RecordDetailPage() {
               </div>
               <div>
                 <div style={{ color: '#888', fontSize: '12px', fontWeight: '700', marginBottom: '8px' }}>Category</div>
-                <div style={{ fontSize: '18px', fontWeight: '900', color: 'white' }}>{record.category_name}</div>
+                <div style={{ fontSize: '18px', fontWeight: '900', color: 'white' }}>{record.category_name || record.category || record.category_id || 'Unknown Category'}</div>
               </div>
               <div>
                 <div style={{ color: '#888', fontSize: '12px', fontWeight: '700', marginBottom: '8px' }}>Verified Date</div>
-                <div style={{ fontSize: '14px', color: '#ccc' }}>{new Date(record.verified_at).toLocaleDateString()}</div>
+                <div style={{ fontSize: '14px', color: '#ccc' }}>{new Date(record.verified_at || record.updated_at || record.created_at).toLocaleDateString()}</div>
               </div>
               <div>
                 <div style={{ color: '#888', fontSize: '12px', fontWeight: '700', marginBottom: '8px' }}>Views</div>
-                <div style={{ fontSize: '18px', fontWeight: '900', color: '#FFD700' }}>{record.views || 0}</div>
+                <div style={{ fontSize: '18px', fontWeight: '900', color: '#FFD700' }}>{socialStats.views || 0}</div>
               </div>
             </div>
 
@@ -346,10 +436,49 @@ export default function RecordDetailPage() {
 
                 <div>
                   <div style={{ color: '#888', fontSize: '12px', fontWeight: '700', marginBottom: '8px' }}>Verification ID</div>
-                  <div style={{ fontSize: '12px', color: '#666', fontFamily: 'monospace' }}>
-                    {record.id?.substring(0, 12)}...
+                  <div style={{ fontSize: '16px', color: 'white', fontFamily: 'monospace', letterSpacing: '1px', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '4px', display: 'inline-block' }}>
+                    {record.id}
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Comments Section */}
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '24px', marginBottom: '32px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '900', color: 'white', marginBottom: '16px' }}>Comments ({socialStats.comments.length})</h3>
+              
+              <form onSubmit={handleAddComment} style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+                <input 
+                  type="text" 
+                  placeholder="Add a public comment..." 
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '12px', borderRadius: '8px', outline: 'none' }}
+                />
+                <button type="submit" style={{ background: '#FF5500', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer' }}>
+                  Post
+                </button>
+              </form>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '400px', overflowY: 'auto' }}>
+                {socialStats.comments.length === 0 ? (
+                  <p style={{ color: '#888', fontSize: '14px' }}>No comments yet. Be the first to comment!</p>
+                ) : (
+                  socialStats.comments.map(c => (
+                    <div key={c.id} style={{ display: 'flex', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px' }}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#333', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                         {c.userAvatar ? <img src={c.userAvatar} style={{width:'100%', height:'100%', objectFit:'cover'}} /> : <User size={20} color="#fff" />}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
+                          <span style={{ fontWeight: '700', color: 'white', fontSize: '14px' }}>{c.userName || 'User'}</span>
+                          <span style={{ fontSize: '10px', color: '#666' }}>{new Date(c.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <p style={{ color: '#ccc', fontSize: '14px', margin: 0, lineHeight: 1.5 }}>{c.text}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -374,7 +503,7 @@ export default function RecordDetailPage() {
                   {record.user?.display_name || record.user?.name || 'Unknown Athlete'}
                 </h4>
                 <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>
-                  Member #{record.user?.member_number || 'N/A'}
+                  Member #{athleteProfile?.profile?.member_number || record.user?.member_number || 'N/A'}
                 </p>
               </div>
 
@@ -400,12 +529,12 @@ export default function RecordDetailPage() {
 
               <div style={{ paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '12px', color: '#888' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span>Total Records:</span>
-                  <span style={{ color: '#FF5500', fontWeight: '700' }}>{record.user?.verified_records_count || 0}</span>
+                  <span>Total Submitted:</span>
+                  <span style={{ color: '#FF5500', fontWeight: '700' }}>{athleteProfile?.records?.length || 0}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>World Records:</span>
-                  <span style={{ color: '#FFD700', fontWeight: '700' }}>{record.user?.world_records_count || 0}</span>
+                  <span>Approved Records:</span>
+                  <span style={{ color: '#4ade80', fontWeight: '700' }}>{athleteProfile?.ranking?.verified_records_count || record.user?.verified_records_count || 0}</span>
                 </div>
               </div>
             </div>
@@ -421,23 +550,23 @@ export default function RecordDetailPage() {
                   <Eye size={18} color="#FF5500" />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '11px', color: '#888', fontWeight: '700' }}>VIEWS</div>
-                    <div style={{ fontSize: '16px', fontWeight: '900', color: 'white' }}>{record.views || 0}</div>
+                    <div style={{ fontSize: '16px', fontWeight: '900', color: 'white' }}>{socialStats.views || 0}</div>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
-                  <Heart size={18} color="#FF5500" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', cursor: 'pointer' }} onClick={handleToggleLike}>
+                  <Heart size={18} color="#FF5500" fill={socialStats.isLiked ? "#FF5500" : "none"} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '11px', color: '#888', fontWeight: '700' }}>LIKES</div>
-                    <div style={{ fontSize: '16px', fontWeight: '900', color: 'white' }}>{record.likes || 0}</div>
+                    <div style={{ fontSize: '16px', fontWeight: '900', color: 'white' }}>{socialStats.likes || 0}</div>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
                   <Trophy size={18} color="#FFD700" />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '11px', color: '#888', fontWeight: '700' }}>RANK</div>
-                    <div style={{ fontSize: '16px', fontWeight: '900', color: '#FFD700' }}>#{record.ranking || 'N/A'}</div>
+                    <div style={{ fontSize: '11px', color: '#888', fontWeight: '700' }}>GLOBAL RANK</div>
+                    <div style={{ fontSize: '16px', fontWeight: '900', color: '#FFD700' }}>#{localRank}</div>
                   </div>
                 </div>
               </div>

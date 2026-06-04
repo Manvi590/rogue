@@ -1,4 +1,5 @@
 const supabase = require('../config/supabase');
+const socialController = require('./socialController');
 
 // Get homepage records organized by sections (public endpoint)
 exports.getHomepageSections = async (req, res) => {
@@ -30,6 +31,9 @@ exports.getHomepageSections = async (req, res) => {
 
     sections.top_ranked = sections.featured.slice(0, 5);
     sections.recent_uploads = [];
+    sections.featured = socialController.mergeSocialStats(sections.featured);
+    sections.newly_verified = socialController.mergeSocialStats(sections.newly_verified);
+    sections.top_ranked = socialController.mergeSocialStats(sections.top_ranked);
 
     res.json(sections);
   } catch (error) {
@@ -58,7 +62,7 @@ exports.getNewRecords = async (req, res) => {
       r.user?.display_name?.toLowerCase().includes(search.toLowerCase())
     ) : data;
 
-    res.json({ records: filtered, total: count, limit: parseInt(limit) });
+    res.json({ records: socialController.mergeSocialStats(filtered), total: count, limit: parseInt(limit) });
   } catch (error) {
     console.error('Get new records error:', error);
     res.status(500).json({ error: error.message });
@@ -79,7 +83,7 @@ exports.getFeaturedRecords = async (req, res) => {
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
-    res.json({ records: data, total: count, limit: parseInt(limit) });
+    res.json({ records: socialController.mergeSocialStats(data), total: count, limit: parseInt(limit) });
   } catch (error) {
     console.error('Get featured records error:', error);
     res.status(500).json({ error: error.message });
@@ -99,7 +103,7 @@ exports.getMostViewedRecords = async (req, res) => {
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
-    res.json({ records: data, total: count, limit: parseInt(limit) });
+    res.json({ records: socialController.mergeSocialStats(data), total: count, limit: parseInt(limit) });
   } catch (error) {
     console.error('Get most viewed records error:', error);
     res.status(500).json({ error: error.message });
@@ -120,7 +124,7 @@ exports.getTopRankedRecords = async (req, res) => {
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
-    res.json({ records: data, total: count, limit: parseInt(limit) });
+    res.json({ records: socialController.mergeSocialStats(data), total: count, limit: parseInt(limit) });
   } catch (error) {
     console.error('Get top ranked records error:', error);
     res.status(500).json({ error: error.message });
@@ -142,7 +146,7 @@ exports.getRecordsByCategory = async (req, res) => {
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
-    res.json({ records: data, total: count, category_id: categoryId, limit: parseInt(limit) });
+    res.json({ records: socialController.mergeSocialStats(data), total: count, category_id: categoryId, limit: parseInt(limit) });
   } catch (error) {
     console.error('Get records by category error:', error);
     res.status(500).json({ error: error.message });
@@ -167,7 +171,7 @@ exports.getLocalRecords = async (req, res) => {
 
     const { data, count, error } = await query;
     if (error) throw error;
-    res.json({ records: data, total: count, limit: parseInt(limit) });
+    res.json({ records: socialController.mergeSocialStats(data), total: count, limit: parseInt(limit) });
   } catch (error) {
     console.error('Get local records error:', error);
     res.status(500).json({ error: error.message });
@@ -340,7 +344,7 @@ exports.getAllRecords = async (req, res) => {
       r.user?.display_name?.toLowerCase().includes(search.toLowerCase())
     ) : data;
 
-    res.json({ records: filtered, total: count, limit: parseInt(limit) });
+    res.json({ records: socialController.mergeSocialStats(filtered), total: count, limit: parseInt(limit) });
   } catch (error) {
     console.error('Get all records error:', error);
     res.status(500).json({ error: error.message });

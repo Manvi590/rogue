@@ -522,7 +522,7 @@ const ChallengeVerify = () => {
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 01</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                           <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>ATHLETE IDENTITY</h1>
-                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 1 OF 5</div>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "white", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 1 OF 5</div>
                         </div>
                         <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
                           <div style={{ width: "20%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
@@ -531,7 +531,7 @@ const ChallengeVerify = () => {
 
                       <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
                         <div>
-                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>FULL LEGAL NAME</label>
+                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>FULL LEGAL NAME</label>
                           <input 
                             type="text" 
                             placeholder="AS APPEARS ON PASSPORT" 
@@ -543,7 +543,7 @@ const ChallengeVerify = () => {
                         </div>
 
                         <div>
-                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>ATHLETE ID</label>
+                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>ATHLETE ID</label>
                           <div style={{ position: "relative" }}>
                             <input 
                               type="text" 
@@ -560,7 +560,7 @@ const ChallengeVerify = () => {
                         </div>
 
                         <div>
-                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>COUNTRY OF ORIGIN</label>
+                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>COUNTRY OF ORIGIN</label>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <button style={{
@@ -665,7 +665,7 @@ const ChallengeVerify = () => {
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 02</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                           <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>ENVIRONMENT VALIDATION</h1>
-                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 2 OF 5</div>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "white", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 2 OF 5</div>
                         </div>
                         <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
                           <div style={{ width: "40%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
@@ -695,7 +695,7 @@ const ChallengeVerify = () => {
                                 style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none" }} 
                               />
                               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                                <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} required style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
+                                <input type="date" max={new Date().toISOString().split('T')[0]} value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} required style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
                                 <input type="time" value={formData.time} onChange={(e) => setFormData({...formData, time: e.target.value})} required style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
                               </div>
                             </div>
@@ -710,7 +710,7 @@ const ChallengeVerify = () => {
                             
                             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                               <div>
-                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>Street Address</label>
+                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "8px", textTransform: "uppercase" }}>Street Address</label>
                                 <input 
                                   type="text" 
                                   placeholder="Enter Street Address" 
@@ -723,7 +723,7 @@ const ChallengeVerify = () => {
                               
                               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                                 <div>
-                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>Apartment / Unit Number (Optional)</label>
+                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "8px", textTransform: "uppercase" }}>Apartment / Unit Number (Optional)</label>
                                   <input 
                                     type="text" 
                                     placeholder="e.g. Apt 4B" 
@@ -733,7 +733,7 @@ const ChallengeVerify = () => {
                                   />
                                 </div>
                                 <div>
-                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>City</label>
+                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "8px", textTransform: "uppercase" }}>City</label>
                                   <input 
                                     type="text" 
                                     placeholder="Enter City" 
@@ -747,7 +747,7 @@ const ChallengeVerify = () => {
                               
                               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                                 <div>
-                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>Country</label>
+                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "8px", textTransform: "uppercase" }}>Country</label>
                                   <select 
                                     value={formData.countryAddress || ""} 
                                     onChange={(e) => setFormData({...formData, countryAddress: e.target.value, stateAddress: ""})}
@@ -768,7 +768,7 @@ const ChallengeVerify = () => {
                                 </div>
                                 
                                 <div>
-                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>State / Province</label>
+                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "8px", textTransform: "uppercase" }}>State / Province</label>
                                   {formData.countryAddress === "United States" ? (
                                     <select 
                                       value={formData.stateAddress || ""} 
@@ -842,7 +842,7 @@ const ChallengeVerify = () => {
                               </div>
                               
                               <div>
-                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>Zip / Postal Code</label>
+                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "8px", textTransform: "uppercase" }}>Zip / Postal Code</label>
                                 <input 
                                   type="text" 
                                   placeholder="Enter Zip / Postal Code" 
@@ -972,7 +972,7 @@ const ChallengeVerify = () => {
                         </div>
                       )}
                       <div style={{ display: "flex", justifyContent: "space-between", marginTop: "40px" }}>
-                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><ArrowLeft size={16} /> PREVIOUS STEP</button>
+                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "white", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><ArrowLeft size={16} /> PREVIOUS STEP</button>
                         <button onClick={nextStep} style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 40px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.2)" }}>
                           NEXT STEP <ArrowRight size={18} />
                         </button>
@@ -986,7 +986,7 @@ const ChallengeVerify = () => {
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 03</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                           <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>MEDIA EVIDENCE</h1>
-                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 3 OF 5</div>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "white", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 3 OF 5</div>
                         </div>
                         <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
                           <div style={{ width: "60%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
@@ -1034,7 +1034,7 @@ const ChallengeVerify = () => {
                               onChange={(e) => setFormData({...formData, youtubeLink: e.target.value})}
                               style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "16px 20px", color: "white", outline: "none", fontSize: "13px" }} 
                             />
-                            <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", marginTop: "12px" }}>
+                            <p style={{ fontSize: "11px", color: "white", marginTop: "12px" }}>
                               If your raw footage is over 2GB, please provide an unlisted YouTube or Vimeo link.
                             </p>
                           </div>
@@ -1054,10 +1054,10 @@ const ChallengeVerify = () => {
                             />
                             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
                               <Camera size={24} color="#FF6A00" />
-                              <span style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)" }}>MAX 250MB</span>
+                              <span style={{ fontSize: "10px", fontWeight: "900", color: "white" }}>MAX 250MB</span>
                             </div>
                             <h3 style={{ fontSize: "20px", fontWeight: "900", textTransform: "uppercase", marginBottom: "10px" }}>PHOTO EVIDENCE</h3>
-                            <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)", lineHeight: "1.5", marginBottom: "20px" }}>
+                            <p style={{ fontSize: "13px", color: "white", lineHeight: "1.5", marginBottom: "20px" }}>
                               {uploadedFiles.images.length > 0 ? `${uploadedFiles.images.length} files selected` : "High-resolution stills of equipment and finish line."}
                             </p>
                             <div style={{ paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,0.05)", fontSize: "11px", fontWeight: "900", color: "#FF6A00", letterSpacing: "0.1em" }}>
@@ -1085,7 +1085,7 @@ const ChallengeVerify = () => {
                         </div>
                       )}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "white", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
                           <ArrowLeft size={18} /> PREVIOUS STEP
                         </button>
                         <button 
@@ -1118,7 +1118,7 @@ const ChallengeVerify = () => {
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 04</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                           <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>BIOMETRIC AUDIT</h1>
-                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 4 OF 5</div>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "white", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 4 OF 5</div>
                         </div>
                         <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
                           <div style={{ width: "80%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
@@ -1179,7 +1179,7 @@ const ChallengeVerify = () => {
 
                           {/* HUD BOTTOM LEFT */}
                           <div style={{ position: "absolute", bottom: "24px", left: "24px" }}>
-                            <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "4px" }}>TRACKING IDENTITY</div>
+                            <div style={{ fontSize: "10px", fontWeight: "900", color: "white", textTransform: "uppercase", marginBottom: "4px" }}>TRACKING IDENTITY</div>
                             <div style={{ fontSize: "16px", fontWeight: "950", color: "white" }}>
                               {formData.fullName ? formData.fullName.toUpperCase().replace(/\s+/g, '_') : user ? user.name.toUpperCase().replace(/\s+/g, '_') : "ELITE_ATHLETE"}
                             </div>
@@ -1187,7 +1187,7 @@ const ChallengeVerify = () => {
 
                           {/* HUD BOTTOM RIGHT */}
                           <div style={{ position: "absolute", bottom: "24px", right: "24px", textAlign: "right" }}>
-                            <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "4px" }}>CONFIDENCE SCORE</div>
+                            <div style={{ fontSize: "10px", fontWeight: "900", color: "white", textTransform: "uppercase", marginBottom: "4px" }}>CONFIDENCE SCORE</div>
                             <div style={{ 
                               fontSize: "32px", 
                               fontWeight: "950", 
@@ -1278,6 +1278,22 @@ const ChallengeVerify = () => {
                                 return <div key={lIdx} style={{ color }}>{log}</div>;
                               })}
                             </div>
+                            
+                            {auditOutcome === "failed" && (
+                              <div style={{ 
+                                marginTop: "16px",
+                                padding: "16px",
+                                background: "rgba(255, 77, 77, 0.05)",
+                                border: "1px solid rgba(255, 77, 77, 0.2)",
+                                borderRadius: "12px",
+                                color: "#FF4D4D",
+                                fontSize: "12px",
+                                lineHeight: "1.5"
+                              }}>
+                                <strong style={{ fontWeight: "900", display: "block", marginBottom: "4px" }}>AUDIT FAILED:</strong> 
+                                The biometric engine detected anomalies in the video frame rate, spatial coordinates, or movement signatures. This often occurs if the video is edited, spliced, or if the participant's facial mesh cannot be securely locked. Please provide an uncut, raw, and high-quality video to pass the security audit.
+                              </div>
+                            )}
                           </div>
 
                           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "32px", padding: "32px" }}>
@@ -1288,23 +1304,23 @@ const ChallengeVerify = () => {
                              </p>
                              <button 
                                onClick={nextStep}
-                               disabled={auditState !== "complete" || auditOutcome === "incomplete"}
+                               disabled={auditState !== "complete" || auditOutcome !== "passed"}
                                style={{ 
                                  width: "100%", 
-                                 background: (auditState !== "complete" || auditOutcome === "incomplete") ? "rgba(255,255,255,0.1)" : "#FF6A00", 
-                                 color: (auditState !== "complete" || auditOutcome === "incomplete") ? "rgba(255,255,255,0.4)" : "white", 
+                                 background: (auditState !== "complete" || auditOutcome !== "passed") ? "rgba(255,255,255,0.1)" : "#FF6A00", 
+                                 color: (auditState !== "complete" || auditOutcome !== "passed") ? "rgba(255,255,255,0.4)" : "white", 
                                  border: "none", 
                                  borderRadius: "100px", 
                                  padding: "20px", 
                                  fontSize: "14px", 
                                  fontWeight: "900", 
                                  textTransform: "uppercase", 
-                                 cursor: (auditState !== "complete" || auditOutcome === "incomplete") ? "not-allowed" : "pointer", 
+                                 cursor: (auditState !== "complete" || auditOutcome !== "passed") ? "not-allowed" : "pointer", 
                                  display: "flex", 
                                  alignItems: "center", 
                                  justifyContent: "center", 
                                  gap: "12px", 
-                                 boxShadow: (auditState !== "complete" || auditOutcome === "incomplete") ? "none" : "0 20px 40px rgba(255,106,0,0.2)",
+                                 boxShadow: (auditState !== "complete" || auditOutcome !== "passed") ? "none" : "0 20px 40px rgba(255,106,0,0.2)",
                                  transition: "all 0.3s"
                                }}
                              >
@@ -1332,7 +1348,7 @@ const ChallengeVerify = () => {
                       </div>
 
                       <div style={{ display: "flex", justifyContent: "flex-start", marginTop: "40px" }}>
-                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><ArrowLeft size={16} /> PREVIOUS STEP</button>
+                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "white", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><ArrowLeft size={16} /> PREVIOUS STEP</button>
                       </div>
                     </div>
                   )}
@@ -1343,7 +1359,7 @@ const ChallengeVerify = () => {
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 05</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                           <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>FINAL LEDGER SUBMISSION</h1>
-                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 5 OF 5</div>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "white", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 5 OF 5</div>
                         </div>
                         <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
                           <div style={{ width: "100%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
@@ -1362,17 +1378,17 @@ const ChallengeVerify = () => {
                             
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", marginBottom: "48px" }}>
                               <div>
-                                <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>ATHLETE NAME</div>
+                                <div style={{ fontSize: "10px", fontWeight: "900", color: "white", textTransform: "uppercase", marginBottom: "8px" }}>ATHLETE NAME</div>
                                 <div style={{ fontSize: "24px", fontWeight: "950" }}>{formData.fullName || user.name}</div>
                               </div>
                               <div>
-                                <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>CATEGORY</div>
+                                <div style={{ fontSize: "10px", fontWeight: "900", color: "white", textTransform: "uppercase", marginBottom: "8px" }}>CATEGORY</div>
                                 <div style={{ fontSize: "24px", fontWeight: "950" }}>{formData.event || "N/A"}</div>
                               </div>
                             </div>
 
                             <div style={{ marginBottom: "48px" }}>
-                              <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "12px" }}>FINAL PERFORMANCE METRIC</div>
+                              <div style={{ fontSize: "10px", fontWeight: "900", color: "white", textTransform: "uppercase", marginBottom: "12px" }}>FINAL PERFORMANCE METRIC</div>
                               <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
                                 <input 
                                   type="text" 
@@ -1397,7 +1413,7 @@ const ChallengeVerify = () => {
                                 <div style={{ fontSize: "13px", fontWeight: "900", marginBottom: "4px" }}>
                                   {uploadedFiles.video ? uploadedFiles.video.name : (formData.youtubeLink || "LIFT_VERIFICATION_V082.MOV")}
                                 </div>
-                                <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", fontWeight: "700" }}>4K Resolution • GPS Logged • Biometric Verified</div>
+                                <div style={{ fontSize: "10px", color: "white", fontWeight: "700" }}>4K Resolution • GPS Logged • Biometric Verified</div>
                               </div>
                               <button onClick={() => setStep(3)} style={{ background: "none", border: "none", color: "#FF6A00", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                                 EDIT <Edit3 size={14} />
@@ -1469,7 +1485,7 @@ const ChallengeVerify = () => {
                       {/* FINAL ACTION */}
                       <div style={{ textAlign: "center", maxWidth: "800px", margin: "0 auto" }}>
                         <div style={{ fontSize: "11px", fontWeight: "900", color: "#FF6A00", textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "16px" }}>LEGAL DISCLAIMER</div>
-                        <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", lineHeight: "1.6", marginBottom: "48px" }}>
+                        <p style={{ fontSize: "12px", color: "white", lineHeight: "1.6", marginBottom: "48px" }}>
                           By hitting 'Submit to Global Ledger', you certify that all performance data, video evidence, and biometric logs are 100% authentic and unmanipulated. Any attempt to falsify record data will result in immediate permanent disqualification and revocation of Elite Membership. The Rogue World Records committee reserves the right to request a live re-verification of any performance.
                         </p>
                         
@@ -1517,7 +1533,7 @@ const ChallengeVerify = () => {
                       </div>
 
                       <div style={{ marginTop: "60px" }}>
-                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><ArrowLeft size={16} /> PREVIOUS STEP</button>
+                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "white", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><ArrowLeft size={16} /> PREVIOUS STEP</button>
                       </div>
                     </div>
                   )}

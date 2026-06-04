@@ -1351,7 +1351,7 @@ const Profile = () => {
                   <div>
                     <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>DATE OF BIRTH</label>
                     <input 
-                      type="date" 
+                      type="date" max={new Date().toISOString().split('T')[0]} 
                       value={editForm.dob}
                       onChange={(e) => setEditForm({ ...editForm, dob: e.target.value })}
                       style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px", colorScheme: "dark" }} 

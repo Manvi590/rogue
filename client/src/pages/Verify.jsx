@@ -184,7 +184,8 @@ const Verify = () => {
     venueName: "",
     city: "",
     resultScore: "",
-    unit: "TIME", // TIME, DISTANCE, WEIGHT, REPETITIONS, POINTS, OTHER
+    measurementType: "TIME",
+    unit: "H:M:S", 
     explanation: "",
     
     // Section 4
@@ -206,7 +207,7 @@ const Verify = () => {
     
     // Section 8
     declarationSigned: false,
-    declarationDate: "",
+    declarationDate: new Date().toISOString().split('T')[0],
 
     streetAddress: "",
     apartment: "",
@@ -666,7 +667,7 @@ const Verify = () => {
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 01</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                           <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>ATHLETE IDENTITY</h1>
-                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 1 OF 6</div>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "white", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 1 OF 6</div>
                         </div>
                         <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
                           <div style={{ width: "16.6%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
@@ -675,7 +676,7 @@ const Verify = () => {
 
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
                         <div>
-                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>FULL LEGAL NAME</label>
+                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>FULL LEGAL NAME</label>
                           <input 
                             type="text" 
                             placeholder="AS APPEARS ON PASSPORT" 
@@ -686,7 +687,7 @@ const Verify = () => {
                           />
                         </div>
                         <div>
-                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>USERNAME / PROFILE NAME</label>
+                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>USERNAME / PROFILE NAME</label>
                           <input 
                             type="text" 
                             placeholder="ATHLETE HANDLE" 
@@ -700,9 +701,10 @@ const Verify = () => {
 
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
                         <div>
-                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>DATE OF BIRTH</label>
+                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>DATE OF BIRTH</label>
                           <input 
                             type="date" 
+                            max={new Date().toISOString().split('T')[0]}
                             value={formData.dob}
                             onChange={(e) => setFormData({...formData, dob: e.target.value})}
                             required
@@ -710,7 +712,7 @@ const Verify = () => {
                           />
                         </div>
                         <div>
-                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>AGE DIVISION</label>
+                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>AGE DIVISION</label>
                           <div style={{ position: "relative" }}>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -778,7 +780,7 @@ const Verify = () => {
 
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
                         <div>
-                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>EMAIL ADDRESS</label>
+                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>EMAIL ADDRESS</label>
                           <input 
                             type="email" 
                             placeholder="OFFICIAL CONTACT EMAIL" 
@@ -789,7 +791,7 @@ const Verify = () => {
                           />
                         </div>
                         <div>
-                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>PHONE NUMBER</label>
+                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>PHONE NUMBER</label>
                           <input 
                             type="tel" 
                             placeholder="+X XXX XXX XXXX" 
@@ -803,7 +805,7 @@ const Verify = () => {
 
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
                         <div>
-                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>COUNTRY OF ORIGIN</label>
+                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>COUNTRY OF ORIGIN</label>
                           <div style={{ position: "relative" }}>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -857,7 +859,7 @@ const Verify = () => {
                           </div>
                         </div>
                         <div>
-                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>SOCIAL MEDIA (OPTIONAL)</label>
+                          <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>SOCIAL MEDIA (OPTIONAL)</label>
                           <input 
                             type="text" 
                             placeholder="@INSTAGRAM / X / FB" 
@@ -920,7 +922,7 @@ const Verify = () => {
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 02</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                           <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>RECORD INFORMATION</h1>
-                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 2 OF 6</div>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "white", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 2 OF 6</div>
                         </div>
                         <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
                           <div style={{ width: "33.3%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
@@ -931,7 +933,7 @@ const Verify = () => {
                         <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
                           {/* RECORD TITLE */}
                           <div>
-                            <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>RECORD TITLE</label>
+                            <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>RECORD TITLE</label>
                             <input 
                               type="text" 
                               placeholder="E.G. MOST PUSH-UPS IN ONE MINUTE" 
@@ -945,7 +947,7 @@ const Verify = () => {
                           {/* CATEGORY SELECTION */}
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
                             <div>
-                              <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>MAIN CATEGORY</label>
+                              <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>MAIN CATEGORY</label>
                               <div style={{ position: "relative" }}>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
@@ -1007,7 +1009,7 @@ const Verify = () => {
                               </div>
                             </div>
                             <div>
-                              <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>SUBCATEGORY GROUP</label>
+                              <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>SUBCATEGORY GROUP</label>
                               <div style={{ position: "relative" }}>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
@@ -1069,7 +1071,7 @@ const Verify = () => {
                           </div>
 
                           <div>
-                            <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>SPECIFIC EVENT / SUBCATEGORY</label>
+                            <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>SPECIFIC EVENT / SUBCATEGORY</label>
                             <div style={{ position: "relative" }}>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -1125,7 +1127,7 @@ const Verify = () => {
 
                           {/* ATTEMPT TYPE */}
                           <div>
-                            <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>IS THIS A:</label>
+                            <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>IS THIS A:</label>
                             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
                               {[
                                 { id: "NEW_RECORD", label: "NEW ATTEMPT" },
@@ -1178,7 +1180,7 @@ const Verify = () => {
                                     </h4>
                                   </div>
                                   <div>
-                                    <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                                    <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>
                                       CURRENT HOLDER'S NAME
                                     </label>
                                     <input 
@@ -1190,7 +1192,7 @@ const Verify = () => {
                                     />
                                   </div>
                                   <div>
-                                    <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                                    <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>
                                       CURRENT RECORD SCORE / VALUE
                                     </label>
                                     <input 
@@ -1209,7 +1211,7 @@ const Verify = () => {
                           {/* PERFORMANCE DATA */}
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
                             <div>
-                              <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>RESULT OF NEW ATTEMPT</label>
+                              <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>RESULT OF NEW ATTEMPT</label>
                               <input 
                                 type="text" 
                                 placeholder="E.G. 502.5" 
@@ -1220,7 +1222,7 @@ const Verify = () => {
                               />
                             </div>
                             <div>
-                              <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "rgba(255, 255, 255, 0.4)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>UNIT OF MEASUREMENT</label>
+                              <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>MEASUREMENT TYPE</label>
                               <div style={{ position: "relative" }}>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
@@ -1240,13 +1242,13 @@ const Verify = () => {
                                       textAlign: "left"
                                     }}>
                                       <span>{
-                                        formData.unit === "TIME" ? "TIME (H:M:S)" :
-                                        formData.unit === "DISTANCE" ? "DISTANCE (M/KM)" :
-                                        formData.unit === "WEIGHT" ? "WEIGHT (KG/LBS)" :
-                                        formData.unit === "REPETITIONS" ? "REPETITIONS" :
-                                        formData.unit === "POINTS" ? "POINTS / SCORE" :
-                                        formData.unit === "OTHER" ? "OTHER" :
-                                        formData.unit || "SELECT UNIT"
+                                        formData.measurementType === "TIME" ? "TIME" :
+                                        formData.measurementType === "DISTANCE" ? "DISTANCE" :
+                                        formData.measurementType === "WEIGHT" ? "WEIGHT" :
+                                        formData.measurementType === "REPETITIONS" ? "REPETITIONS" :
+                                        formData.measurementType === "POINTS" ? "POINTS / SCORE" :
+                                        formData.measurementType === "OTHER" ? "OTHER" :
+                                        formData.measurementType || "SELECT TYPE"
                                       }</span>
                                       <ChevronDown size={16} style={{ opacity: 0.6 }} />
                                     </button>
@@ -1261,27 +1263,96 @@ const Verify = () => {
                                     boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
                                   }}>
                                     {[
-                                      { val: "TIME", label: "TIME (H:M:S)" },
-                                      { val: "DISTANCE", label: "DISTANCE (M/KM)" },
-                                      { val: "WEIGHT", label: "WEIGHT (KG/LBS)" },
+                                      { val: "TIME", label: "TIME" },
+                                      { val: "DISTANCE", label: "DISTANCE" },
+                                      { val: "WEIGHT", label: "WEIGHT" },
                                       { val: "REPETITIONS", label: "REPETITIONS" },
                                       { val: "POINTS", label: "POINTS / SCORE" },
                                       { val: "OTHER", label: "OTHER" }
                                     ].map((item) => (
                                       <DropdownMenuItem
                                         key={item.val}
-                                        onClick={() => setFormData({...formData, unit: item.val})}
+                                        onClick={() => {
+                                          const defaultUnits = { TIME: "H:M:S", DISTANCE: "METERS", WEIGHT: "KG", REPETITIONS: "REPS", POINTS: "POINTS", OTHER: "CUSTOM" };
+                                          setFormData({...formData, measurementType: item.val, unit: defaultUnits[item.val]});
+                                        }}
                                         style={{
                                           padding: "14px 20px",
-                                          color: formData.unit === item.val ? "#FF6A00" : "white",
+                                          color: formData.measurementType === item.val ? "#FF6A00" : "white",
                                           fontSize: "14px",
-                                          fontWeight: formData.unit === item.val ? "800" : "500",
+                                          fontWeight: formData.measurementType === item.val ? "800" : "500",
                                           borderRadius: "10px",
                                           cursor: "pointer",
                                           transition: "all 0.2s"
                                         }}
                                       >
                                         {item.label}
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ marginTop: "24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                            <div style={{ gridColumn: "2 / 3" }}>
+                              <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "white", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.1em" }}>SPECIFIC UNIT</label>
+                              <div style={{ position: "relative" }}>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button style={{
+                                      width: "100%",
+                                      background: "rgba(255,255,255,0.03)",
+                                      border: "1px solid rgba(255,255,255,0.08)",
+                                      borderRadius: "16px",
+                                      padding: "18px 24px",
+                                      color: "white",
+                                      fontSize: "14px",
+                                      outline: "none",
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                      cursor: "pointer",
+                                      textAlign: "left"
+                                    }}>
+                                      <span>{formData.unit || "SELECT UNIT"}</span>
+                                      <ChevronDown size={16} style={{ opacity: 0.6 }} />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent style={{
+                                    width: "100%",
+                                    minWidth: "250px",
+                                    background: "#161616",
+                                    border: "1px solid rgba(255,255,255,0.1)",
+                                    borderRadius: "16px",
+                                    padding: "8px",
+                                    boxShadow: "0 20px 40px rgba(0,0,0,0.5)",
+                                    maxHeight: "300px",
+                                    overflowY: "auto"
+                                  }}>
+                                    {(
+                                      formData.measurementType === "TIME" ? ["H:M:S", "HOURS", "MINUTES", "SECONDS", "MILLISECONDS"] :
+                                      formData.measurementType === "DISTANCE" ? ["KILOMETERS", "METERS", "CENTIMETERS", "MILES", "FEET", "INCHES"] :
+                                      formData.measurementType === "WEIGHT" ? ["KG", "GRAMS", "LBS", "OUNCES"] :
+                                      formData.measurementType === "REPETITIONS" ? ["REPS"] :
+                                      formData.measurementType === "POINTS" ? ["POINTS", "SCORE"] :
+                                      ["CUSTOM", "OTHER"]
+                                    ).map((u) => (
+                                      <DropdownMenuItem
+                                        key={u}
+                                        onClick={() => setFormData({...formData, unit: u})}
+                                        style={{
+                                          padding: "14px 20px",
+                                          color: formData.unit === u ? "#FF6A00" : "white",
+                                          fontSize: "14px",
+                                          fontWeight: formData.unit === u ? "800" : "500",
+                                          borderRadius: "10px",
+                                          cursor: "pointer",
+                                          transition: "all 0.2s"
+                                        }}
+                                      >
+                                        {u}
                                       </DropdownMenuItem>
                                     ))}
                                   </DropdownMenuContent>
@@ -1297,11 +1368,11 @@ const Verify = () => {
                             <label style={{ display: "block", fontSize: "11px", fontWeight: "900", color: "#FF6A00", marginBottom: "20px", textTransform: "uppercase", letterSpacing: "0.1em" }}>ATTEMPT LOGISTICS</label>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "20px" }}>
                               <div>
-                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>DATE OF ATTEMPT</label>
-                                <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} required style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
+                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "8px", textTransform: "uppercase" }}>DATE OF ATTEMPT</label>
+                                <input type="date" max={new Date().toISOString().split('T')[0]} value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} required style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
                               </div>
                               <div>
-                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>TIME OF ATTEMPT</label>
+                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "8px", textTransform: "uppercase" }}>TIME OF ATTEMPT</label>
                                 <input type="time" value={formData.time} onChange={(e) => setFormData({...formData, time: e.target.value})} required style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "14px 20px", color: "white", outline: "none", fontSize: "12px", colorScheme: "dark" }} />
                               </div>
                             </div>
@@ -1328,7 +1399,7 @@ const Verify = () => {
                             
                             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                               <div>
-                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>Street Address</label>
+                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "8px", textTransform: "uppercase" }}>Street Address</label>
                                 <input 
                                   type="text" 
                                   placeholder="Enter Street Address" 
@@ -1341,7 +1412,7 @@ const Verify = () => {
                               
                               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                                 <div>
-                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>Apartment / Unit Number (Optional)</label>
+                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "8px", textTransform: "uppercase" }}>Apartment / Unit Number (Optional)</label>
                                   <input 
                                     type="text" 
                                     placeholder="e.g. Apt 4B" 
@@ -1351,7 +1422,7 @@ const Verify = () => {
                                   />
                                 </div>
                                 <div>
-                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>City</label>
+                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "8px", textTransform: "uppercase" }}>City</label>
                                   <input 
                                     type="text" 
                                     placeholder="Enter City" 
@@ -1365,7 +1436,7 @@ const Verify = () => {
                               
                               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                                 <div>
-                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>Country</label>
+                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "8px", textTransform: "uppercase" }}>Country</label>
                                   <select 
                                     value={formData.countryAddress || ""} 
                                     onChange={(e) => setFormData({...formData, countryAddress: e.target.value, stateAddress: ""})}
@@ -1386,7 +1457,7 @@ const Verify = () => {
                                 </div>
                                 
                                 <div>
-                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>State / Province</label>
+                                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "8px", textTransform: "uppercase" }}>State / Province</label>
                                   {formData.countryAddress === "United States" ? (
                                     <select 
                                       value={formData.stateAddress || ""} 
@@ -1460,7 +1531,7 @@ const Verify = () => {
                               </div>
                               
                               <div>
-                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "8px", textTransform: "uppercase" }}>Zip / Postal Code</label>
+                                <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "white", marginBottom: "8px", textTransform: "uppercase" }}>Zip / Postal Code</label>
                                 <input 
                                   type="text" 
                                   placeholder="Enter Zip / Postal Code" 
@@ -1504,7 +1575,7 @@ const Verify = () => {
                         </div>
                       )}
                       <div style={{ display: "flex", justifyContent: "space-between", marginTop: "40px" }}>
-                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "white", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                           <ArrowLeft size={16} /> PREVIOUS STEP
                         </button>
                         <button onClick={nextStep} style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 40px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.2)" }}>
@@ -1522,7 +1593,7 @@ const Verify = () => {
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 03</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                           <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>EQUIPMENT & WITNESSES</h1>
-                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 3 OF 6</div>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "white", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 3 OF 6</div>
                         </div>
                         <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
                           <div style={{ width: "50%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
@@ -1537,7 +1608,7 @@ const Verify = () => {
                               <Dumbbell size={18} color="#FF6A00" />
                               <span style={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.1em" }}>EQUIPMENT USED</span>
                             </div>
-                            <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", marginBottom: "20px", lineHeight: "1.5" }}>
+                            <p style={{ fontSize: "12px", color: "white", marginBottom: "20px", lineHeight: "1.5" }}>
                               List all specialized gear, weights, or tools used during the attempt. Include calibration details if applicable.
                             </p>
                             <textarea 
@@ -1638,7 +1709,7 @@ const Verify = () => {
                         </div>
                       )}
                       <div style={{ display: "flex", justifyContent: "space-between", marginTop: "40px" }}>
-                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><ArrowLeft size={16} /> PREVIOUS STEP</button>
+                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "white", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><ArrowLeft size={16} /> PREVIOUS STEP</button>
                         <button onClick={nextStep} style={{ background: "#FF6A00", color: "white", border: "none", borderRadius: "100px", padding: "16px 40px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 20px 40px rgba(255, 106, 0, 0.2)" }}>
                           NEXT STEP <ArrowRight size={18} />
                         </button>
@@ -1654,7 +1725,7 @@ const Verify = () => {
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 04</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                           <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>MEDIA EVIDENCE</h1>
-                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 4 OF 6</div>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "white", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 4 OF 6</div>
                         </div>
                         <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
                           <div style={{ width: "66.6%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
@@ -1704,7 +1775,7 @@ const Verify = () => {
                               onChange={(e) => setFormData({...formData, youtubeLink: e.target.value})}
                               style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", padding: "16px 20px", color: "white", outline: "none", fontSize: "13px" }} 
                             />
-                            <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", marginTop: "12px" }}>
+                            <p style={{ fontSize: "11px", color: "white", marginTop: "12px" }}>
                               If your raw footage is over 2GB, please provide an unlisted YouTube or Vimeo link.
                             </p>
                           </div>
@@ -1724,10 +1795,10 @@ const Verify = () => {
                             />
                             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
                               <Camera size={24} color="#FF6A00" />
-                              <span style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)" }}>MAX 250MB</span>
+                              <span style={{ fontSize: "10px", fontWeight: "900", color: "white" }}>MAX 250MB</span>
                             </div>
                             <h3 style={{ fontSize: "20px", fontWeight: "900", textTransform: "uppercase", marginBottom: "10px" }}>PHOTO EVIDENCE</h3>
-                            <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)", lineHeight: "1.5", marginBottom: "20px" }}>
+                            <p style={{ fontSize: "13px", color: "white", lineHeight: "1.5", marginBottom: "20px" }}>
                               {uploadedFiles.images.length > 0 ? `${uploadedFiles.images.length} files selected` : "High-resolution stills of equipment and finish line."}
                             </p>
                             <div style={{ paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,0.05)", fontSize: "11px", fontWeight: "900", color: "#FF6A00", letterSpacing: "0.1em" }}>
@@ -1757,7 +1828,7 @@ const Verify = () => {
                       )}
                       {/* NAVIGATION */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "white", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
                           <ArrowLeft size={18} /> PREVIOUS STEP
                         </button>
                         <button 
@@ -1792,7 +1863,7 @@ const Verify = () => {
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 05</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                           <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>BIOMETRIC AUDIT</h1>
-                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 5 OF 6</div>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "white", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 5 OF 6</div>
                         </div>
                         <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
                           <div style={{ width: "83.3%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
@@ -1853,7 +1924,7 @@ const Verify = () => {
 
                           {/* HUD BOTTOM LEFT */}
                           <div style={{ position: "absolute", bottom: "24px", left: "24px" }}>
-                            <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "4px" }}>TRACKING IDENTITY</div>
+                            <div style={{ fontSize: "10px", fontWeight: "900", color: "white", textTransform: "uppercase", marginBottom: "4px" }}>TRACKING IDENTITY</div>
                             <div style={{ fontSize: "16px", fontWeight: "950", color: "white" }}>
                               {formData.fullName ? formData.fullName.toUpperCase().replace(/\s+/g, '_') : user ? user.name.toUpperCase().replace(/\s+/g, '_') : "ELITE_ATHLETE"}
                             </div>
@@ -1861,7 +1932,7 @@ const Verify = () => {
 
                           {/* HUD BOTTOM RIGHT */}
                           <div style={{ position: "absolute", bottom: "24px", right: "24px", textAlign: "right" }}>
-                            <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "4px" }}>CONFIDENCE SCORE</div>
+                            <div style={{ fontSize: "10px", fontWeight: "900", color: "white", textTransform: "uppercase", marginBottom: "4px" }}>CONFIDENCE SCORE</div>
                             <div style={{ 
                               fontSize: "32px", 
                               fontWeight: "950", 
@@ -1952,6 +2023,22 @@ const Verify = () => {
                                 return <div key={lIdx} style={{ color }}>{log}</div>;
                               })}
                             </div>
+                            
+                            {auditOutcome === "failed" && (
+                              <div style={{ 
+                                marginTop: "16px",
+                                padding: "16px",
+                                background: "rgba(255, 77, 77, 0.05)",
+                                border: "1px solid rgba(255, 77, 77, 0.2)",
+                                borderRadius: "12px",
+                                color: "#FF4D4D",
+                                fontSize: "12px",
+                                lineHeight: "1.5"
+                              }}>
+                                <strong style={{ fontWeight: "900", display: "block", marginBottom: "4px" }}>AUDIT FAILED:</strong> 
+                                The biometric engine detected anomalies in the video frame rate, spatial coordinates, or movement signatures. This often occurs if the video is edited, spliced, or if the participant's facial mesh cannot be securely locked. Please provide an uncut, raw, and high-quality video to pass the security audit.
+                              </div>
+                            )}
                           </div>
 
                           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "32px", padding: "32px" }}>
@@ -1962,23 +2049,23 @@ const Verify = () => {
                              </p>
                              <button 
                                onClick={nextStep}
-                               disabled={auditState !== "complete" || auditOutcome === "incomplete"}
+                               disabled={auditState !== "complete" || auditOutcome !== "passed"}
                                style={{ 
                                  width: "100%", 
-                                 background: (auditState !== "complete" || auditOutcome === "incomplete") ? "rgba(255,255,255,0.1)" : "#FF6A00", 
-                                 color: (auditState !== "complete" || auditOutcome === "incomplete") ? "rgba(255,255,255,0.4)" : "white", 
+                                 background: (auditState !== "complete" || auditOutcome !== "passed") ? "rgba(255,255,255,0.1)" : "#FF6A00", 
+                                 color: (auditState !== "complete" || auditOutcome !== "passed") ? "rgba(255,255,255,0.4)" : "white", 
                                  border: "none", 
                                  borderRadius: "100px", 
                                  padding: "20px", 
                                  fontSize: "14px", 
                                  fontWeight: "900", 
                                  textTransform: "uppercase", 
-                                 cursor: (auditState !== "complete" || auditOutcome === "incomplete") ? "not-allowed" : "pointer", 
+                                 cursor: (auditState !== "complete" || auditOutcome !== "passed") ? "not-allowed" : "pointer", 
                                  display: "flex", 
                                  alignItems: "center", 
                                  justifyContent: "center", 
                                  gap: "12px", 
-                                 boxShadow: (auditState !== "complete" || auditOutcome === "incomplete") ? "none" : "0 20px 40px rgba(255,106,0,0.2)",
+                                 boxShadow: (auditState !== "complete" || auditOutcome !== "passed") ? "none" : "0 20px 40px rgba(255,106,0,0.2)",
                                  transition: "all 0.3s"
                                }}
                              >
@@ -2008,7 +2095,7 @@ const Verify = () => {
                       </div>
 
                       <div style={{ display: "flex", justifyContent: "flex-start", marginTop: "40px" }}>
-                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><ArrowLeft size={16} /> PREVIOUS STEP</button>
+                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "white", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><ArrowLeft size={16} /> PREVIOUS STEP</button>
                       </div>
                       </div>
                     </ScrollReveal>
@@ -2021,7 +2108,7 @@ const Verify = () => {
                         <h3 style={{ color: "#FF6A00", fontSize: "12px", fontWeight: "900", letterSpacing: "0.1em", marginBottom: "12px" }}>PHASE 06</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                           <h1 style={{ fontSize: "48px", fontWeight: "950", textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: "1" }}>FINAL LEDGER SUBMISSION</h1>
-                          <div style={{ fontSize: "12px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 6 OF 6</div>
+                          <div style={{ fontSize: "12px", fontWeight: "900", color: "white", textTransform: "uppercase", letterSpacing: "0.05em" }}>STEP 6 OF 6</div>
                         </div>
                         <div style={{ width: "100%", height: "2px", background: "rgba(255,255,255,0.05)", marginTop: "24px", position: "relative" }}>
                           <div style={{ width: "100%", height: "100%", background: "#FF6A00", position: "absolute", top: 0, left: 0 }}></div>
@@ -2040,17 +2127,17 @@ const Verify = () => {
                             
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", marginBottom: "48px" }}>
                               <div>
-                                <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>ATHLETE NAME</div>
+                                <div style={{ fontSize: "10px", fontWeight: "900", color: "white", textTransform: "uppercase", marginBottom: "8px" }}>ATHLETE NAME</div>
                                 <div style={{ fontSize: "24px", fontWeight: "950" }}>{formData.fullName || user.name}</div>
                               </div>
                               <div>
-                                <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>RECORD CATEGORY</div>
+                                <div style={{ fontSize: "10px", fontWeight: "900", color: "white", textTransform: "uppercase", marginBottom: "8px" }}>RECORD CATEGORY</div>
                                 <div style={{ fontSize: "24px", fontWeight: "950" }}>{formData.recordTitle || "UNSPECIFIED"}</div>
                               </div>
                             </div>
 
                             <div style={{ marginBottom: "48px" }}>
-                              <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "12px" }}>FINAL PERFORMANCE METRIC</div>
+                              <div style={{ fontSize: "10px", fontWeight: "900", color: "white", textTransform: "uppercase", marginBottom: "12px" }}>FINAL PERFORMANCE METRIC</div>
                               <div style={{ fontSize: "96px", fontWeight: "950", color: "#FF6A00", lineHeight: "1", letterSpacing: "-0.04em" }}>
                                 {formData.resultScore || "0"} <span style={{ fontSize: "32px", color: "white", marginLeft: "12px" }}>{formData.unit || "UNIT"}</span>
                               </div>
@@ -2064,7 +2151,7 @@ const Verify = () => {
                                 <div style={{ fontSize: "13px", fontWeight: "900", marginBottom: "4px" }}>
                                   {uploadedFiles.video ? uploadedFiles.video.name : "LIFT_VERIFICATION_V082.MOV"}
                                 </div>
-                                <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", fontWeight: "700" }}>4K Resolution • GPS Logged • Biometric Verified</div>
+                                <div style={{ fontSize: "10px", color: "white", fontWeight: "700" }}>4K Resolution • GPS Logged • Biometric Verified</div>
                               </div>
                               <button onClick={() => setStep(4)} style={{ background: "none", border: "none", color: "#FF6A00", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                                 EDIT <Edit3 size={14} />
@@ -2137,7 +2224,7 @@ const Verify = () => {
                       <div style={{ maxWidth: "800px", margin: "0 auto" }}>
                         <div style={{ textAlign: "center", marginBottom: "40px" }}>
                           <div style={{ fontSize: "11px", fontWeight: "900", color: "#FF6A00", textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "16px" }}>LEGAL DISCLAIMER</div>
-                          <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", lineHeight: "1.6" }}>
+                          <p style={{ fontSize: "12px", color: "white", lineHeight: "1.6" }}>
                             By hitting 'Submit to Global Ledger', you certify that all performance data, video evidence, and biometric logs are 100% authentic and unmanipulated. Any attempt to falsify record data will result in immediate permanent disqualification and revocation of Elite Membership. The Rogue World Records committee reserves the right to request a live re-verification of any performance.
                           </p>
                         </div>
@@ -2228,7 +2315,7 @@ const Verify = () => {
                       </div>
 
                       <div style={{ marginTop: "60px" }}>
-                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><ArrowLeft size={16} /> PREVIOUS STEP</button>
+                        <button onClick={prevStep} style={{ background: "none", border: "none", color: "white", fontSize: "12px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><ArrowLeft size={16} /> PREVIOUS STEP</button>
                       </div>
                       </div>
                     </ScrollReveal>

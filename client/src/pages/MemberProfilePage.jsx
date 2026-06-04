@@ -15,6 +15,7 @@ export default function MemberProfilePage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [copied, setCopied] = useState(false);
+  const [selectedAchievement, setSelectedAchievement] = useState(null);
 
   const handleShare = async () => {
     try {
@@ -47,7 +48,7 @@ export default function MemberProfilePage() {
           
           if (data.ranking) {
             setRanking({
-              global_rank: data.ranking.global_rank || Math.floor(Math.random() * 100) + 1,
+              global_rank: data.ranking.global_rank || '-',
               total_points: data.ranking.total_points || 0,
               verified_records_count: data.ranking.verified_records_count || 0,
               world_records_count: data.ranking.world_records_count || 0,
@@ -58,11 +59,14 @@ export default function MemberProfilePage() {
               certificates_earned: Math.floor(Math.random() * 8)
             });
           }
+          
+          if (data.records) {
+             setRecords(data.records);
+          }
         } else {
           setProfile(null);
         }
         
-        setRecords([]);
         setPointsHistory([]);
       } catch (error) {
         console.error('Error fetching profile:', error);
@@ -214,7 +218,7 @@ export default function MemberProfilePage() {
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px', overflowX: 'auto' }}>
-          {['overview', 'achievements', 'videos'].map(tab => (
+          {['overview', 'achievements', 'records', 'videos'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -233,6 +237,7 @@ export default function MemberProfilePage() {
             >
               {tab === 'overview' && '📊 Overview'}
               {tab === 'achievements' && '⭐ Achievements'}
+              {tab === 'records' && '📋 Submitted Records'}
               {tab === 'videos' && '🎥 Videos'}
             </button>
           ))}
@@ -273,78 +278,270 @@ export default function MemberProfilePage() {
           </div>
         )}
 
-        {activeTab === 'achievements' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '16px' }}>
-            {[
-              { icon: '👑', label: 'Grand Champion', earned: ranking?.tier_badge === 'Grand Champion' },
-              { icon: '⭐', label: 'Elite Master', earned: ['Grand Champion', 'Elite Master'].includes(ranking?.tier_badge) },
-              { icon: '🏆', label: 'Pro Competitor', earned: true },
-              { icon: '🥇', label: 'First Place', earned: (ranking?.first_place_categories || 0) > 0 },
-              { icon: '🥈', label: 'Top 10', earned: (ranking?.top_10_placements || 0) > 0 },
-              { icon: '📜', label: 'Certified', earned: (ranking?.certificates_earned || 0) > 0 }
-            ].map((achievement, idx) => (
-              <div
-                key={idx}
-                style={{
-                  background: achievement.earned ? 'rgba(255,85,0,0.15)' : 'rgba(255,255,255,0.02)',
-                  border: achievement.earned ? '1px solid rgba(255,85,0,0.3)' : '1px solid rgba(255,255,255,0.05)',
-                  borderRadius: '12px',
-                  padding: '20px',
-                  textAlign: 'center',
-                  opacity: achievement.earned ? 1 : 0.5
-                }}
-              >
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>{achievement.icon}</div>
-                <div style={{ color: achievement.earned ? 'white' : '#888', fontWeight: '700', fontSize: '12px' }}>
-                  {achievement.label}
+        {activeTab === 'achievements' && (() => {
+          const achievementsList = [
+            { id: 'grand_champion', icon: '👑', label: 'Grand Champion', earned: ranking?.tier_badge === 'Grand Champion', desc: 'The highest echelon of athletic excellence in the ROGUE Network. Awarded only to elite athletes exceeding 5000 verified power points. True legends of the sport.', color: '#FF5500' },
+            { id: 'elite_master', icon: '⭐', label: 'Elite Master', earned: ['Grand Champion', 'Elite Master'].includes(ranking?.tier_badge), desc: 'A seasoned world record holder with exceptional athletic performance and over 2500 power points. Highly respected in the community.', color: '#a200ff' },
+            { id: 'pro_competitor', icon: '🏆', label: 'Pro Competitor', earned: true, desc: 'An official ROGUE Network competitor who has successfully registered their athletic profile and is actively competing on the global stage.', color: '#3b82f6' },
+            { id: 'first_place', icon: '🥇', label: 'First Place', earned: (ranking?.first_place_categories || 0) > 0, desc: `Currently holding First Place globally in ${ranking?.first_place_categories || 0} category(s). This athlete is an absolute pioneer pushing human limits!`, color: '#FFD700' },
+            { id: 'top_10', icon: '🥈', label: 'Top 10 Rank', earned: (ranking?.top_10_placements || 0) > 0, desc: `Ranked in the Global Top 10 for ${ranking?.top_10_placements || 0} category(s). A testament to elite competitive capability.`, color: '#cbd5e1' },
+            { id: 'certified', icon: '📜', label: 'ROGUE Certified', earned: (ranking?.certificates_earned || 0) > 0, desc: `Successfully earned ${ranking?.certificates_earned || 0} Official ROGUE Certificates for verified, record-breaking performances.`, color: '#4ade80' }
+          ];
+
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '16px' }}>
+              {achievementsList.map((achievement, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => {
+                    if (achievement.earned) {
+                      setSelectedAchievement(achievement);
+                    }
+                  }}
+                  style={{
+                    background: achievement.earned ? 'rgba(255,85,0,0.15)' : 'rgba(255,255,255,0.02)',
+                    border: achievement.earned ? '1px solid rgba(255,85,0,0.3)' : '1px solid rgba(255,255,255,0.05)',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    textAlign: 'center',
+                    opacity: achievement.earned ? 1 : 0.5,
+                    cursor: achievement.earned ? 'pointer' : 'default',
+                    transition: 'all 0.2s',
+                    boxShadow: achievement.earned ? '0 4px 15px rgba(255,85,0,0.1)' : 'none'
+                  }}
+                  onMouseEnter={e => {
+                    if (achievement.earned) {
+                      e.currentTarget.style.transform = 'translateY(-4px)';
+                      e.currentTarget.style.boxShadow = `0 8px 25px ${achievement.color}40`;
+                      e.currentTarget.style.borderColor = achievement.color;
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (achievement.earned) {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 4px 15px rgba(255,85,0,0.1)';
+                      e.currentTarget.style.borderColor = 'rgba(255,85,0,0.3)';
+                    }
+                  }}
+                >
+                  <div style={{ fontSize: '40px', marginBottom: '12px', filter: achievement.earned ? `drop-shadow(0 0 10px ${achievement.color}80)` : 'none' }}>{achievement.icon}</div>
+                  <div style={{ color: achievement.earned ? 'white' : '#888', fontWeight: '800', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    {achievement.label}
+                  </div>
                 </div>
+              ))}
+            </div>
+          );
+        })()}
+
+        {activeTab === 'records' && (
+          <div>
+            {records.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {records.map(record => (
+                  <div
+                    key={record.id}
+                    onClick={() => navigate(`/record/${record.id}`)}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid rgba(255,255,255,0.05)',
+                      padding: '24px',
+                      borderRadius: '16px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(255,106,0,0.05)';
+                      e.currentTarget.style.borderColor = 'rgba(255,106,0,0.2)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)';
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                        <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '900', color: 'white' }}>{record.title || record.category}</h3>
+                        {record.status === 'verified' && (
+                          <span style={{ background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', fontSize: '10px', fontWeight: '800', padding: '4px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                            <CheckCircle2 size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                            Verified
+                          </span>
+                        )}
+                        {record.status === 'rejected' && (
+                          <span style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', fontSize: '10px', fontWeight: '800', padding: '4px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                            <X size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                            Rejected
+                          </span>
+                        )}
+                        {record.status === 'pending' && (
+                          <span style={{ background: 'rgba(255, 106, 0, 0.1)', color: '#FF6A00', fontSize: '10px', fontWeight: '800', padding: '4px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                            <Activity size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                            Under Review
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>
+                        {record.category} | {new Date(record.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '24px', fontWeight: '950', color: 'white' }}>
+                        {record.value} <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>{record.unit}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            ) : (
+              <div style={{ textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.01)', borderRadius: '16px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                <FileText size={48} color="rgba(255,255,255,0.2)" style={{ marginBottom: '16px' }} />
+                <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'white', marginBottom: '8px' }}>No records submitted yet</h3>
+                <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>This athlete hasn't submitted any records.</p>
+              </div>
+            )}
           </div>
         )}
 
         {activeTab === 'videos' && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
-            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', overflow: 'hidden' }}>
-              <div style={{ width: '100%', position: 'relative', paddingTop: '56.25%', background: '#000' }}>
-                <iframe
-                  src="https://www.youtube.com/embed/ScMzIvxBSi4?autoplay=0"
-                  title="Featured Record Video"
-                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                ></iframe>
+            {records.filter(r => r.evidence_url || r.video_url || r.videoUrl).length > 0 ? (
+              records
+                .filter(r => r.evidence_url || r.video_url || r.videoUrl)
+                .map(record => {
+                  const videoUrl = record.evidence_url || record.video_url || record.videoUrl;
+                  const isYouTube = videoUrl.includes('youtube') || videoUrl.includes('youtu.be');
+                  let embedUrl = videoUrl;
+                  
+                  if (isYouTube) {
+                    const youtubeId = videoUrl.includes('youtube.com/watch?v=') 
+                      ? videoUrl.split('v=')[1]?.split('&')[0] 
+                      : videoUrl.split('youtu.be/')[1]?.split('?')[0];
+                    embedUrl = `https://www.youtube.com/embed/${youtubeId}?autoplay=0`;
+                  }
+                  
+                  return (
+                    <div key={record.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', overflow: 'hidden' }}>
+                      <div style={{ width: '100%', position: 'relative', paddingTop: '56.25%', background: '#000', cursor: 'pointer' }} onClick={() => navigate(`/record/${record.id}`)}>
+                        {isYouTube ? (
+                          <iframe
+                            src={embedUrl}
+                            title={record.title}
+                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', pointerEvents: 'none' }}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          ></iframe>
+                        ) : (
+                          <video
+                            src={formatProductImage(videoUrl)}
+                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        )}
+                      </div>
+                      <div style={{ padding: '16px', cursor: 'pointer' }} onClick={() => navigate(`/record/${record.id}`)}>
+                        <div style={{ background: record.is_world_record ? '#FFD700' : '#FF5500', color: record.is_world_record ? '#000' : 'white', display: 'inline-block', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '900', marginBottom: '8px' }}>
+                          {record.is_world_record ? 'WORLD RECORD' : record.category.toUpperCase()}
+                        </div>
+                        <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '900', color: 'white' }}>{record.title}</h3>
+                        <p style={{ margin: 0, fontSize: '13px', color: '#888', lineHeight: '1.5' }}>
+                          Value: {record.value} {record.unit} • {new Date(record.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+            ) : (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.01)', borderRadius: '16px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'white', marginBottom: '8px' }}>No videos found</h3>
+                <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>This athlete hasn't uploaded any video evidence yet.</p>
               </div>
-              <div style={{ padding: '16px' }}>
-                <div style={{ background: '#FF5500', color: 'white', display: 'inline-block', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '900', marginBottom: '8px' }}>FEATURED RECORD</div>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '900', color: 'white' }}>World Record Performance</h3>
-                <p style={{ margin: 0, fontSize: '13px', color: '#888', lineHeight: '1.5' }}>
-                  Watch the amazing performance that secured the world record. Verified by ROGUE officials.
-                </p>
-              </div>
-            </div>
-            
-            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', overflow: 'hidden' }}>
-              <div style={{ width: '100%', position: 'relative', paddingTop: '56.25%', background: '#000' }}>
-                <iframe
-                  src="https://www.youtube.com/embed/jNQXAC9IVRw?autoplay=0"
-                  title="Training Video"
-                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                ></iframe>
-              </div>
-              <div style={{ padding: '16px' }}>
-                <div style={{ background: '#333', color: 'white', display: 'inline-block', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '900', marginBottom: '8px' }}>TRAINING</div>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '900', color: 'white' }}>Behind The Scenes</h3>
-                <p style={{ margin: 0, fontSize: '13px', color: '#888', lineHeight: '1.5' }}>
-                  A look into the intense training regimen required to break records.
-                </p>
-              </div>
-            </div>
+            )}
           </div>
         )}
       </div>
+      
+      {/* Achievement Popup Modal */}
+      {selectedAchievement && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.85)',
+          backdropFilter: 'blur(10px)',
+          zIndex: 9999,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '20px',
+          animation: 'fadeIn 0.2s ease-out'
+        }} onClick={() => setSelectedAchievement(null)}>
+          <div style={{
+            background: '#111',
+            borderRadius: '24px',
+            border: `1px solid ${selectedAchievement.color}50`,
+            padding: '40px',
+            maxWidth: '400px',
+            width: '100%',
+            textAlign: 'center',
+            boxShadow: `0 20px 50px -10px ${selectedAchievement.color}40`,
+            position: 'relative',
+            animation: 'slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+          }} onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setSelectedAchievement(null)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'rgba(255,255,255,0.1)',
+                border: 'none',
+                color: 'white',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                cursor: 'pointer',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+            >
+              <X size={16} />
+            </button>
+            
+            <div style={{ 
+              fontSize: '80px', 
+              marginBottom: '20px', 
+              filter: `drop-shadow(0 0 30px ${selectedAchievement.color})`,
+              animation: 'pulse 2s infinite ease-in-out'
+            }}>
+              {selectedAchievement.icon}
+            </div>
+            
+            <div style={{ color: selectedAchievement.color, fontSize: '12px', fontWeight: '900', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px' }}>
+              ACHIEVEMENT UNLOCKED
+            </div>
+            
+            <h2 style={{ color: 'white', fontSize: '32px', fontWeight: '950', margin: '0 0 16px 0', letterSpacing: '-1px' }}>
+              {selectedAchievement.label}
+            </h2>
+            
+            <div style={{ height: '2px', width: '40px', background: selectedAchievement.color, margin: '0 auto 20px auto', borderRadius: '2px' }} />
+            
+            <p style={{ color: '#aaa', fontSize: '15px', lineHeight: '1.6', margin: 0 }}>
+              {selectedAchievement.desc}
+            </p>
+            
+            <div style={{ marginTop: '30px', background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '12px', fontSize: '12px', color: '#666', border: '1px solid rgba(255,255,255,0.05)' }}>
+              Acquired by <span style={{ color: '#fff', fontWeight: 'bold' }}>{profile.display_name}</span> • ROGUE Network
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

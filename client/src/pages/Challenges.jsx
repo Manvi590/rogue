@@ -6,108 +6,56 @@ import Navbar from "../components/Navbar";
 import PageNav from "../components/PageNav";
 import Footer from "../components/Footer";
 import ScrollReveal from "../components/ScrollReveal";
+import { apiCall } from "../utils/api";
 
 const Challenges = () => {
-  const categories = ["ALL", "STRENGTH", "ENDURANCE", "AGILITY"];
+  const [categories, setCategories] = useState(["ALL"]);
+  const [challengeCards, setChallengeCards] = useState([]);
+  const [featuredChallenge, setFeaturedChallenge] = useState(null);
 
-  const challengeCards = [
-    { 
-      id: 1, 
-      title: "THE ROGUE MEDLEY", 
-      holder: "Marcus Vane",
-      cat: "STRENGTH",
-      subcat: "Functional Strength",
-      score: "1 min 42.50 sec",
-      dateVerified: "2026-03-12",
-      description: "A grueling multi-stage strength gauntlet consisting of rope pulls, heavy carries, and rapid tire flips.",
-      rules: [
-        "All equipment must meet official Rogue standards.",
-        "Uncut video recording showing athlete and timer at all times.",
-        "Tires must be flipped completely past the 50m line."
-      ],
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-      participants: "2.1K", 
-      difficulty: "HARD",
-      img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80" 
-    },
-    { 
-      id: 2, 
-      title: "IRON LUNGS", 
-      holder: "Sarah Jenkins",
-      cat: "ENDURANCE",
-      subcat: "Cardio Endurance",
-      score: "42 min 15.00 sec",
-      dateVerified: "2026-04-05",
-      description: "Continuous maximum intensity treadmill challenge at an incline of 12% without holding the handrails.",
-      rules: [
-        "Treadmill must remain set at 12% incline throughout the run.",
-        "No hand contact with console or rails after initial start.",
-        "Uninterrupted biometric heart rate feed displayed on HUD."
-      ],
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-      participants: "800", 
-      difficulty: "ROGUE",
-      img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80" 
-    },
-    { 
-      id: 3, 
-      title: "LIGHTNING REFLEX", 
-      holder: "David Thorne",
-      cat: "AGILITY",
-      subcat: "Reflex Speed",
-      score: "48.20 seconds",
-      dateVerified: "2026-05-01",
-      description: "A multi-target agility and footwork test requiring exact foot alignment on dynamic floor markers.",
-      rules: [
-        "Markers must be hit in sequential numerical order.",
-        "Foot must fully cover the marker light on each step.",
-        "Complete safety gear including knee pads must be worn."
-      ],
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-      participants: "1.2K", 
-      difficulty: "PRO",
-      img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=600&q=80" 
-    },
-    { 
-      id: 4, 
-      title: "TIRE FLIP GAUNTLET", 
-      holder: "Viktor Drago",
-      cat: "STRENGTH",
-      subcat: "Power Challenges",
-      score: "25 Reps / 2 Minutes",
-      dateVerified: "2026-02-20",
-      description: "Maximum repetitions of flipping a standard 300kg heavy duty tractor tire within a strict 120-second window.",
-      rules: [
-        "Tire weight must be certified at 300kg or greater.",
-        "Repetitions only count when tire comes to a complete rest on the floor.",
-        "Gloves and chalk are permitted."
-      ],
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
-      participants: "500", 
-      difficulty: "HARD",
-      img: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=600&q=80" 
-    },
-  ];
-
-  const featuredChallenge = {
-    id: 5,
-    title: "THE APEX DECATHLON",
-    holder: "Alex Thorne",
-    cat: "AGILITY",
-    subcat: "Speed & Reaction",
-    score: "11 min 15.00 sec",
-    dateVerified: "2026-05-10",
-    description: "A continuous 10-stage test of extreme speed, agility, and quick decision making using precision reaction platforms.",
-    rules: [
-      "All 10 reaction phases must be completed in continuous sequence.",
-      "Any missed marker results in immediate failure.",
-      "Footwear must be standardized training shoes."
-    ],
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-    participants: "12.4K",
-    difficulty: "ROGUE",
-    img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1600&q=80"
-  };
+  useEffect(() => {
+    const fetchRecords = async () => {
+      try {
+        const data = await apiCall('/records', 'GET');
+        const mappedRecords = data.map(record => ({
+          id: record.id,
+          title: record.title || "Unknown Record",
+          holder: record.user?.name || "Unknown Holder",
+          cat: (record.category || "UNCATEGORIZED").toUpperCase(),
+          subcat: record.subcategory || "General",
+          score: record.unit_of_measurement ? `${record.performance_metrics} ${record.unit_of_measurement}` : (record.performance_metrics || "N/A"),
+          dateVerified: record.date_of_attempt ? new Date(record.date_of_attempt).toLocaleDateString() : "Unknown",
+          description: record.description || "No description provided.",
+          rules: record.rules ? record.rules.split("\n") : ["Official rules apply.", "Must provide uncut video evidence.", "Follow all safety guidelines."],
+          videoUrl: record.evidence_url || record.video_url || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+          participants: Math.floor(Math.random() * 1000) + 100,
+          difficulty: "HARD",
+          img: record.thumbnail_url || record.image_url || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80",
+          status: record.status
+        }));
+        
+        setChallengeCards(mappedRecords);
+        const uniqueCats = ["ALL", ...new Set(mappedRecords.map(r => r.cat))];
+        setCategories(uniqueCats);
+        
+        const localStatsStr = localStorage.getItem("rogue_local_stats");
+        let featuredId = null;
+        if (localStatsStr) {
+           const localStats = JSON.parse(localStatsStr);
+           const featuredKeys = Object.keys(localStats).filter(k => localStats[k].isFeatured);
+           if (featuredKeys.length > 0) {
+             featuredId = featuredKeys[0].replace('rogue_stat_', '');
+           }
+        }
+        
+        const featured = featuredId ? mappedRecords.find(r => r.id === featuredId) : mappedRecords[0];
+        if (featured) setFeaturedChallenge(featured);
+      } catch (error) {
+        console.error("Failed to fetch challenges:", error);
+      }
+    };
+    fetchRecords();
+  }, []);
 
   const [activeTab, setActiveTab] = useState("ALL");
   const [selectedChallenge, setSelectedChallenge] = useState(null);
@@ -217,59 +165,61 @@ const Challenges = () => {
         </div>
 
         {/* HERO SECTION - FEATURED CHALLENGE */}
-        <div style={{ position: "relative", height: "600px", margin: "0 5%", borderRadius: "40px", overflow: "hidden", display: "flex", alignItems: "center" }}>
-          <img 
-            src={featuredChallenge.img} 
-            alt="Featured Challenge" 
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.6)" }}
-          />
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(10,10,10,0.9), transparent)" }} />
-          
-          <div style={{ position: "relative", zIndex: 2, padding: "0 80px" }}>
-            <div style={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase", color: "rgba(255,255,255,0.6)", marginBottom: "16px", letterSpacing: "0.1em" }}>
-              CHALLENGE OF THE MONTH
-            </div>
-            <h1 style={{ fontSize: "clamp(48px, 8vw, 96px)", fontWeight: "950", textTransform: "uppercase", lineHeight: "0.9", letterSpacing: "-0.04em", marginBottom: "20px" }}>
-              <ScrollReveal>THE APEX</ScrollReveal> <br />
-              <span style={{ color: "#FF6A00" }}><ScrollReveal>DECATHLON</ScrollReveal></span>
-            </h1>
+        {featuredChallenge && (
+          <div style={{ position: "relative", height: "600px", margin: "0 5%", borderRadius: "40px", overflow: "hidden", display: "flex", alignItems: "center" }}>
+            <img 
+              src={featuredChallenge.img} 
+              alt="Featured Challenge" 
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.6)" }}
+            />
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(10,10,10,0.9), transparent)" }} />
             
-            <div style={{ display: "flex", gap: "40px", marginBottom: "40px" }}>
-              <div>
-                <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "4px" }}>PARTICIPANTS</div>
-                <div style={{ fontSize: "18px", fontWeight: "900" }}>12.4K</div>
+            <div style={{ position: "relative", zIndex: 2, padding: "0 80px" }}>
+              <div style={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase", color: "rgba(255,255,255,0.6)", marginBottom: "16px", letterSpacing: "0.1em" }}>
+                CHALLENGE OF THE MONTH
               </div>
-              <div>
-                <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "4px" }}>DIFFICULTY</div>
-                <div style={{ fontSize: "18px", fontWeight: "900", color: "#FF6A00" }}>ROGUE</div>
+              <h1 style={{ fontSize: "clamp(48px, 8vw, 96px)", fontWeight: "950", textTransform: "uppercase", lineHeight: "0.9", letterSpacing: "-0.04em", marginBottom: "20px" }}>
+                <ScrollReveal>{featuredChallenge.title.split(' ')[0]}</ScrollReveal> <br />
+                <span style={{ color: "#FF6A00" }}><ScrollReveal>{featuredChallenge.title.split(' ').slice(1).join(' ')}</ScrollReveal></span>
+              </h1>
+              
+              <div style={{ display: "flex", gap: "40px", marginBottom: "40px" }}>
+                <div>
+                  <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "4px" }}>PARTICIPANTS</div>
+                  <div style={{ fontSize: "18px", fontWeight: "900" }}>{featuredChallenge.participants}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", marginBottom: "4px" }}>DIFFICULTY</div>
+                  <div style={{ fontSize: "18px", fontWeight: "900", color: "#FF6A00" }}>{featuredChallenge.difficulty}</div>
+                </div>
               </div>
+  
+              <button 
+                onClick={() => { setSelectedChallenge(featuredChallenge); setHasWatched(false); }}
+                style={{
+                  background: "#FF6A00",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "100px",
+                  padding: "20px 48px",
+                  fontSize: "15px",
+                  fontWeight: "900",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  boxShadow: "0 10px 30px rgba(255,106,0,0.4)",
+                  transition: "all 0.3s"
+                }}
+                onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+                onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+              >
+                CHALLENGE RECORD <ArrowRight size={20} />
+              </button>
             </div>
-
-            <button 
-              onClick={() => { setSelectedChallenge(featuredChallenge); setHasWatched(false); }}
-              style={{
-                background: "#FF6A00",
-                color: "white",
-                border: "none",
-                borderRadius: "100px",
-                padding: "20px 48px",
-                fontSize: "15px",
-                fontWeight: "900",
-                textTransform: "uppercase",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "12px",
-                boxShadow: "0 10px 30px rgba(255,106,0,0.4)",
-                transition: "all 0.3s"
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-            >
-              CHALLENGE RECORD <ArrowRight size={20} />
-            </button>
           </div>
-        </div>
+        )}
 
         {/* FILTERS */}
         <div style={{ padding: "80px 5% 40px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
@@ -402,15 +352,40 @@ const Challenges = () => {
               <div style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
                 {/* Video Player Side */}
                 <div style={{ flex: "1.2", background: "black", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", height: "100%", overflow: "hidden" }}>
-                <video
-                  src={selectedChallenge.videoUrl}
-                  controls
-                  autoPlay
-                  onPlay={handleVideoPlay}
-                  onTimeUpdate={handleVideoTimeUpdate}
-                  onEnded={handleVideoEnded}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
+                {(() => {
+                  const src = selectedChallenge.videoUrl || '';
+                  const isYouTube = src.includes('youtube') || src.includes('youtu.be');
+                  if (isYouTube) {
+                    const youtubeId = src.includes('youtube.com/watch?v=') 
+                      ? src.split('v=')[1]?.split('&')[0] 
+                      : (src.includes('youtu.be/') ? src.split('youtu.be/')[1]?.split('?')[0] : null);
+                    
+                    return (
+                      <iframe 
+                        src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1`} 
+                        frameBorder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowFullScreen 
+                        style={{ width: "100%", height: "100%", objectFit: "cover", border: "none" }}
+                        onLoad={() => {
+                          setTimeout(() => setHasWatched(true), 3000);
+                        }}
+                      />
+                    );
+                  }
+                  
+                  return (
+                    <video
+                      src={src}
+                      controls
+                      autoPlay
+                      onPlay={handleVideoPlay}
+                      onTimeUpdate={handleVideoTimeUpdate}
+                      onEnded={handleVideoEnded}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  );
+                })()}
                 {!hasWatched && (
                   <div style={{
                     position: "absolute",

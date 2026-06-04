@@ -14,39 +14,33 @@ export default function ExploreRecords() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('new');
-  const [localStats, setLocalStats] = useState({});
+  const [authMessage, setAuthMessage] = useState('');
 
-  useEffect(() => {
-    try {
-      const stats = {};
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('rogue_stat_')) {
-          const recordId = key.replace('rogue_stat_', '');
-          stats[recordId] = JSON.parse(localStorage.getItem(key));
-        }
-      }
-      setLocalStats(stats);
-    } catch (e) {}
-  }, []);
+  const showAuthMessage = (msg) => {
+    setAuthMessage(msg);
+    setTimeout(() => setAuthMessage(''), 3000);
+  };
+  
+  
 
   const handleWatchRecord = (e, recordId) => {
     e.stopPropagation();
-    const stat = localStats[recordId] || { views: 0, likes: 0, liked: false };
-    const newStat = { ...stat, views: stat.views + 1 };
-    setLocalStats(prev => ({ ...prev, [recordId]: newStat }));
-    localStorage.setItem(`rogue_stat_${recordId}`, JSON.stringify(newStat));
     navigate(`/record/${recordId}`);
   };
 
-  const handleToggleLike = (e, recordId) => {
+  const handleToggleLike = async (e, recordId) => {
     e.stopPropagation();
-    const stat = localStats[recordId] || { views: 0, likes: 0, liked: false };
-    const newLiked = !stat.liked;
-    const newLikes = stat.likes + (newLiked ? 1 : -1);
-    const newStat = { ...stat, liked: newLiked, likes: newLikes < 0 ? 0 : newLikes };
-    setLocalStats(prev => ({ ...prev, [recordId]: newStat }));
-    localStorage.setItem(`rogue_stat_${recordId}`, JSON.stringify(newStat));
+    try {
+      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      if (!userInfo || !userInfo.token) {
+        showAuthMessage('Please login to like records!');
+        return;
+      }
+      const res = await apiCall(`/social/${recordId}/like`, 'POST', null, userInfo.token);
+      setRecords(records.map(r => r.id === recordId ? { ...r, isLiked: res.isLiked, likes: res.likes } : r));
+    } catch (err) {
+      if (err.message.includes('Not authorized')) showAuthMessage('Please login to like records!');
+    }
   };
 
   const categories = ['All', 'Athletics', 'Strength', 'Endurance', 'Gaming', 'Skills'];
@@ -58,10 +52,20 @@ export default function ExploreRecords() {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const q = params.get('q') || '';
+    const q = params.get('q') || params.get('search') || '';
+    const cat = params.get('category') || 'All';
     setSearchQuery(q);
-    fetchRecords(q, activeCategory, filterType);
-  }, [location.search, activeCategory, filterType]);
+    setActiveCategory(cat);
+    fetchRecords(q, cat, filterType);
+  }, [location.search, filterType]);
+
+  const handleCategoryClick = (cat) => {
+    setActiveCategory(cat);
+    const params = new URLSearchParams(location.search);
+    if (cat === 'All') params.delete('category');
+    else params.set('category', cat);
+    navigate(`/explore?${params.toString()}`);
+  };
 
   const fetchRecords = async (q = '', category = 'All', filter = 'new') => {
     try {
@@ -93,30 +97,52 @@ export default function ExploreRecords() {
     const matchesCategory = activeCategory === 'All' || (r.category || '').toLowerCase() === activeCategory.toLowerCase() || (r.category_name || '').toLowerCase() === activeCategory.toLowerCase();
     
     // Featured status is managed by admin / backend, with local fallback for legacy stats.
-    const matchesFeatured = filterType === 'featured' ? (r.is_featured || r.isFeatured || localStats[r.id]?.isFeatured) : true;
+    const matchesFeatured = filterType === 'featured' ? (r.is_featured || r.isFeatured) : true;
     
     return matchesSearch && matchesCategory && matchesFeatured;
   });
 
   if (filterType === 'viewed') {
     filteredRecords.sort((a, b) => {
-      const viewsA = (a.views || 0) + (localStats[a.id]?.views || 0);
-      const viewsB = (b.views || 0) + (localStats[b.id]?.views || 0);
+      const viewsA = a.views || 0;
+      const viewsB = b.views || 0;
       return viewsB - viewsA;
     });
     
     if (filteredRecords.length > 0) {
-      const maxViews = (filteredRecords[0].views || 0) + (localStats[filteredRecords[0].id]?.views || 0);
-      filteredRecords = filteredRecords.filter(r => {
-        const v = (r.views || 0) + (localStats[r.id]?.views || 0);
-        return v === maxViews;
-      });
+      const maxViews = filteredRecords[0].views || 0;
+      filteredRecords = filteredRecords.filter(r => (r.views || 0) === maxViews);
     }
   }
 
   return (
     <div style={{ minHeight: '100vh', background: '#000', color: '#fff', paddingBottom: '0' }}>
       <Navbar />
+
+      {/* Custom Auth Toast Message */}
+      {authMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: '30px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#FF5500',
+          color: 'white',
+          padding: '12px 24px',
+          borderRadius: '50px',
+          fontWeight: '700',
+          fontSize: '14px',
+          boxShadow: '0 8px 32px rgba(255,85,0,0.3)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          animation: 'fadeInUp 0.3s ease forwards'
+        }}>
+          <AlertCircle size={18} />
+          {authMessage}
+        </div>
+      )}
 
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '40px 40px 60px' }}>
         <div style={{ marginBottom: '40px', textAlign: 'left' }}>
@@ -139,7 +165,7 @@ export default function ExploreRecords() {
           {categories.map(cat => (
             <button
               key={cat}
-              onClick={() => setActiveCategory(cat)}
+              onClick={() => handleCategoryClick(cat)}
               style={{
                 background: activeCategory === cat ? '#FF6A00' : '#1a1a1a',
                 color: 'white',
@@ -182,19 +208,42 @@ export default function ExploreRecords() {
             <p>Loading records...</p>
           </div>
         ) : filteredRecords.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px', color: '#888', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.03)' }}>
-            <Search size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
-            <p style={{ fontSize: '16px', fontWeight: 600 }}>No records found</p>
-            <p style={{ fontSize: '13px', color: '#666' }}>Try adjusting your search or filters</p>
+          <div style={{ textAlign: 'center', padding: '80px 20px', color: '#888', background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: '1px dashed rgba(255,85,0,0.3)' }}>
+            <div style={{ 
+              width: '80px', height: '80px', background: 'rgba(255,85,0,0.1)', borderRadius: '50%', 
+              display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto 24px auto',
+              border: '1px solid rgba(255,85,0,0.2)'
+            }}>
+              <Trophy size={40} color="#FF5500" style={{ opacity: 0.8 }} />
+            </div>
+            <h3 style={{ fontSize: '24px', fontWeight: 900, color: 'white', marginBottom: '12px', letterSpacing: '-0.5px' }}>
+              No Records Here Yet!
+            </h3>
+            <p style={{ fontSize: '15px', color: '#aaa', maxWidth: '400px', margin: '0 auto 30px auto', lineHeight: '1.6' }}>
+              This category is currently wide open. It looks like nobody has set a verified record here yet. This is your chance to shine and etch your name into the ROGUE history!
+            </p>
+            <button 
+              onClick={() => navigate('/verify')}
+              style={{
+                background: 'linear-gradient(135deg, #FF5500 0%, #ff8800 100%)',
+                color: 'white', border: 'none', padding: '14px 32px', borderRadius: '100px',
+                fontSize: '14px', fontWeight: '900', letterSpacing: '0.5px', cursor: 'pointer',
+                boxShadow: '0 10px 25px rgba(255, 85, 0, 0.35)', transition: 'all 0.2s'
+              }} 
+              className="btn-glow-neon"
+              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+            >
+              CLAIM THIS RECORD
+            </button>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
             {filteredRecords.map((record) => {
-              const stat = localStats[record.id] || { views: 0, likes: 0, liked: false, isFeatured: false };
-              const displayViews = (record.views || 0) + stat.views;
-              const displayLikes = (record.likes || 0) + stat.likes;
-              const isLiked = stat.liked;
-              const isFeatured = record.is_featured || record.isFeatured || stat.isFeatured;
+              const displayViews = record.views || 0;
+              const displayLikes = record.likes || 0;
+              const isLiked = record.isLiked;
+              const isFeatured = record.is_featured || record.isFeatured;
 
               return (
               <div

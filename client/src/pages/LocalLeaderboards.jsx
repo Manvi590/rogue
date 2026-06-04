@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { apiCall } from "../utils/api";
 import { 
   Trophy, 
   MapPin, 
@@ -61,13 +62,23 @@ const LocalLeaderboards = () => {
   const ageGroups = ["All Ages", "Junior Champions Division (5–12)", "Teen Legends Division (13–17)", "Adult Division (18–49)", "Masters Division (50+)"];
   const sortOptions = ["Highest Score", "Newest Records"];
 
-  const countries = [
+  const [countries, setCountries] = useState([
     { name: "United States", code: "USA", flag: "🇺🇸", competitors: "4,820" },
     { name: "Canada", code: "CAN", flag: "🇨🇦", competitors: "1,940" },
     { name: "United Kingdom", code: "GBR", flag: "🇬🇧", competitors: "2,410" },
     { name: "Australia", code: "AUS", flag: "🇦🇺", competitors: "1,150" },
     { name: "Germany", code: "GER", flag: "🇩🇪", competitors: "980" }
-  ];
+  ]);
+
+  useEffect(() => {
+    apiCall('/countries', 'GET')
+      .then(data => {
+        if (data && Array.isArray(data) && data.length > 0) {
+          setCountries(data);
+        }
+      })
+      .catch(err => console.error("Error fetching countries:", err));
+  }, []);
 
   const categories = [
     "Athletics", 
@@ -104,8 +115,47 @@ const LocalLeaderboards = () => {
     { name: "Timmy Jenkins", country: "United Kingdom", category: "Gaming", value: "12,500 Pts", scoreNumeric: 12500, date: "2026-05-18", event: "Arcade High Score", state: "London", avatar: "https://randomuser.me/api/portraits/men/19.jpg", ageGroup: "Junior Champions Division (5–12)", recordId: "rubik-s-cube", profileId: "jamal-carter" }
   ];
 
+  const [recordsData, setRecordsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLocalRecords = async () => {
+      try {
+        setLoading(true);
+        // Using the main records endpoint to get all verified records
+        const data = await apiCall('/records', 'GET');
+        
+        if (data && Array.isArray(data)) {
+          const mapped = data.map(r => ({
+            name: r.user?.name || r.user?.username || "Unknown Athlete",
+            country: "United States", // Defaulting since we don't store country on user table
+            category: r.category || "General",
+            value: `${r.value} ${r.unit}`,
+            scoreNumeric: parseFloat(r.value) || 0,
+            date: r.date_set ? new Date(r.date_set).toISOString().split('T')[0] : "2026-05-18",
+            event: r.title || "Record Event",
+            state: r.city || "Local Area", // Using city as fallback
+            avatar: r.user?.profile_image 
+              ? (r.user.profile_image.includes('http') ? r.user.profile_image : `http://localhost:5002/uploads/${r.user.profile_image}`)
+              : `https://ui-avatars.com/api/?name=${encodeURIComponent(r.user?.name || "Athlete")}&background=FF6A00&color=fff`,
+            ageGroup: "Adult Division (18–49)", // Defaulting
+            recordId: r.id,
+            profileId: r.user_id
+          }));
+          setRecordsData(mapped);
+        }
+      } catch (err) {
+        console.error("Error fetching local records:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchLocalRecords();
+  }, []);
+
   const getRankings = () => {
-    let list = mockLocalData.filter(item => item.country === selectedCountry && item.category === activeCategory);
+    let list = recordsData.filter(item => item.country === selectedCountry && item.category === activeCategory);
     
     if (activeAgeGroup !== "All Ages") {
       list = list.filter(item => item.ageGroup === activeAgeGroup);
@@ -120,13 +170,11 @@ const LocalLeaderboards = () => {
     }
 
     if (activeSort === "Highest Score") {
-      // In a real app we'd use standardized numeric metrics. Here we use the mock scoreNumeric.
       list.sort((a, b) => b.scoreNumeric - a.scoreNumeric);
     } else if (activeSort === "Newest Records") {
       list.sort((a, b) => new Date(b.date) - new Date(a.date));
     }
 
-    // Assign dynamic local ranks after sort
     return list.map((item, index) => ({ ...item, rank: index + 1 }));
   };
 
@@ -158,42 +206,17 @@ const LocalLeaderboards = () => {
           </div>
         </section>
 
-        {/* COUNTRY SELECTOR CARDS */}
+        {/* COUNTRY SELECTOR */}
         <section style={{ padding: "0 5% 40px" }}>
           <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "60px" }}>
-              {countries.map(c => (
-                <div
-                  key={c.name}
-                  onClick={() => setSelectedCountry(c.name)}
-                  style={{
-                    background: selectedCountry === c.name ? "linear-gradient(135deg, #FF6A00, #FF3D00)" : "rgba(255,255,255,0.02)",
-                    border: selectedCountry === c.name ? "none" : "1px solid rgba(255,255,255,0.05)",
-                    borderRadius: "24px",
-                    padding: "28px 24px",
-                    cursor: "pointer",
-                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                    transform: selectedCountry === c.name ? "translateY(-4px)" : "translateY(0)",
-                    boxShadow: selectedCountry === c.name ? "0 10px 30px rgba(255,106,0,0.2)" : "none"
-                  }}
-                  onMouseEnter={e => {
-                    if (selectedCountry !== c.name) {
-                      e.currentTarget.style.background = "rgba(255,255,255,0.04)";
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (selectedCountry !== c.name) {
-                      e.currentTarget.style.background = "rgba(255,255,255,0.02)";
-                    }
-                  }}
-                >
-                  <div style={{ fontSize: "36px", marginBottom: "16px" }}>{c.flag}</div>
-                  <h3 style={{ fontSize: "18px", fontWeight: "900", marginBottom: "6px" }}>{c.name}</h3>
-                  <div style={{ fontSize: "12px", color: selectedCountry === c.name ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.4)", fontWeight: "700" }}>
-                    {c.competitors} COMPETITORS
-                  </div>
-                </div>
-              ))}
+            <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "24px", padding: "24px", marginBottom: "60px", display: "flex", gap: "20px", alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ fontSize: "16px", fontWeight: "900", color: "white" }}>Select Region:</div>
+              <CustomSelect 
+                label="Country" 
+                value={selectedCountry} 
+                onChange={setSelectedCountry} 
+                options={countries.map(c => c.name)} 
+              />
             </div>
           </div>
         </section>
@@ -289,12 +312,17 @@ const LocalLeaderboards = () => {
                   </div>
                 </div>
 
-                <div style={{ background: "rgba(255,255,255,0.01)", borderRadius: "32px", border: "1px solid rgba(255,255,255,0.05)", overflow: "hidden" }}>
-                  {currentRankings.length > 0 ? (
+                <div style={{ background: "rgba(255,255,255,0.01)", borderRadius: "32px", border: "1px solid rgba(255,255,255,0.05)", overflow: "hidden", minHeight: "200px", position: "relative" }}>
+                  {loading ? (
+                    <div style={{ padding: "80px 40px", textAlign: "center" }}>
+                      <div className="loader" style={{ margin: "0 auto 16px", border: "2px solid rgba(255,106,0,0.2)", borderTop: "2px solid #FF6A00", borderRadius: "50%", width: "30px", height: "30px", animation: "spin 1s linear infinite" }}></div>
+                      <h3 style={{ fontSize: "16px", fontWeight: "800", color: "rgba(255,255,255,0.7)" }}>Loading local athletes...</h3>
+                    </div>
+                  ) : currentRankings.length > 0 ? (
                     currentRankings.map((r, i) => (
                       <div
                         key={i}
-                        onClick={() => navigate(`/record/${r.recordId}`)}
+                        onClick={() => navigate(`/profile/${r.profileId}`)}
                         style={{
                           display: "grid",
                           gridTemplateColumns: "80px 1.5fr 200px 150px",
@@ -338,7 +366,7 @@ const LocalLeaderboards = () => {
                         >
                           <img src={r.avatar} alt={r.name} style={{ width: "48px", height: "48px", borderRadius: "14px", objectFit: "cover", border: "1px solid rgba(255,255,255,0.1)" }} />
                           <div>
-                            <div className="athlete-hover-name" style={{ fontSize: "16px", fontWeight: "800", transition: "color 0.2s" }}>{r.name}</div>
+                            <div className="athlete-hover-name" style={{ fontSize: "16px", fontWeight: "800", transition: "color 0.2s", textAlign: "left" }}>{r.name}</div>
                             <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "4px", marginTop: "2px" }}>
                               <MapPin size={10} color="#FF6A00" /> {r.state}
                             </div>

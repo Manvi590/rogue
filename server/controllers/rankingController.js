@@ -9,7 +9,7 @@ exports.getGlobalRankings = async (req, res) => {
 
     let query = supabase
       .from('user_rankings')
-      .select('*, users(username, display_name, profile_image, country, state, city)', { count: 'exact' });
+      .select('*, users(name, profile_image)', { count: 'exact' });
 
     if (country) query = query.eq('country', country);
     if (state) query = query.eq('state', state);
@@ -19,13 +19,64 @@ exports.getGlobalRankings = async (req, res) => {
     query = query.order(sortBy, orderDirection).range(offset, offset + limit - 1);
 
     const { data, count, error } = await query;
-    if (error) throw error;
+    if (error) {
+      if (error.code === 'PGRST205' || error.message.includes('schema cache')) {
+        console.warn('Ranking table not found, please run SQL script in Supabase.');
+        return res.json({ rankings: [], total: 0, limit: parseInt(limit), offset: parseInt(offset), warning: 'Ranking tables not initialized.' });
+      }
+      throw error;
+    }
 
-    let filtered = data;
+    let filtered = data || [];
+    console.log("Ranking data length:", filtered.length);
+
+    // FALLBACK LOGIC: If table is empty (e.g. because of RLS), dynamically compute from records
+    if (filtered.length === 0) {
+      console.log("Running fallback logic...");
+      const { data: recordsData, error: recordsError } = await supabase
+        .from('records')
+        .select('user_id, users!records_user_id_fkey(name, profile_image)')
+        .eq('status', 'verified');
+        
+      console.log("Records fallback fetched, error:", recordsError);
+
+      if (recordsData && recordsData.length > 0) {
+        const usersMap = {};
+        recordsData.forEach(r => {
+          if (!r.user_id || !r.users) return;
+          if (!usersMap[r.user_id]) {
+            usersMap[r.user_id] = {
+              user_id: r.user_id,
+              total_points: 0,
+              verified_records_count: 0,
+              users: r.users,
+              global_rank: 0,
+              category_id: null
+            };
+          }
+          usersMap[r.user_id].verified_records_count += 1;
+          usersMap[r.user_id].total_points += 5000; // Assigning dynamic 5000 points per record
+        });
+        
+        let dynamicRankings = Object.values(usersMap).sort((a,b) => b.total_points - a.total_points);
+        dynamicRankings.forEach((r, idx) => r.global_rank = idx + 1);
+        
+        if (search) {
+          dynamicRankings = dynamicRankings.filter(r =>
+            r.users.name?.toLowerCase().includes(search.toLowerCase())
+          );
+        }
+        
+        console.log("Returning dynamic rankings:", dynamicRankings.length);
+        return res.json({ rankings: dynamicRankings, total: dynamicRankings.length, limit: parseInt(limit), offset: parseInt(offset), warning: 'Using dynamic fallback data.' });
+      } else {
+         console.log("Records data is empty in fallback");
+      }
+    }
+
     if (search) {
-      filtered = data.filter(r =>
-        r.users.username?.toLowerCase().includes(search.toLowerCase()) ||
-        r.users.display_name?.toLowerCase().includes(search.toLowerCase())
+      filtered = filtered.filter(r =>
+        r.users.name?.toLowerCase().includes(search.toLowerCase())
       );
     }
 
@@ -41,7 +92,7 @@ exports.getLocalRankings = async (req, res) => {
   try {
     const { country, state, city, limit = 50, offset = 0, sortBy = 'total_points', order = 'desc' } = req.query;
 
-    let query = supabase.from('user_rankings').select('*, users(username, display_name, profile_image, country, state, city)', { count: 'exact' });
+    let query = supabase.from('user_rankings').select('*, users(name, profile_image)', { count: 'exact' });
 
     if (country) query = query.eq('country', country);
     if (state) query = query.eq('state', state);
@@ -76,7 +127,7 @@ exports.getCategoryRankings = async (req, res) => {
 
     const { data, count, error } = await supabase
       .from('user_rankings')
-      .select('*, users(username, display_name)', { count: 'exact' })
+      .select('*, users(name)', { count: 'exact' })
       .in('user_id', userIds)
       .order('total_points', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -95,7 +146,7 @@ exports.getUserRankingDetails = async (req, res) => {
     const { user_id } = req.params;
 
     const { data: ranking, error: rankingError } = await supabase
-      .from('user_rankings').select('*, users(username, display_name, email, country, state, city)').eq('user_id', user_id).single();
+      .from('user_rankings').select('*, users(name, email)').eq('user_id', user_id).single();
 
     if (rankingError) throw rankingError;
 

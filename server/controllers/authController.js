@@ -315,45 +315,62 @@ const updateUserProfile = async (req, res) => {
 // @access  Public
 const getPublicUserProfile = async (req, res) => {
   const { username } = req.params;
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(username);
   const { data: user, error } = await supabase
     .from('users')
     .select('*')
-    .eq('username', username)
+    .eq(isUUID ? 'id' : 'username', username)
     .single();
 
   if (error || !user) {
     return res.status(404).json({ message: 'User not found', error: error });
   }
 
+  // Fetch user's records
+  const { data: userRecords } = await supabase
+    .from('records')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+
+  const verifiedRecords = userRecords ? userRecords.filter(r => r.status === 'verified') : [];
+  const verifiedCount = verifiedRecords.length;
+  const totalPoints = verifiedCount * 5000; // Same dynamic metric used in leaderboard
+
+  // Dynamically calculate global rank by finding how many users have more verified records
+  const { data: allVerifiedRecords } = await supabase
+    .from('records')
+    .select('user_id')
+    .eq('status', 'verified');
+    
+  let globalRank = 0;
+  if (verifiedCount > 0 && allVerifiedRecords) {
+    const userCounts = {};
+    allVerifiedRecords.forEach(r => {
+      userCounts[r.user_id] = (userCounts[r.user_id] || 0) + 1;
+    });
+    // Count how many users have strictly more records than this user
+    let higherUsersCount = 0;
+    for (const uid in userCounts) {
+      if (userCounts[uid] > verifiedCount) higherUsersCount++;
+    }
+    globalRank = higherUsersCount + 1;
+  }
+
   // Get some public ranking/stats for this user
   let ranking = {
-    global_rank: 0,
-    total_points: 0,
-    verified_records_count: 0,
-    world_records_count: 0,
+    global_rank: globalRank,
+    total_points: totalPoints,
+    verified_records_count: verifiedCount,
+    world_records_count: userRecords ? userRecords.filter(r => r.is_world_record).length : 0,
     tier_badge: 'Challenger'
   };
 
-  try {
-    const { data: records } = await supabase
-      .from('records')
-      .select('id, status, is_world_record, value')
-      .eq('user_id', user.id);
-      
-    if (records) {
-      ranking.verified_records_count = records.filter(r => r.status === 'verified').length;
-      ranking.world_records_count = records.filter(r => r.is_world_record).length;
-      ranking.total_points = ranking.verified_records_count * 100 + ranking.world_records_count * 500;
-      
-      if (ranking.total_points > 5000) ranking.tier_badge = 'Grand Champion';
-      else if (ranking.total_points > 2500) ranking.tier_badge = 'Elite Master';
-      else if (ranking.total_points > 1000) ranking.tier_badge = 'Pro Competitor';
-    }
-  } catch (err) {
-    console.error('Error fetching public ranking data', err);
-  }
+  if (ranking.total_points > 5000) ranking.tier_badge = 'Grand Champion';
+  else if (ranking.total_points > 2500) ranking.tier_badge = 'Elite Master';
+  else if (ranking.total_points > 1000) ranking.tier_badge = 'Pro Competitor';
 
-  res.json({ profile: user, ranking });
+  res.json({ profile: user, ranking, records: userRecords || [] });
 };
 
 module.exports = { authUser, registerUser, getUserProfile, updateUserProfile, getPublicUserProfile };

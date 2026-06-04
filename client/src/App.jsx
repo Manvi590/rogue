@@ -9,7 +9,6 @@ import About from './pages/About'
 import Contact from './pages/Contact'
 import Shop from './pages/Shop'
 import ProductDetail from './pages/ProductDetail'
-import Explore from './pages/Explore'
 import Challenges from './pages/Challenges'
 import Verify from './pages/Verify'
 import ChallengeVerify from './pages/ChallengeVerify'
@@ -78,7 +77,7 @@ function App() {
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/shop" element={<Shop />} />
-            <Route path="/explore" element={<Explore />} />
+            <Route path="/explore" element={<ExploreRecords />} />
             <Route path="/challenge" element={<Challenges />} />
             <Route path="/verify" element={<ProtectedRoute><Verify /></ProtectedRoute>} />
             <Route path="/challenge-verify" element={<ProtectedRoute><ChallengeVerify /></ProtectedRoute>} />
