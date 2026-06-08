@@ -488,7 +488,7 @@ const Home = () => {
           {/* ── LEFT SIDEBAR (Explore Categories) ── */}
           <aside
             className="hero-v3-sidebar-left"
-            style={{ display: "flex", flexDirection: "column", position: "relative" }}
+            style={{ display: "flex", flexDirection: "column", position: "relative", marginTop: "80px" }}
           >
             <div
               onClick={() => navigate("/categories")}
@@ -705,7 +705,7 @@ const Home = () => {
           </main>
 
           {/* ── RIGHT SIDEBAR (Live Videos) ── */}
-          <aside className="hero-v3-sidebar-right" style={{ display: "flex", flexDirection: "column", height: "600px", marginTop: "35px" }}>
+          <aside className="hero-v3-sidebar-right" style={{ display: "flex", flexDirection: "column", height: "600px", marginTop: "80px" }}>
             <div style={{ textAlign: "right", marginBottom: "8px", flexShrink: 0 }}>
               <Link to="/streams" style={{ textDecoration: "none" }}>
                 <span style={{ color: "#FF6A00", fontSize: "14px", fontWeight: "700", cursor: "pointer" }}>View All Streams &gt;</span>
@@ -716,9 +716,23 @@ const Home = () => {
                 const recordSlug = video.slug || "deadlifts";
                 return (
                   <Link to={`/record/${recordSlug}`} key={idx} style={{ textDecoration: "none" }}>
-                    <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden", height: "78px", boxShadow: "0 4px 12px rgba(0,0,0,0.15)", cursor: "pointer", flexShrink: 0 }}>
+                    <div 
+                      style={{ position: "relative", borderRadius: "12px", overflow: "hidden", height: "78px", boxShadow: "0 4px 12px rgba(0,0,0,0.15)", cursor: "pointer", flexShrink: 0, transition: "all 0.3s ease" }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                        e.currentTarget.style.boxShadow = "0 8px 24px rgba(255,106,0,0.4)";
+                        const overlay = e.currentTarget.querySelector('.video-overlay');
+                        if(overlay) overlay.style.background = "rgba(0,0,0,0.1)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "none";
+                        e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+                        const overlay = e.currentTarget.querySelector('.video-overlay');
+                        if(overlay) overlay.style.background = "rgba(0,0,0,0.3)";
+                      }}
+                    >
                       <img src={video.img} alt={video.title || "Live Stream"} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)" }} />
+                      <div className="video-overlay" style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)", transition: "background 0.3s ease" }} />
                       <div style={{ position: "absolute", bottom: "8px", left: "12px", color: "white", fontSize: "12px", fontWeight: "700" }}>{video.time}</div>
                       <Play style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", color: "#FF6A00", fill: "#FF6A00", width: 40, height: 40, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.4))" }} />
                     </div>
@@ -935,7 +949,7 @@ const Home = () => {
           </div>
         </div>
         <div className="slider-wrapper holders-slider-wrapper">
-          <InfiniteSlider gap={12} speed={5} reverse={true} cardWidth="260px">
+          <InfiniteSlider gap={12} speed={32} reverse={true} cardWidth="260px">
             {featuredHolders.map((holder, idx) => (
               <HolderCard key={idx} {...holder} />
             ))}

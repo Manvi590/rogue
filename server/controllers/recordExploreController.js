@@ -119,7 +119,7 @@ exports.getTopRankedRecords = async (req, res) => {
       .from('records')
       .select('*, user:users!user_id(username, display_name:name, profile_image)', { count: 'exact' })
       .eq('status', 'verified')
-      .eq('is_world_record', true)
+      .eq('record_type', 'world_record')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 

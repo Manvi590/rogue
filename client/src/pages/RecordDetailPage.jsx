@@ -360,7 +360,7 @@ export default function RecordDetailPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '700' }}>
                   <CheckCircle size={16} /> Verified
                 </div>
-                {record.is_world_record && (
+                {record.record_type === 'world_record' && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255, 215, 0, 0.1)', color: '#FFD700', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '700' }}>
                     <Trophy size={16} /> World Record
                   </div>

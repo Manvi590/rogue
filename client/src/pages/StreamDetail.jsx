@@ -154,6 +154,18 @@ const StreamDetail = () => {
   const [purchaseCode, setPurchaseCode] = React.useState("");
   const [showRedeemModal, setShowRedeemModal] = React.useState(false);
   const [redeemCodeInput, setRedeemCodeInput] = React.useState("");
+  const [cardNumber, setCardNumber] = React.useState("");
+
+  const handleCardNumberChange = (e) => {
+    let val = e.target.value.replace(/\D/g, "");
+    if (val.length > 16) val = val.substring(0, 16);
+    let formatted = "";
+    for (let i = 0; i < val.length; i++) {
+      if (i > 0 && i % 4 === 0) formatted += " ";
+      formatted += val[i];
+    }
+    setCardNumber(formatted);
+  };
 
 
   const isCurrentUserKicked = user && blockedUsers.includes(user.id || user._id);
@@ -465,7 +477,7 @@ const StreamDetail = () => {
                     <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "8px" }}>Card Details</label>
                     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                       <input type="text" placeholder="Cardholder Name" style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px 16px", color: "white", fontSize: "14px", outline: "none" }} />
-                      <input type="text" placeholder="Card Number" maxLength="19" style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px 16px", color: "white", fontSize: "14px", outline: "none", letterSpacing: "2px" }} />
+                      <input type="text" placeholder="Card Number" maxLength="19" value={cardNumber} onChange={handleCardNumberChange} style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px 16px", color: "white", fontSize: "14px", outline: "none", letterSpacing: "2px" }} />
                       <div style={{ display: "flex", gap: "10px" }}>
                         <input type="text" placeholder="MM/YY" maxLength="5" style={{ flex: 1, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px 16px", color: "white", fontSize: "14px", outline: "none" }} />
                         <input type="text" placeholder="CVC" maxLength="4" style={{ flex: 1, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "12px 16px", color: "white", fontSize: "14px", outline: "none" }} />
@@ -501,8 +513,12 @@ const StreamDetail = () => {
                 ) : (
                   <button 
                     onClick={() => {
-                      navigator.clipboard.writeText(purchaseCode);
-                      showToast("Code copied to clipboard!");
+                      navigator.clipboard.writeText(purchaseCode).catch(() => console.log("Clipboard write failed"));
+                      setHasTicket(true);
+                      setCanWatch(true);
+                      setIsPlaying(true);
+                      setShowModal(false);
+                      showToast("✅ Code copied and Stream Unlocked!");
                     }}
                     style={{
                       background: "#22c55e",
@@ -520,7 +536,7 @@ const StreamDetail = () => {
                     onMouseEnter={e => { e.currentTarget.style.background = "#16a34a"; e.currentTarget.style.transform = "translateY(-2px)"; }}
                     onMouseLeave={e => { e.currentTarget.style.background = "#22c55e"; e.currentTarget.style.transform = "translateY(0)"; }}
                   >
-                    COPY CODE
+                    COPY CODE & WATCH
                   </button>
                 )}
 
@@ -541,7 +557,7 @@ const StreamDetail = () => {
                   onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
                   onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
                 >
-                  CANCEL
+                  {purchaseCode ? "CLOSE" : "CANCEL"}
                 </button>
               </div>
             </div>

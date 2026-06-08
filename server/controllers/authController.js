@@ -177,7 +177,7 @@ const registerUser = async (req, res) => {
 const getUserProfile = async (req, res) => {
   const { data: user, error } = await supabase
     .from('users')
-    .select('id, name, email, is_admin, role, membership_type, account_status, profile_image, username, phone, gender, dob, weight, weight_unit, height, height_unit, country, city, street_address, state, zip_code, member_number')
+    .select('id, name, email, is_admin, role, membership_type, account_status, profile_image, username, phone, gender, dob, weight, weight_unit, height, height_unit, country, city, street_address, state, zip_code, member_number, ethnicity')
     .eq('id', req.user.id)
     .single();
 
@@ -217,6 +217,7 @@ const getUserProfile = async (req, res) => {
       streetAddress: finalUser.street_address || '',
       state: finalUser.state || '',
       zipCode: finalUser.zip_code || '',
+      ethnicity: finalUser.ethnicity || '',
       role: finalUser.role || 'athlete',
       membershipType: finalUser.membership_type || 'free_athlete',
       accountStatus: finalUser.account_status || 'active',
@@ -242,7 +243,7 @@ const updateUserProfile = async (req, res) => {
       name, email, password, profileImage,
       username, phone, gender, dob, 
       weight, weightUnit, height, heightUnit, 
-      country, city, streetAddress, state, zipCode
+      country, city, streetAddress, state, zipCode, ethnicity
     } = req.body;
 
     const updates = {
@@ -260,7 +261,9 @@ const updateUserProfile = async (req, res) => {
       country: country !== undefined ? country : user.country,
       city: city !== undefined ? city : user.city,
       street_address: streetAddress !== undefined ? streetAddress : user.street_address,
+      state: state !== undefined ? state : user.state,
       zip_code: zipCode !== undefined ? zipCode : user.zip_code,
+      ethnicity: ethnicity !== undefined ? ethnicity : user.ethnicity,
       updated_at: new Date()
     };
 
@@ -362,8 +365,12 @@ const getPublicUserProfile = async (req, res) => {
     global_rank: globalRank,
     total_points: totalPoints,
     verified_records_count: verifiedCount,
-    world_records_count: userRecords ? userRecords.filter(r => r.is_world_record).length : 0,
-    tier_badge: 'Challenger'
+    world_records_count: userRecords ? userRecords.filter(r => r.record_type === 'world_record').length : 0,
+    tier_badge: 'Challenger',
+    first_place_categories: globalRank === 1 ? 1 : 0,
+    top_10_placements: (globalRank > 0 && globalRank <= 10) ? 1 : 0,
+    medals_earned: verifiedCount > 0 ? 1 : 0,
+    certificates_earned: verifiedCount
   };
 
   if (ranking.total_points > 5000) ranking.tier_badge = 'Grand Champion';

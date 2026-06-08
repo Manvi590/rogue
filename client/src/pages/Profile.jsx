@@ -105,7 +105,11 @@ const Profile = () => {
     height: "",
     heightUnit: "cm",
     country: "",
+    streetAddress: "",
     city: "",
+    state: "",
+    zipCode: "",
+    ethnicity: "",
     profileImage: ""
   });
 
@@ -163,7 +167,11 @@ const Profile = () => {
         height: user.height || "",
         heightUnit: user.heightUnit || "cm",
         country: user.country || "",
+        streetAddress: user.streetAddress || "",
         city: user.city || "",
+        state: user.state || "",
+        zipCode: user.zipCode || "",
+        ethnicity: user.ethnicity || "",
         profileImage: user.profileImage || ""
       });
       setEditError("");
@@ -960,22 +968,43 @@ const Profile = () => {
                   <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                     <div style={{ background: "rgba(255, 85, 0, 0.06)", color: "#FF5500", padding: "8px", borderRadius: "8px", border: "1px solid rgba(255, 85, 0, 0.12)" }}><Phone size={14} /></div>
                     <div>
-                      <div style={{ color: "#555", fontSize: "9px", fontWeight: "900", letterSpacing: "1px" }}>PHONE DIRECT</div>
+                      <div style={{ color: "#555", fontSize: "9px", fontWeight: "900", letterSpacing: "1px" }}>PHONE NUMBER</div>
                       <div style={{ fontSize: "13px", fontWeight: "800", color: "white", letterSpacing: "-0.3px" }}>{user.phone || "Not Specified"}</div>
                     </div>
                   </div>
 
-                  {/* Gender and DOB double column */}
+                  {/* Gender and Ethnicity double column */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: "12px" }}>
                     <div>
                       <span style={{ color: "#555", fontSize: "9px", fontWeight: "900", letterSpacing: "1px", display: "block" }}>GENDER</span>
                       <span style={{ fontSize: "13px", fontWeight: "800", color: "white", textTransform: "capitalize" }}>{user.gender || "Not Set"}</span>
                     </div>
                     <div>
+                      <span style={{ color: "#555", fontSize: "9px", fontWeight: "900", letterSpacing: "1px", display: "block" }}>RACE / ETHNICITY</span>
+                      <span style={{ fontSize: "13px", fontWeight: "800", color: "white", textTransform: "capitalize" }}>{user.ethnicity || "Not Set"}</span>
+                    </div>
+                  </div>
+
+                  {/* DOB standalone or paired with something else */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: "12px" }}>
+                    <div>
                       <span style={{ color: "#555", fontSize: "9px", fontWeight: "900", letterSpacing: "1px", display: "block" }}>BIRTH DATE</span>
                       <span style={{ fontSize: "13px", fontWeight: "800", color: "white" }}>
                         {user.dob ? new Date(user.dob).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : "Not Set"}
                       </span>
+                    </div>
+                  </div>
+
+                  {/* Address */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: "12px" }}>
+                    <div style={{ background: "rgba(255, 85, 0, 0.06)", color: "#FF5500", padding: "8px", borderRadius: "8px", border: "1px solid rgba(255, 85, 0, 0.12)" }}><MapPin size={14} /></div>
+                    <div>
+                      <div style={{ color: "#555", fontSize: "9px", fontWeight: "900", letterSpacing: "1px" }}>ADDRESS</div>
+                      <div style={{ fontSize: "13px", fontWeight: "800", color: "white", letterSpacing: "-0.3px" }}>
+                        {user.streetAddress || user.city || user.state || user.zipCode ? 
+                          [user.streetAddress, user.city, user.state, user.zipCode].filter(Boolean).join(", ") 
+                          : "Not Specified"}
+                      </div>
                     </div>
                   </div>
 
@@ -1201,7 +1230,7 @@ const Profile = () => {
             background: "#0c0c0e",
             border: "1px solid rgba(255, 85, 0, 0.15)",
             width: "100%",
-            maxWidth: "680px",
+            maxWidth: "900px",
             borderRadius: "32px",
             boxShadow: "0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(255, 85, 0, 0.05)",
             overflow: "hidden",
@@ -1219,10 +1248,10 @@ const Profile = () => {
               alignItems: "center"
             }}>
               <div>
-                <h3 style={{ fontSize: "20px", fontWeight: "900", margin: 0, letterSpacing: "-0.5px", display: "flex", alignItems: "center", gap: "10px", color: "white" }}>
+                <h3 style={{ fontSize: "26px", fontWeight: "900", margin: 0, letterSpacing: "-0.5px", display: "flex", alignItems: "center", gap: "12px", color: "white" }}>
                   <Settings size={20} color="#FF5500" /> EDIT ATHLETE REGISTRY
                 </h3>
-                <p style={{ color: "#555", fontSize: "11px", margin: "4px 0 0 0", fontWeight: "600", letterSpacing: "0.5px" }}>UPDATE PHYSICAL DOSSIER & SECURITY KEYS</p>
+                <p style={{ color: "#555", fontSize: "14px", margin: "6px 0 0 0", fontWeight: "600", letterSpacing: "0.5px" }}>UPDATE PHYSICAL DOSSIER & SECURITY KEYS</p>
               </div>
               <button 
                 onClick={() => setIsEditModalOpen(false)}
@@ -1238,7 +1267,7 @@ const Profile = () => {
               <div style={{ padding: "32px", overflowY: "auto", maxHeight: "60vh", display: "flex", flexDirection: "column", gap: "20px", scrollBehavior: "smooth", WebkitOverflowScrolling: "touch" }}>
                 
                 {editError && (
-                  <div style={{ background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.15)", borderRadius: "12px", color: "#f87171", padding: "12px 16px", fontSize: "12px", display: "flex", gap: "8px", alignItems: "center" }}>
+                  <div style={{ background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.15)", borderRadius: "12px", color: "#f87171", padding: "16px 20px", fontSize: "12px", display: "flex", gap: "8px", alignItems: "center" }}>
                     <AlertCircle size={16} />
                     <span>{editError}</span>
                   </div>
@@ -1246,7 +1275,7 @@ const Profile = () => {
 
                 {/* Section: Profile Image Upload */}
                 <div>
-                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>PROFILE IMAGE (UPLOAD)</label>
+                  <label style={{ display: "block", fontSize: "16px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>PROFILE IMAGE (UPLOAD)</label>
                   <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                     <div style={{ background: "rgba(255,255,255,0.02)", width: "48px", height: "48px", borderRadius: "8px", display: "flex", justifyContent: "center", alignItems: "center", border: "1px solid rgba(255,255,255,0.05)", overflow: "hidden", flexShrink: 0 }}>
                       {isUploading ? (
@@ -1257,7 +1286,7 @@ const Profile = () => {
                         <Image size={20} color="#555" />
                       )}
                     </div>
-                    <label style={{ flex: 1, background: "rgba(0,0,0,0.4)", border: "1px dashed rgba(255,255,255,0.2)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px", cursor: isUploading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "0.3s", opacity: isUploading ? 0.5 : 1 }} className={!isUploading ? "hover-white" : ""}>
+                    <label style={{ flex: 1, background: "rgba(0,0,0,0.4)", border: "1px dashed rgba(255,255,255,0.2)", borderRadius: "10px", padding: "16px 20px", color: "white", outline: "none", fontSize: "16px", cursor: isUploading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "0.3s", opacity: isUploading ? 0.5 : 1 }} className={!isUploading ? "hover-white" : ""}>
                       <span>{isUploading ? "UPLOADING..." : editForm.profileImage ? "CHANGE UPLOADED IMAGE" : "UPLOAD NEW PICTURE"}</span>
                       <input 
                         type="file" 
@@ -1299,7 +1328,7 @@ const Profile = () => {
                           color: "#ef4444",
                           border: "1px solid rgba(239, 68, 68, 0.2)",
                           borderRadius: "10px",
-                          padding: "12px 16px",
+                          padding: "16px 20px",
                           fontSize: "11px",
                           fontWeight: "900",
                           cursor: isUploading ? "not-allowed" : "pointer",
@@ -1313,60 +1342,60 @@ const Profile = () => {
                 </div>
 
                 {/* Row: Name & Username */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
                   <div>
-                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>FULL CREDENTIAL NAME</label>
+                    <label style={{ display: "block", fontSize: "16px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>FULL CREDENTIAL NAME</label>
                     <input 
                       type="text" 
                       value={editForm.name}
                       onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                       required
-                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "16px 20px", color: "white", outline: "none", fontSize: "16px" }} 
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>REGISTRY USERNAME</label>
+                    <label style={{ display: "block", fontSize: "16px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>REGISTRY USERNAME</label>
                     <input 
                       type="text" 
                       value={editForm.username}
                       onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
                       required
-                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "16px 20px", color: "white", outline: "none", fontSize: "16px" }} 
                     />
                   </div>
                 </div>
 
                 {/* Row: Phone & Birth Date */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
                   <div>
-                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>PHONE DIRECT</label>
+                    <label style={{ display: "block", fontSize: "16px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>PHONE NUMBER</label>
                     <input 
                       type="tel" 
                       placeholder="+1 (555) 000-0000"
                       value={editForm.phone}
                       onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "16px 20px", color: "white", outline: "none", fontSize: "16px" }} 
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>DATE OF BIRTH</label>
+                    <label style={{ display: "block", fontSize: "16px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>DATE OF BIRTH</label>
                     <input 
                       type="date" max={new Date().toISOString().split('T')[0]} 
                       value={editForm.dob}
                       onChange={(e) => setEditForm({ ...editForm, dob: e.target.value })}
-                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px", colorScheme: "dark" }} 
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "16px 20px", color: "white", outline: "none", fontSize: "16px", colorScheme: "dark" }} 
                     />
                   </div>
                 </div>
 
                 {/* Row: Gender & Country */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
                   <div>
-                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>GENDER</label>
+                    <label style={{ display: "block", fontSize: "16px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>GENDER</label>
                     <select
                       value={editForm.gender}
                       onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}
-                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }}
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "16px 20px", color: "white", outline: "none", fontSize: "16px" }}
                     >
                       <option value="" style={{ background: "#0c0c0e" }}>Select Gender</option>
                       <option value="male" style={{ background: "#0c0c0e" }}>Male</option>
@@ -1376,25 +1405,91 @@ const Profile = () => {
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>COUNTRY</label>
+                    <label style={{ display: "block", fontSize: "16px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>RACE / ETHNICITY</label>
+                    <select 
+                      value={editForm.ethnicity}
+                      onChange={(e) => setEditForm({ ...editForm, ethnicity: e.target.value })}
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "16px 20px", color: "white", outline: "none", fontSize: "16px" }}
+                    >
+                      <option value="" style={{ background: "#0c0c0e" }}>Select Ethnicity</option>
+                      <option value="White" style={{ background: "#0c0c0e" }}>White</option>
+                      <option value="Black" style={{ background: "#0c0c0e" }}>Black</option>
+                      <option value="Spanish/Hispanic" style={{ background: "#0c0c0e" }}>Spanish / Hispanic</option>
+                      <option value="Asian" style={{ background: "#0c0c0e" }}>Asian</option>
+                      <option value="Other" style={{ background: "#0c0c0e" }}>Other</option>
+                      <option value="Prefer not to say" style={{ background: "#0c0c0e" }}>Prefer not to say</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "16px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>COUNTRY</label>
                     <input 
                       type="text" 
                       placeholder="e.g. United States"
                       value={editForm.country}
                       onChange={(e) => setEditForm({ ...editForm, country: e.target.value })}
-                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "16px 20px", color: "white", outline: "none", fontSize: "16px" }} 
+                    />
+                  </div>
+                </div>
+
+                {/* Row: Address */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "16px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>STREET ADDRESS</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. 123 Main St"
+                      value={editForm.streetAddress}
+                      onChange={(e) => setEditForm({ ...editForm, streetAddress: e.target.value })}
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "16px 20px", color: "white", outline: "none", fontSize: "16px" }} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "16px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>CITY</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. New York"
+                      value={editForm.city}
+                      onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "16px 20px", color: "white", outline: "none", fontSize: "16px" }} 
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "16px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>STATE / PROVINCE</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. NY"
+                      value={editForm.state}
+                      onChange={(e) => setEditForm({ ...editForm, state: e.target.value })}
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "16px 20px", color: "white", outline: "none", fontSize: "16px" }} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "16px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>ZIP / POSTAL CODE</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. 10001"
+                      value={editForm.zipCode}
+                      onChange={(e) => setEditForm({ ...editForm, zipCode: e.target.value })}
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "16px 20px", color: "white", outline: "none", fontSize: "16px" }} 
                     />
                   </div>
                 </div>
 
                 {/* Row: Weight & Height */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
                   <div>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                      <label style={{ fontSize: "10px", fontWeight: "900", color: "#555", letterSpacing: "1px" }}>WEIGHT</label>
+                      <label style={{ fontSize: "16px", fontWeight: "900", color: "#555", letterSpacing: "1px" }}>WEIGHT</label>
                       <div style={{ display: "flex", gap: "8px" }}>
-                        <button type="button" onClick={() => setEditForm({ ...editForm, weightUnit: "kg" })} style={{ background: "transparent", border: "none", color: editForm.weightUnit === "kg" ? "#FF5500" : "#555", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}>KG</button>
-                        <button type="button" onClick={() => setEditForm({ ...editForm, weightUnit: "lbs" })} style={{ background: "transparent", border: "none", color: editForm.weightUnit === "lbs" ? "#FF5500" : "#555", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}>LBS</button>
+                        <button type="button" onClick={() => setEditForm({ ...editForm, weightUnit: "kg" })} style={{ background: "transparent", border: "none", color: editForm.weightUnit === "kg" ? "#FF5500" : "#555", fontSize: "16px", fontWeight: "900", cursor: "pointer" }}>KG</button>
+                        <button type="button" onClick={() => setEditForm({ ...editForm, weightUnit: "lbs" })} style={{ background: "transparent", border: "none", color: editForm.weightUnit === "lbs" ? "#FF5500" : "#555", fontSize: "16px", fontWeight: "900", cursor: "pointer" }}>LBS</button>
                       </div>
                     </div>
                     <input 
@@ -1402,15 +1497,15 @@ const Profile = () => {
                       value={editForm.weight}
                       onChange={(e) => setEditForm({ ...editForm, weight: e.target.value })}
                       placeholder={editForm.weightUnit === "kg" ? "75" : "165"}
-                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "16px 20px", color: "white", outline: "none", fontSize: "16px" }} 
                     />
                   </div>
                   <div>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                      <label style={{ fontSize: "10px", fontWeight: "900", color: "#555", letterSpacing: "1px" }}>HEIGHT ({editForm.heightUnit.toUpperCase()})</label>
+                      <label style={{ fontSize: "16px", fontWeight: "900", color: "#555", letterSpacing: "1px" }}>HEIGHT ({editForm.heightUnit.toUpperCase()})</label>
                       <div style={{ display: "flex", gap: "8px" }}>
-                        <button type="button" onClick={() => setEditForm({ ...editForm, heightUnit: "cm" })} style={{ background: "transparent", border: "none", color: editForm.heightUnit === "cm" ? "#FF5500" : "#555", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}>CM</button>
-                        <button type="button" onClick={() => setEditForm({ ...editForm, heightUnit: "ft_in" })} style={{ background: "transparent", border: "none", color: editForm.heightUnit === "ft_in" ? "#FF5500" : "#555", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}>FT/IN</button>
+                        <button type="button" onClick={() => setEditForm({ ...editForm, heightUnit: "cm" })} style={{ background: "transparent", border: "none", color: editForm.heightUnit === "cm" ? "#FF5500" : "#555", fontSize: "16px", fontWeight: "900", cursor: "pointer" }}>CM</button>
+                        <button type="button" onClick={() => setEditForm({ ...editForm, heightUnit: "ft_in" })} style={{ background: "transparent", border: "none", color: editForm.heightUnit === "ft_in" ? "#FF5500" : "#555", fontSize: "16px", fontWeight: "900", cursor: "pointer" }}>FT/IN</button>
                       </div>
                     </div>
                     <input 
@@ -1418,20 +1513,20 @@ const Profile = () => {
                       value={editForm.height}
                       onChange={(e) => setEditForm({ ...editForm, height: e.target.value })}
                       placeholder={editForm.heightUnit === "cm" ? "180" : "5'11\""}
-                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                      style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "16px 20px", color: "white", outline: "none", fontSize: "16px" }} 
                     />
                   </div>
                 </div>
 
                 {/* City */}
                 <div>
-                  <label style={{ display: "block", fontSize: "10px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>CITY / REGION</label>
+                  <label style={{ display: "block", fontSize: "16px", fontWeight: "900", color: "#555", marginBottom: "8px", letterSpacing: "1px" }}>CITY / REGION</label>
                   <input 
                     type="text" 
                     placeholder="e.g. Los Angeles, CA"
                     value={editForm.city}
                     onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
-                    style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 16px", color: "white", outline: "none", fontSize: "13px" }} 
+                    style={{ width: "100%", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "16px 20px", color: "white", outline: "none", fontSize: "16px" }} 
                   />
                 </div>
 
@@ -1455,7 +1550,7 @@ const Profile = () => {
                     border: "1px solid rgba(255,255,255,0.05)",
                     padding: "12px 24px",
                     borderRadius: "10px",
-                    fontSize: "13px",
+                    fontSize: "16px",
                     fontWeight: "900",
                     cursor: "pointer",
                     transition: "all 0.2s"
@@ -1473,7 +1568,7 @@ const Profile = () => {
                     border: "none",
                     padding: "12px 32px",
                     borderRadius: "10px",
-                    fontSize: "13px",
+                    fontSize: "16px",
                     fontWeight: "900",
                     cursor: editLoading ? "not-allowed" : "pointer",
                     display: "flex",

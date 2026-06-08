@@ -290,18 +290,20 @@ const getAllSubmissionsForAdmin = async (req, res) => {
 // @route   PUT /api/records/admin/adjudicate/:id
 // @access  Private/Admin
 const adjudicateRecord = async (req, res) => {
-  const { status, points } = req.body;
+  const { status, points, is_world_record } = req.body;
   
   if (!['verified', 'rejected', 'pending'].includes(status)) {
     return res.status(400).json({ message: 'Invalid adjudication status' });
   }
 
   try {
-    // Prepare update object
     const updateData = {
       status,
       updated_at: new Date()
     };
+    if (is_world_record !== undefined) {
+      updateData.record_type = is_world_record ? 'world_record' : 'standard';
+    }
 
     const { data: updatedRecord, error } = await supabase
       .from('records')

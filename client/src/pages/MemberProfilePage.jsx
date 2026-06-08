@@ -53,10 +53,10 @@ export default function MemberProfilePage() {
               verified_records_count: data.ranking.verified_records_count || 0,
               world_records_count: data.ranking.world_records_count || 0,
               tier_badge: data.ranking.tier_badge || 'Challenger',
-              first_place_categories: Math.floor(Math.random() * 5),
-              top_10_placements: Math.floor(Math.random() * 15),
-              medals_earned: Math.floor(Math.random() * 10),
-              certificates_earned: Math.floor(Math.random() * 8)
+              first_place_categories: data.ranking.first_place_categories || 0,
+              top_10_placements: data.ranking.top_10_placements || 0,
+              medals_earned: data.ranking.medals_earned || 0,
+              certificates_earned: data.ranking.certificates_earned || 0
             });
           }
           
@@ -218,7 +218,7 @@ export default function MemberProfilePage() {
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px', overflowX: 'auto' }}>
-          {['overview', 'achievements', 'records', 'videos'].map(tab => (
+          {['overview', 'demographics', 'achievements', 'records', 'videos'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -236,6 +236,7 @@ export default function MemberProfilePage() {
               }}
             >
               {tab === 'overview' && '📊 Overview'}
+              {tab === 'demographics' && '👤 Demographics'}
               {tab === 'achievements' && '⭐ Achievements'}
               {tab === 'records' && '📋 Submitted Records'}
               {tab === 'videos' && '🎥 Videos'}
@@ -275,6 +276,63 @@ export default function MemberProfilePage() {
                 {ranking?.certificates_earned}
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'demographics' && (
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+              <div>
+                <div style={{ color: '#555', fontSize: '10px', fontWeight: '900', letterSpacing: '1px', marginBottom: '4px' }}>FULL NAME</div>
+                <div style={{ color: 'white', fontSize: '16px', fontWeight: '700' }}>{profile.name || profile.display_name}</div>
+              </div>
+              <div>
+                <div style={{ color: '#555', fontSize: '10px', fontWeight: '900', letterSpacing: '1px', marginBottom: '4px' }}>EMAIL ADDRESS</div>
+                <div style={{ color: 'white', fontSize: '16px', fontWeight: '700' }}>{profile.email}</div>
+              </div>
+              <div>
+                <div style={{ color: '#555', fontSize: '10px', fontWeight: '900', letterSpacing: '1px', marginBottom: '4px' }}>PHONE NUMBER</div>
+                <div style={{ color: 'white', fontSize: '16px', fontWeight: '700' }}>{profile.phone || 'Not Specified'}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px' }}>
+              <div>
+                <div style={{ color: '#555', fontSize: '10px', fontWeight: '900', letterSpacing: '1px', marginBottom: '4px' }}>ADDRESS</div>
+                <div style={{ color: 'white', fontSize: '16px', fontWeight: '700' }}>
+                  {profile.street_address || profile.city || profile.state || profile.zip_code ? 
+                    [profile.street_address, profile.city, profile.state, profile.zip_code].filter(Boolean).join(", ") 
+                    : (profile.country || "Not Specified")}
+                </div>
+              </div>
+              <div>
+                <div style={{ color: '#555', fontSize: '10px', fontWeight: '900', letterSpacing: '1px', marginBottom: '4px' }}>BIRTH DATE</div>
+                <div style={{ color: 'white', fontSize: '16px', fontWeight: '700' }}>
+                  {profile.dob ? new Date(profile.dob).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : "Not Set"}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px' }}>
+              <div>
+                <div style={{ color: '#555', fontSize: '10px', fontWeight: '900', letterSpacing: '1px', marginBottom: '4px' }}>GENDER</div>
+                <div style={{ color: 'white', fontSize: '16px', fontWeight: '700', textTransform: 'capitalize' }}>{profile.gender || 'Not Set'}</div>
+              </div>
+              <div>
+                <div style={{ color: '#555', fontSize: '10px', fontWeight: '900', letterSpacing: '1px', marginBottom: '4px' }}>RACE / ETHNICITY</div>
+                <div style={{ color: 'white', fontSize: '16px', fontWeight: '700', textTransform: 'capitalize' }}>{profile.ethnicity || 'Not Set'}</div>
+              </div>
+              <div>
+                <div style={{ color: '#555', fontSize: '10px', fontWeight: '900', letterSpacing: '1px', marginBottom: '4px' }}>WEIGHT</div>
+                <div style={{ color: 'white', fontSize: '16px', fontWeight: '700' }}>{profile.weight ? `${profile.weight} ${profile.weight_unit || 'kg'}` : 'Not Set'}</div>
+              </div>
+              <div>
+                <div style={{ color: '#555', fontSize: '10px', fontWeight: '900', letterSpacing: '1px', marginBottom: '4px' }}>HEIGHT</div>
+                <div style={{ color: 'white', fontSize: '16px', fontWeight: '700' }}>{profile.height ? `${profile.height} ${profile.height_unit || 'cm'}` : 'Not Set'}</div>
+              </div>
+            </div>
+
           </div>
         )}
 
@@ -442,8 +500,8 @@ export default function MemberProfilePage() {
                         )}
                       </div>
                       <div style={{ padding: '16px', cursor: 'pointer' }} onClick={() => navigate(`/record/${record.id}`)}>
-                        <div style={{ background: record.is_world_record ? '#FFD700' : '#FF5500', color: record.is_world_record ? '#000' : 'white', display: 'inline-block', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '900', marginBottom: '8px' }}>
-                          {record.is_world_record ? 'WORLD RECORD' : record.category.toUpperCase()}
+                        <div style={{ background: record.record_type === 'world_record' ? '#FFD700' : '#FF5500', color: record.record_type === 'world_record' ? '#000' : 'white', display: 'inline-block', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '900', marginBottom: '8px' }}>
+                          {record.record_type === 'world_record' ? 'WORLD RECORD' : record.category.toUpperCase()}
                         </div>
                         <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '900', color: 'white' }}>{record.title}</h3>
                         <p style={{ margin: 0, fontSize: '13px', color: '#888', lineHeight: '1.5' }}>

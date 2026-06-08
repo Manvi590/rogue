@@ -144,6 +144,7 @@ const Admin = () => {
   const [isVqDetailOpen, setIsVqDetailOpen] = useState(false);
   const [vqAdminNote, setVqAdminNote] = useState("");
   const [vqPointsAwarded, setVqPointsAwarded] = useState(0);
+  const [vqIsWorldRecord, setVqIsWorldRecord] = useState(false);
   const [vqStatusOverrides, setVqStatusOverrides] = useState({}); // { [recordId]: verificationStatus }
   const [vqUpdating, setVqUpdating] = useState(null); // id being updated
 
@@ -6108,7 +6109,8 @@ const Admin = () => {
                 await apiCall(`/records/admin/adjudicate/${recordId}`, "PUT", {
                   status: newStatus === "approved" ? "verified" : newStatus === "denied" ? "rejected" : "pending",
                   verification_status: newStatus,
-                  points: parseInt(vqPointsAwarded) || 0
+                  points: parseInt(vqPointsAwarded) || 0,
+                  is_world_record: vqIsWorldRecord
                 }, user.token);
                 showToast(`Status updated to "${VQ_STATUSES.find(s=>s.key===newStatus)?.label || newStatus}"`, "success");
               } catch (err) {
@@ -6221,7 +6223,7 @@ const Admin = () => {
                             className="table-row-hover"
                             style={{ borderBottom: "1px solid rgba(255,255,255,0.03)", cursor: "pointer" }}
                           >
-                            <td style={{ padding: "16px 20px" }} onClick={() => { setSelectedVqRecord(r); setVqAdminNote(""); setIsVqDetailOpen(true); }}>
+                            <td style={{ padding: "16px 20px" }} onClick={() => { setSelectedVqRecord(r); setVqIsWorldRecord(r.is_world_record || false); setVqAdminNote(""); setIsVqDetailOpen(true); }}>
                               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                                 <img src={`https://ui-avatars.com/api/?name=${r.user?.name || 'A'}&background=random&size=40`} alt="" style={{ width: "36px", height: "36px", borderRadius: "50%", border: "2px solid rgba(255,85,0,0.3)" }} />
                                 <div>
@@ -6230,16 +6232,16 @@ const Admin = () => {
                                 </div>
                               </div>
                             </td>
-                            <td style={{ padding: "16px 20px" }} onClick={() => { setSelectedVqRecord(r); setVqAdminNote(""); setIsVqDetailOpen(true); }}>
+                            <td style={{ padding: "16px 20px" }} onClick={() => { setSelectedVqRecord(r); setVqIsWorldRecord(r.is_world_record || false); setVqAdminNote(""); setIsVqDetailOpen(true); }}>
                               <div style={{ fontWeight: "800", fontSize: "13px", color: "white", marginBottom: "3px" }}>{r.title}</div>
                               <div style={{ fontSize: "11px", color: "#555", display: "flex", alignItems: "center", gap: "4px" }}>
                                 <Video size={10} />{r.evidence_url ? "Video attached" : "No video"}
                               </div>
                             </td>
-                            <td style={{ padding: "16px 20px" }} onClick={() => { setSelectedVqRecord(r); setVqAdminNote(""); setVqPointsAwarded(0); setIsVqDetailOpen(true); }}>
+                            <td style={{ padding: "16px 20px" }} onClick={() => { setSelectedVqRecord(r); setVqIsWorldRecord(r.is_world_record || false); setVqAdminNote(""); setVqPointsAwarded(0); setIsVqDetailOpen(true); }}>
                               <span style={{ background: "rgba(255,255,255,0.05)", color: "#aaa", padding: "4px 10px", borderRadius: "100px", fontSize: "10px", fontWeight: "900", textTransform: "uppercase" }}>{r.category || "General"}</span>
                             </td>
-                            <td style={{ padding: "16px 20px", color: "#666", fontSize: "12px", fontWeight: "600" }} onClick={() => { setSelectedVqRecord(r); setVqAdminNote(""); setIsVqDetailOpen(true); }}>
+                            <td style={{ padding: "16px 20px", color: "#666", fontSize: "12px", fontWeight: "600" }} onClick={() => { setSelectedVqRecord(r); setVqIsWorldRecord(r.is_world_record || false); setVqAdminNote(""); setIsVqDetailOpen(true); }}>
                               {new Date(r.created_at || Date.now()).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}
                             </td>
                             <td style={{ padding: "16px 20px" }}>
@@ -6292,7 +6294,7 @@ const Admin = () => {
                                   style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", width: "30px", height: "30px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                                 ><XCircle size={14} /></button>
                                 <button
-                                  onClick={() => { setSelectedVqRecord(r); setVqAdminNote(""); setVqPointsAwarded(0); setIsVqDetailOpen(true); }}
+                                  onClick={() => { setSelectedVqRecord(r); setVqIsWorldRecord(r.is_world_record || false); setVqAdminNote(""); setVqPointsAwarded(0); setIsVqDetailOpen(true); }}
                                   style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.08)", color: "#888", width: "30px", height: "30px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                                 ><FileText size={14} /></button>
                               </div>
@@ -6429,6 +6431,16 @@ const Admin = () => {
                               style={{ width: "200px", background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: "8px", padding: "12px 14px", color: "#22c55e", fontSize: "14px", fontWeight: "900", outline: "none" }}
                             />
                             <div style={{ fontSize: "11px", color: "#666", marginTop: "6px" }}>Award points to this athlete upon approval to boost their rank.</div>
+                            <div style={{ marginTop: "16px", display: "flex", alignItems: "center", gap: "8px", background: "rgba(255,215,0,0.05)", padding: "12px", borderRadius: "8px", border: "1px solid rgba(255,215,0,0.2)" }}>
+                              <input 
+                                type="checkbox" 
+                                id="isWorldRecordCheckbox"
+                                checked={vqIsWorldRecord}
+                                onChange={e => setVqIsWorldRecord(e.target.checked)}
+                                style={{ accentColor: "#FFD700", width: "16px", height: "16px", cursor: "pointer" }}
+                              />
+                              <label htmlFor="isWorldRecordCheckbox" style={{ fontSize: "12px", color: "#FFD700", fontWeight: "900", letterSpacing: "0.5px", cursor: "pointer" }}>OFFICIALLY RECOGNIZE AS A WORLD RECORD</label>
+                            </div>
                           </div>
                         )}
                       </div>
